@@ -149,9 +149,9 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)..\bin\*.dll" "$(TargetDir)"
-copy "$(SolutionDir)..\bin64\*.dll" "$(TargetDir)"
-copy "$(SolutionDir)..\bin\*.cfg" "$(TargetDir)"</Command>
+      <Command>IF EXIST "$(SolutionDir)..\bin\*.dll" copy "$(SolutionDir)..\bin\*.dll" "$(TargetDir)"
+IF EXIST "$(SolutionDir)..\bin64\*.dll" copy "$(SolutionDir)..\bin64\*.dll" "$(TargetDir)"
+IF EXIST "$(SolutionDir)..\bin\*.cfg" copy "$(SolutionDir)..\bin\*.cfg" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -206,9 +206,9 @@ copy "$(SolutionDir)..\bin\*.cfg" "$(TargetDir)"</Command>
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy "$(SolutionDir)..\bin\*.dll" "$(TargetDir)"
-copy "$(SolutionDir)..\bin64\*.dll" "$(TargetDir)"
-copy "$(SolutionDir)..\bin\*.cfg" "$(TargetDir)"</Command>
+      <Command>IF EXIST "$(SolutionDir)..\bin\*.dll" copy "$(SolutionDir)..\bin\*.dll" "$(TargetDir)"
+IF EXIST "$(SolutionDir)..\bin64\*.dll" copy "$(SolutionDir)..\bin64\*.dll" "$(TargetDir)"
+IF EXIST "$(SolutionDir)..\bin\*.cfg" copy "$(SolutionDir)..\bin\*.cfg" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
