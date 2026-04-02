@@ -1,0 +1,3 @@
+[submodule "xlights"]
+	path = xlights
+	url = https://github.com/xLightsSequencer/xLights.git

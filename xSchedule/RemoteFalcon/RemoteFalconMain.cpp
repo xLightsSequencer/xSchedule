@@ -27,7 +27,7 @@
 #include <wx/dirdlg.h>
 #include <wx/url.h>
 
-#include "../../xLights/xLightsVersion.h"
+#include "../../xlights/xLights/xLightsVersion.h"
 #include "RemoteFalconMain.h"
 #include "RemoteFalconSettingsDialog.h"
 #include "RemoteFalconOptions.h"
@@ -36,11 +36,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../../include/xLights.xpm"
-#include "../../include/xLights-16.xpm"
-#include "../../include/xLights-32.xpm"
-#include "../../include/xLights-64.xpm"
-#include "../../include/xLights-128.xpm"
+#include "../../xlights/include/xLights.xpm"
+#include "../../xlights/include/xLights-16.xpm"
+#include "../../xlights/include/xLights-32.xpm"
+#include "../../xlights/include/xLights-64.xpm"
+#include "../../xlights/include/xLights-128.xpm"
 
 #include <log.h>
 

@@ -12,7 +12,7 @@
 #include "RGBEffects.h"
 #include "ScheduleOptions.h"
 #include "xScheduleApp.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 #include <wx/string.h>
 #include <wx/wx.h>
 #include <wx/xml/xml.h>

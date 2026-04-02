@@ -1,22 +1,23 @@
-name: Create Ubuntu and Window Releases
+name: Create Ubuntu and Windows Releases
 
-on: 
+on:
   push:
     tags:
     - '*'
-    
+
   workflow_dispatch:
+
 jobs:
   build-linux:
 
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: 'recursive'
       - run: docker pull ghcr.io/xlightssequencer/xlights-build-docker:master
-      - run: docker run --name buildvm ghcr.io/xlightssequencer/xlights-build-docker:master /bin/bash Recipe.appimage
-      - run: 'docker cp buildvm:/xLights/xLights/AppImage/ /tmp/'
+      - run: docker run --name buildvm ghcr.io/xlightssequencer/xlights-build-docker:master /bin/bash Recipe.xSchedule.appimage
+      - run: 'docker cp buildvm:/xSchedule/xSchedule/AppImage/ /tmp/'
       - run: ls -lh /tmp/AppImage
 
       - uses: ncipollo/release-action@v1
@@ -24,49 +25,38 @@ jobs:
            allowUpdates: true
            artifacts: "/tmp/AppImage/*.AppImage"
            token: ${{ secrets.GITHUB_TOKEN }}
-           
+
   build-windows:
    runs-on: windows-2022
 
    steps:
-    - name: Checkout xLights
-      uses: actions/checkout@master
+    - name: Checkout xSchedule
+      uses: actions/checkout@v4
       with:
-          submodules: 'true'
+          submodules: 'recursive'
 
     - name: Setup msbuild
       uses: microsoft/setup-msbuild@v1
 
-    - name: install ISPC
-      uses: ispc/install-ispc-action@main
-      with:
-        version: 1.30.0
-
     - name: Download wxWidgets
-      run: 
-        git clone --depth=1 --shallow-submodules  --recurse-submodules -b xlights_2026.04 https://github.com/xLightsSequencer/wxWidgets ..\wxWidgets\
+      run:
+        git clone --depth=1 --shallow-submodules --recurse-submodules -b xlights_2026.04 https://github.com/xLightsSequencer/wxWidgets ..\wxWidgets\
 
     - name: Build wxWidgets
       working-directory: ..\wxWidgets\
       run: msbuild /m .\build\msw\wx_vc17.sln /p:Configuration="Release" /p:Platform="x64"
 
-    - name: Build All
+    - name: Build xSchedule
       shell: cmd
       working-directory: build_scripts\msw
-      run: call build_VS_x64_skip_libltc.cmd
+      run: call build_xSchedule_x64.cmd
 
     - name: Build Installer
       working-directory: build_scripts\msw
-      run: ISCC.exe xLights_4_64bit_VS.iss
-      
+      run: ISCC.exe xSchedule_64bit.iss
+
     - uses: ncipollo/release-action@v1
       with:
            allowUpdates: true
            artifacts: 'build_scripts\msw\output\*'
            token: ${{ secrets.GITHUB_TOKEN }}
-
-    - uses: vedantmgoyal9/winget-releaser@main
-      with:
-            identifier: xLightsSequencer.xLights
-            installers-regex: '\.exe$' # Only .exe files
-            token: ${{ secrets.WINGET_TOKEN }}

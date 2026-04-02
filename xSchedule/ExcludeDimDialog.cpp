@@ -11,7 +11,7 @@
 #include "ExcludeDimDialog.h"
 #include "xScheduleMain.h"
 #include "ScheduleManager.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 
 //(*InternalHeaders(ExcludeDimDialog)
 #include <wx/intl.h>

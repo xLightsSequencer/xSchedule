@@ -18,7 +18,7 @@
 
 #include "CommandManager.h"
 #include "UserButton.h"
-#include "../xLights/utils/AudioManager.h"
+#include "../xlights/xLights/utils/AudioManager.h"
 #include "events/EventARTNet.h"
 #include "events/EventARTNetTrigger.h"
 #include "events/EventBase.h"

@@ -10,9 +10,9 @@
 
 #include "ConfigureOSC.h"
 #include "ScheduleOptions.h"
-#include "../xLights/outputs/IPOutput.h"
+#include "../xlights/xLights/outputs/IPOutput.h"
 #include "OSCPacket.h"
-#include "../xLights/utils/ip_utils.h"
+#include "../xlights/xLights/utils/ip_utils.h"
 
 //(*InternalHeaders(ConfigureOSC)
 #include <wx/intl.h>

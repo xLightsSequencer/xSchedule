@@ -17,11 +17,11 @@
 #include "ScheduleOptions.h"
 #include "UserButton.h"
 #include "xScheduleMain.h"
-#include "../xLights/utils/AudioManager.h"
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
-#include "../xLights/outputs/IPOutput.h"
-#include "../xLights/xLightsVersion.h"
+#include "../xlights/xLights/utils/AudioManager.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/xLights/xLightsVersion.h"
 #include "PlayList/VideoWindowPositionDialog.h"
 #include <wx/file.h>
 #include <wx/xml/xml.h>

@@ -32,7 +32,7 @@
 #include <wx/timer.h>
 //*)
 
-#include "../../xLights/ui/shared/utils/xLightsTimer.h"
+#include "../../xlights/xLights/ui/shared/utils/xLightsTimer.h"
 #include "RemoteFalconOptions.h"
 #include "RemoteFalconApp.h"
 

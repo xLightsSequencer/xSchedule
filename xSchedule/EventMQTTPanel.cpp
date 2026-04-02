@@ -11,7 +11,7 @@
 #include "EventMQTTPanel.h"
 #include "EventDialog.h"
 #include "events/EventMQTT.h"
-#include "../xLights/utils/ip_utils.h"
+#include "../xlights/xLights/utils/ip_utils.h"
 
 //(*InternalHeaders(EventMQTTPanel)
 #include <wx/intl.h>

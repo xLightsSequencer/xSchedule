@@ -11,7 +11,7 @@
 #include "AddReverseDialog.h"
 #include "ScheduleManager.h"
 #include "xScheduleMain.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 
 //(*InternalHeaders(AddReverseDialog)
 #include <wx/intl.h>

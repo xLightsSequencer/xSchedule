@@ -7,8 +7,8 @@
 //*)
 
 #include "SMSDaemonOptions.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/xLights/utils/UtilFunctions.h"
+#include "../../xlights/xLights/ui/wxUtilities.h"
 
 //(*IdInit(SMSSettingsDialog)
 const long SMSSettingsDialog::ID_STATICTEXT7 = wxNewId();

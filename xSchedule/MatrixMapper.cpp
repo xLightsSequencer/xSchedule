@@ -10,10 +10,10 @@
 
 #include "MatrixMapper.h"
 #include "RGBEffects.h"
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
 
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 #include <log.h>
 #include <wx/string.h>
 #include <wx/wx.h>

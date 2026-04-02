@@ -12,7 +12,7 @@
 #include "RGBEffects.h"
 #include "ScheduleManager.h"
 #include "xScheduleMain.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 #include "PlayList/VideoWindowPositionDialog.h"
 
 //(*InternalHeaders(VirtualMatrixDialog)

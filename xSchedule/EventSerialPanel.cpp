@@ -10,7 +10,7 @@
 
 #include "EventSerialPanel.h"
 #include "events/EventSerial.h"
-#include "../xLights/outputs/SerialOutput.h"
+#include "../xlights/xLights/outputs/SerialOutput.h"
 
 //(*InternalHeaders(EventSerialPanel)
 #include <wx/intl.h>

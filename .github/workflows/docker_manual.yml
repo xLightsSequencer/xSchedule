@@ -7,16 +7,15 @@ jobs:
 
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: 'recursive'
       - run: docker pull ghcr.io/xlightssequencer/xlights-build-docker:master
-      - run: docker run --name buildvm ghcr.io/xlightssequencer/xlights-build-docker:master /bin/bash Recipe.appimage
-      - run: 'docker cp buildvm:/xLights/xLights/AppImage/ /tmp/'
+      - run: docker run --name buildvm ghcr.io/xlightssequencer/xlights-build-docker:master /bin/bash Recipe.xSchedule.appimage
+      - run: 'docker cp buildvm:/xSchedule/xSchedule/AppImage/ /tmp/'
       - run: ls -lh /tmp/AppImage
 
       - uses: actions/upload-artifact@v4
         with:
-          name: xLights_AppImage
+          name: xSchedule_AppImage
           path: '/tmp/AppImage/*.AppImage'
-

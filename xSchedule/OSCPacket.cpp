@@ -10,10 +10,10 @@
 
 #include "OSCPacket.h"
 #include "ScheduleOptions.h"
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
-#include "../xLights/outputs/IPOutput.h"
-#include "../xLights/utils/ip_utils.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/xLights/utils/ip_utils.h"
 #include <log.h>
 #include <wx/sckaddr.h>
 #include <wx/socket.h>

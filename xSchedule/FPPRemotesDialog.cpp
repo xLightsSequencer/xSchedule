@@ -17,8 +17,8 @@
 
 #include <wx/msgdlg.h>
 #include <wx/generic/textdlgg.h>
-#include "../xLights/outputs/IPOutput.h"
-#include "../xLights/utils/ip_utils.h"
+#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/xLights/utils/ip_utils.h"
 
 //(*IdInit(FPPRemotesDialog)
 const long FPPRemotesDialog::ID_LISTBOX1 = wxNewId();

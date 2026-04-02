@@ -10,9 +10,9 @@
 
 #include "EventPingPanel.h"
 #include "events/EventPing.h"
-#include "../xLights/outputs/OutputManager.h"
-#include "../xLights/outputs/ControllerEthernet.h"
-#include "../xLights/outputs/ControllerSerial.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/ControllerEthernet.h"
+#include "../xlights/xLights/outputs/ControllerSerial.h"
 
 //(*InternalHeaders(EventPingPanel)
 #include <wx/intl.h>

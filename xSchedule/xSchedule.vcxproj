@@ -75,29 +75,29 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\ffmpeg-6\include;..\include;..\include\zlib;..\xLights;..\xLights\utils;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\lib\windows;GL;$(LibraryPath);$(VCToolsInstallDir)lib\x86</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\ffmpeg-6\include;..\xlights\include;..\xlights\include\zlib;..\xLights;..\xlights\xLights\utils;..\dependencies;..\xlights\dependencies\pugixml\src;..\xlights\dependencies\spdlog\include</IncludePath>
+    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\lib;GL;$(LibraryPath);$(VCToolsInstallDir)lib\x86</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);../include/ffmpeg-6/include;..\include;..\include\zlib;..\xLights;..\xLights\utils;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\lib\windows64;..\lib\windows;GL;$(VCToolsInstallDir)lib\x64</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);../include/ffmpeg-6/include;..\xlights\include;..\xlights\include\zlib;..\xLights;..\xlights\xLights\utils;..\dependencies;..\xlights\dependencies\pugixml\src;..\xlights\dependencies\spdlog\include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\lib;..\lib;GL;$(VCToolsInstallDir)lib\x64</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\ffmpeg-6\include;..\include;..\include\zlib;..\xLights;..\xLights\utils;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\lib\windows;GL;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\ffmpeg-6\include;..\xlights\include;..\xlights\include\zlib;..\xLights;..\xlights\xLights\utils;..\dependencies;..\xlights\dependencies\pugixml\src;..\xlights\dependencies\spdlog\include</IncludePath>
+    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\lib;GL;$(LibraryPath)</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\include;../include/ffmpeg-6/include;..\include\zlib;..\xLights;..\xLights\utils;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\lib\windows64;</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\include;../include/ffmpeg-6/include;..\xlights\include\zlib;..\xLights;..\xlights\xLights\utils;..\dependencies;..\xlights\dependencies\pugixml\src;..\xlights\dependencies\spdlog\include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\lib;</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
@@ -212,69 +212,69 @@ copy "$(SolutionDir)..\bin\*.cfg" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\common\xlBaseApp.cpp" />
-    <ClCompile Include="..\xLights\utils\AudioManager.cpp" />
-    <ClCompile Include="..\xLights\controllers\BaseController.cpp" />
-    <ClCompile Include="..\xLights\controllers\ControllerCaps.cpp" />
-    <ClCompile Include="..\xLights\controllers\Falcon.cpp" />
-    <ClCompile Include="..\xLights\ui/setup/Discovery.cpp" />
-    <ClCompile Include="..\xLights\utils\AnimatedImage.cpp" />
-    <ClCompile Include="..\xLights\utils\xlImage.cpp" />
-    <ClCompile Include="..\xLights\render\FSEQFile.cpp" />
-    <ClCompile Include="..\xLights\utils\JobPool.cpp" />
-    <ClCompile Include="..\xLights\kiss_fft\kiss_fft.c" />
-    <ClCompile Include="..\xLights\kiss_fft\tools\kiss_fftr.c" />
-    <ClCompile Include="..\xLights\outputs\ArtNetOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\Controller.cpp" />
-    <ClCompile Include="..\xLights\outputs\ControllerEthernet.cpp" />
-    <ClCompile Include="..\xLights\outputs\ControllerNull.cpp" />
-    <ClCompile Include="..\xLights\outputs\ControllerSerial.cpp" />
-    <ClCompile Include="..\xLights\outputs\DDPOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\DMXOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\E131Output.cpp" />
-    <ClCompile Include="..\xLights\outputs\GenericSerialOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\IPOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\KinetOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\LorController.cpp" />
-    <ClCompile Include="..\xLights\outputs\LorControllers.cpp" />
-    <ClCompile Include="..\xLights\outputs\LOROptimisedOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\LOROutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\NullOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\OPCOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\OpenDMXOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\OpenPixelNetOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\Output.cpp" />
-    <ClCompile Include="..\xLights\outputs\OutputManager.cpp" />
-    <ClCompile Include="..\xLights\outputs\PixelNetOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\RenardOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\serial.cpp" />
-    <ClCompile Include="..\xLights\outputs\SerialOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\TestPreset.cpp" />
-    <ClCompile Include="..\xLights\outputs\TwinklyOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\xxxEthernetOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\xxxSerialOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\ZCPPOutput.cpp" />
-    <ClCompile Include="..\xLights\utils\Parallel.cpp" />
-    <ClCompile Include="..\xLights\render\SequenceData.cpp" />
-    <ClCompile Include="..\xLights\utils\SpecialOptions.cpp" />
-    <ClCompile Include="..\xLights\utils\TraceLog.cpp" />
-    <ClCompile Include="..\xLights\utils\UtilFunctions.cpp" />
-    <ClCompile Include="..\xLights\ui\wxUtilities.cpp" />
-    <ClCompile Include="..\xLights\utils\CurlManager.cpp" />
-    <ClCompile Include="..\xLights\utils\ip_utils.cpp" />
-    <ClCompile Include="..\xLights\utils\string_utils.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\Files.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginBufferingAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginChannelAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginHostAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginInputDomainAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginLoader.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginWrapper.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\RealTime.cpp" />
-    <ClCompile Include="..\xLights\render\VideoReader.cpp" />
-    <ClCompile Include="..\xLights\render\WindowsHardwareVideoReader.cpp" />
-    <ClCompile Include="..\xLights\ui\shared\utils\xLightsTimer.cpp" />
-    <ClCompile Include="..\xLights\xLightsVersion.cpp" />
+    <ClCompile Include="..\xlights\common\xlBaseApp.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\AudioManager.cpp" />
+    <ClCompile Include="..\xlights\xLights\controllers\BaseController.cpp" />
+    <ClCompile Include="..\xlights\xLights\controllers\ControllerCaps.cpp" />
+    <ClCompile Include="..\xlights\xLights\controllers\Falcon.cpp" />
+    <ClCompile Include="..\xlights\xLights\ui/setup/Discovery.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\AnimatedImage.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\xlImage.cpp" />
+    <ClCompile Include="..\xlights\xLights\render\FSEQFile.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\JobPool.cpp" />
+    <ClCompile Include="..\xlights\xLights\kiss_fft\kiss_fft.c" />
+    <ClCompile Include="..\xlights\xLights\kiss_fft\tools\kiss_fftr.c" />
+    <ClCompile Include="..\xlights\xLights\outputs\ArtNetOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\Controller.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\ControllerEthernet.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\ControllerNull.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\ControllerSerial.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\DDPOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\DMXOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\E131Output.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\GenericSerialOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\IPOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\KinetOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\LorController.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\LorControllers.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\LOROptimisedOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\LOROutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\NullOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\OPCOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\OpenDMXOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\OpenPixelNetOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\Output.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\OutputManager.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\PixelNetOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\RenardOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\serial.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\SerialOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\TestPreset.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\TwinklyOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\xxxEthernetOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\xxxSerialOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\ZCPPOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\Parallel.cpp" />
+    <ClCompile Include="..\xlights\xLights\render\SequenceData.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\SpecialOptions.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\TraceLog.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\UtilFunctions.cpp" />
+    <ClCompile Include="..\xlights\xLights\ui\wxUtilities.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\CurlManager.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\ip_utils.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\string_utils.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\Files.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginBufferingAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginChannelAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginHostAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginInputDomainAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginLoader.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginWrapper.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\RealTime.cpp" />
+    <ClCompile Include="..\xlights\xLights\render\VideoReader.cpp" />
+    <ClCompile Include="..\xlights\xLights\render\WindowsHardwareVideoReader.cpp" />
+    <ClCompile Include="..\xlights\xLights\ui\shared\utils\xLightsTimer.cpp" />
+    <ClCompile Include="..\xlights\xLights\xLightsVersion.cpp" />
     <ClCompile Include="AddReverseDialog.cpp" />
     <ClCompile Include="BackgroundPlaylistDialog.cpp" />
     <ClCompile Include="Blend.cpp" />
@@ -465,61 +465,61 @@ copy "$(SolutionDir)..\bin\*.cfg" "$(TargetDir)"</Command>
     <ClCompile Include="Xyzzy.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\dependencies\pugixml\src\pugixml.cpp" />
-    <ClInclude Include="..\common\xlBaseApp.h" />
-    <ClInclude Include="..\common\xlStackWalker.h" />
-    <ClInclude Include="..\xLights\utils\AudioManager.h" />
-    <ClInclude Include="..\xLights\controllers\BaseController.h" />
-    <ClInclude Include="..\xLights\controllers\ControllerCaps.h" />
-    <ClInclude Include="..\xLights\controllers\Falcon.h" />
-    <ClInclude Include="..\xLights\ui/setup/Discovery.h" />
-    <ClInclude Include="..\xLights\utils\AnimatedImage.h" />
-    <ClInclude Include="..\xLights\utils\xlImage.h" />
-    <ClInclude Include="..\xLights\utils/ExternalHooks.h" />
-    <ClInclude Include="..\xLights\render\FSEQFile.h" />
-    <ClInclude Include="..\xLights\kiss_fft\_kiss_fft_guts.h" />
-    <ClInclude Include="..\xLights\outputs\ArtNetOutput.h" />
-    <ClInclude Include="..\xLights\outputs\Controller.h" />
-    <ClInclude Include="..\xLights\outputs\ControllerEthernet.h" />
-    <ClInclude Include="..\xLights\outputs\ControllerNull.h" />
-    <ClInclude Include="..\xLights\outputs\ControllerSerial.h" />
-    <ClInclude Include="..\xLights\outputs\DDPOutput.h" />
-    <ClInclude Include="..\xLights\outputs\DLightOutput.h" />
-    <ClInclude Include="..\xLights\outputs\DMXOutput.h" />
-    <ClInclude Include="..\xLights\outputs\E131Output.h" />
-    <ClInclude Include="..\xLights\outputs\GenericSerialOutput.h" />
-    <ClInclude Include="..\xLights\outputs\IPOutput.h" />
-    <ClInclude Include="..\xLights\outputs\KinetOutput.h" />
-    <ClInclude Include="..\xLights\outputs\LorController.h" />
-    <ClInclude Include="..\xLights\outputs\LorControllers.h" />
-    <ClInclude Include="..\xLights\outputs\LOROptimisedOutput.h" />
-    <ClInclude Include="..\xLights\outputs\LOROutput.h" />
-    <ClInclude Include="..\xLights\outputs\NullOutput.h" />
-    <ClInclude Include="..\xLights\outputs\OPCOutput.h" />
-    <ClInclude Include="..\xLights\outputs\OpenDMXOutput.h" />
-    <ClInclude Include="..\xLights\outputs\OpenPixelNetOutput.h" />
-    <ClInclude Include="..\xLights\outputs\Output.h" />
-    <ClInclude Include="..\xLights\outputs\OutputManager.h" />
-    <ClInclude Include="..\xLights\outputs\PixelNetOutput.h" />
-    <ClInclude Include="..\xLights\outputs\RenardOutput.h" />
-    <ClInclude Include="..\xLights\outputs\serial.h" />
-    <ClInclude Include="..\xLights\outputs\SerialOutput.h" />
-    <ClInclude Include="..\xLights\outputs\TestPreset.h" />
-    <ClInclude Include="..\xLights\outputs\TwinklyOutput.h" />
-    <ClInclude Include="..\xLights\outputs\xxxEthernetOutput.h" />
-    <ClInclude Include="..\xLights\outputs\xxxSerialOutput.h" />
-    <ClInclude Include="..\xLights\outputs\ZCPPOutput.h" />
-    <ClInclude Include="..\xLights\utils\SpecialOptions.h" />
-    <ClInclude Include="..\xLights\utils\TraceLog.h" />
-    <ClInclude Include="..\xLights\utils\UtilFunctions.h" />
-    <ClInclude Include="..\xLights\ui\wxUtilities.h" />
-    <ClInclude Include="..\xLights\utils\CurlManager.h" />
-    <ClInclude Include="..\xLights\utils\ip_utils.h" />
-    <ClInclude Include="..\xLights\utils\string_utils.h" />
-    <ClInclude Include="..\xLights\render\VideoReader.h" />
-    <ClInclude Include="..\xLights\render\WindowsHardwareVideoReader.h" />
-    <ClInclude Include="..\xLights\ui\shared\utils\xLightsTimer.h" />
-    <ClInclude Include="..\xLights\xLightsVersion.h" />
+    <ClCompile Include="..\xlights\dependencies\pugixml\src\pugixml.cpp" />
+    <ClInclude Include="..\xlights\common\xlBaseApp.h" />
+    <ClInclude Include="..\xlights\common\xlStackWalker.h" />
+    <ClInclude Include="..\xlights\xLights\utils\AudioManager.h" />
+    <ClInclude Include="..\xlights\xLights\controllers\BaseController.h" />
+    <ClInclude Include="..\xlights\xLights\controllers\ControllerCaps.h" />
+    <ClInclude Include="..\xlights\xLights\controllers\Falcon.h" />
+    <ClInclude Include="..\xlights\xLights\ui/setup/Discovery.h" />
+    <ClInclude Include="..\xlights\xLights\utils\AnimatedImage.h" />
+    <ClInclude Include="..\xlights\xLights\utils\xlImage.h" />
+    <ClInclude Include="..\xlights\xLights\utils/ExternalHooks.h" />
+    <ClInclude Include="..\xlights\xLights\render\FSEQFile.h" />
+    <ClInclude Include="..\xlights\xLights\kiss_fft\_kiss_fft_guts.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\ArtNetOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\Controller.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\ControllerEthernet.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\ControllerNull.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\ControllerSerial.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\DDPOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\DLightOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\DMXOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\E131Output.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\GenericSerialOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\IPOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\KinetOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\LorController.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\LorControllers.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\LOROptimisedOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\LOROutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\NullOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\OPCOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\OpenDMXOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\OpenPixelNetOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\Output.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\OutputManager.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\PixelNetOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\RenardOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\serial.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\SerialOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\TestPreset.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\TwinklyOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\xxxEthernetOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\xxxSerialOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\ZCPPOutput.h" />
+    <ClInclude Include="..\xlights\xLights\utils\SpecialOptions.h" />
+    <ClInclude Include="..\xlights\xLights\utils\TraceLog.h" />
+    <ClInclude Include="..\xlights\xLights\utils\UtilFunctions.h" />
+    <ClInclude Include="..\xlights\xLights\ui\wxUtilities.h" />
+    <ClInclude Include="..\xlights\xLights\utils\CurlManager.h" />
+    <ClInclude Include="..\xlights\xLights\utils\ip_utils.h" />
+    <ClInclude Include="..\xlights\xLights\utils\string_utils.h" />
+    <ClInclude Include="..\xlights\xLights\render\VideoReader.h" />
+    <ClInclude Include="..\xlights\xLights\render\WindowsHardwareVideoReader.h" />
+    <ClInclude Include="..\xlights\xLights\ui\shared\utils\xLightsTimer.h" />
+    <ClInclude Include="..\xlights\xLights\xLightsVersion.h" />
     <ClInclude Include="AddReverseDialog.h" />
     <ClInclude Include="BackgroundPlaylistDialog.h" />
     <ClInclude Include="Blend.h" />

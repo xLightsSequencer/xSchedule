@@ -15,7 +15,7 @@
 
 #include "PlayerFrame.h"
 
-#include "../include/xLights.xpm"
+#include "../xlights/include/xLights.xpm"
 
 // as of wxWidgets 2.8.11, wxMediaCtrl events are messed up on Vista and Win7
 // so just avoid them altogether

@@ -21,7 +21,7 @@
 #include "OutputProcessGamma.h"
 #include "OutputProcessColourOrder.h"
 #include "OutputProcessDeadChannel.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 
 OutputProcess::OutputProcess(OutputManager* outputManager, wxXmlNode* node)
 {

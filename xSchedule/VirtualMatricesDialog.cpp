@@ -12,7 +12,7 @@
 #include "ScheduleOptions.h"
 #include "VirtualMatrix.h"
 #include "VirtualMatrixDialog.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 
 //(*InternalHeaders(VirtualMatricesDialog)
 #include <wx/intl.h>

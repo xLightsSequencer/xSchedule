@@ -33,10 +33,10 @@
 					<Add directory="../xSchedule/RemoteFalcon" />
 					<Add directory="../include" />
 					<Add directory="../../xLights" />
-					<Add directory="../../xLights/utils" />
-					<Add directory="../../include" />
-					<Add directory="../../dependencies/pugixml/src" />
-					<Add directory="../../dependencies/spdlog/include" />
+					<Add directory="../../xlights/xLights/utils" />
+					<Add directory="../../xlights/include" />
+					<Add directory="../../xlights/dependencies/pugixml/src" />
+					<Add directory="../../xlights/dependencies/spdlog/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-lGL -lGLU -lglut -ldl -lX11 -lz -lzstd" />
@@ -75,10 +75,10 @@
 					<Add directory="../xSchedule/RemoteFalcon" />
 					<Add directory="../include" />
 					<Add directory="../../xLights" />
-					<Add directory="../../xLights/utils" />
-					<Add directory="../../include" />
-					<Add directory="../../dependencies/pugixml/src" />
-					<Add directory="../../dependencies/spdlog/include" />
+					<Add directory="../../xlights/xLights/utils" />
+					<Add directory="../../xlights/include" />
+					<Add directory="../../xlights/dependencies/pugixml/src" />
+					<Add directory="../../xlights/dependencies/spdlog/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-lGL -lGLU -lglut -ldl -lX11 -lz -lzstd" />
@@ -101,22 +101,22 @@
 		<ResourceCompiler>
 			<Add directory="$(#wx)/include" />
 		</ResourceCompiler>
-		<Unit filename="../../common/xlBaseApp.cpp" />
-		<Unit filename="../../common/xlBaseApp.h" />
-		<Unit filename="../../common/xlStackWalker.h" />
-		<Unit filename="../../xLights/utils/SpecialOptions.cpp" />
-		<Unit filename="../../xLights/utils/SpecialOptions.h" />
-		<Unit filename="../../dependencies/pugixml/src/pugixml.cpp" />
-		<Unit filename="../../xLights/utils/UtilFunctions.cpp" />
-		<Unit filename="../../xLights/utils/UtilFunctions.h" />
-		<Unit filename="../../xLights/ui/wxUtilities.cpp" />
-		<Unit filename="../../xLights/ui/wxUtilities.h" />
-		<Unit filename="../../xLights/utils/CurlManager.cpp" />
-		<Unit filename="../../xLights/utils/CurlManager.h" />
-		<Unit filename="../../xLights/ui/shared/utils/xLightsTimer.cpp" />
-		<Unit filename="../../xLights/ui/shared/utils/xLightsTimer.h" />
-		<Unit filename="../../xLights/xLightsVersion.cpp" />
-		<Unit filename="../../xLights/xLightsVersion.h" />
+		<Unit filename="../../xlights/common/xlBaseApp.cpp" />
+		<Unit filename="../../xlights/common/xlBaseApp.h" />
+		<Unit filename="../../xlights/common/xlStackWalker.h" />
+		<Unit filename="../../xlights/xLights/utils/SpecialOptions.cpp" />
+		<Unit filename="../../xlights/xLights/utils/SpecialOptions.h" />
+		<Unit filename="../../xlights/dependencies/pugixml/src/pugixml.cpp" />
+		<Unit filename="../../xlights/xLights/utils/UtilFunctions.cpp" />
+		<Unit filename="../../xlights/xLights/utils/UtilFunctions.h" />
+		<Unit filename="../../xlights/xLights/ui/wxUtilities.cpp" />
+		<Unit filename="../../xlights/xLights/ui/wxUtilities.h" />
+		<Unit filename="../../xlights/xLights/utils/CurlManager.cpp" />
+		<Unit filename="../../xlights/xLights/utils/CurlManager.h" />
+		<Unit filename="../../xlights/xLights/ui/shared/utils/xLightsTimer.cpp" />
+		<Unit filename="../../xlights/xLights/ui/shared/utils/xLightsTimer.h" />
+		<Unit filename="../../xlights/xLights/xLightsVersion.cpp" />
+		<Unit filename="../../xlights/xLights/xLightsVersion.h" />
 		<Unit filename="../wxJSON/json_defs.h" />
 		<Unit filename="../wxJSON/jsonreader.cpp" />
 		<Unit filename="../wxJSON/jsonreader.h" />

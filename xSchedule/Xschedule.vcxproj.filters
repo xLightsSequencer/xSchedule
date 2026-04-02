@@ -1,21 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\xLights\utils\AudioManager.cpp" />
-    <ClCompile Include="..\xLights\utils\JobPool.cpp" />
-    <ClCompile Include="..\xLights\kiss_fft\kiss_fft.c" />
-    <ClCompile Include="..\xLights\kiss_fft\tools\kiss_fftr.c" />
-    <ClCompile Include="..\xLights\outputs\TestPreset.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\Files.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginBufferingAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginChannelAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginHostAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginInputDomainAdapter.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginLoader.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\PluginWrapper.cpp" />
-    <ClCompile Include="..\xLights\vamp-hostsdk\RealTime.cpp" />
-    <ClCompile Include="..\xLights\VideoReader.cpp" />
-    <ClCompile Include="..\xLights\ui\shared\utils\xLightsTimer.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\AudioManager.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\JobPool.cpp" />
+    <ClCompile Include="..\xlights\xLights\kiss_fft\kiss_fft.c" />
+    <ClCompile Include="..\xlights\xLights\kiss_fft\tools\kiss_fftr.c" />
+    <ClCompile Include="..\xlights\xLights\outputs\TestPreset.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\Files.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginBufferingAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginChannelAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginHostAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginInputDomainAdapter.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginLoader.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\PluginWrapper.cpp" />
+    <ClCompile Include="..\xlights\xLights\vamp-hostsdk\RealTime.cpp" />
+    <ClCompile Include="..\xlights\xLights\VideoReader.cpp" />
+    <ClCompile Include="..\xlights\xLights\ui\shared\utils\xLightsTimer.cpp" />
     <ClCompile Include="BackgroundPlaylistDialog.cpp" />
     <ClCompile Include="ButtonDetailsDialog.cpp" />
     <ClCompile Include="CommandManager.cpp" />
@@ -48,12 +48,12 @@
     <ClCompile Include="VirtualMatrixDialog.cpp" />
     <ClCompile Include="VirtualMatricesDialog.cpp" />
     <ClCompile Include="VirtualMatrix.cpp" />
-    <ClCompile Include="..\xLights\utils\AnimatedImage.cpp" />
-    <ClCompile Include="..\xLights\utils\xlImage.cpp" />
-    <ClCompile Include="..\xLights\xLightsVersion.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\AnimatedImage.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\xlImage.cpp" />
+    <ClCompile Include="..\xlights\xLights\xLightsVersion.cpp" />
     <ClCompile Include="Blend.cpp" />
-    <ClCompile Include="..\xLights\utils\UtilFunctions.cpp" />
-    <ClCompile Include="..\xLights\render\SequenceData.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\UtilFunctions.cpp" />
+    <ClCompile Include="..\xlights\xLights\render\SequenceData.cpp" />
     <ClCompile Include="FPPRemotesDialog.cpp" />
     <ClCompile Include="VideoCache.cpp" />
     <ClCompile Include="ConfigureOSC.cpp" />
@@ -64,13 +64,13 @@
     <ClCompile Include="AddReverseDialog.cpp">
       <Filter>OutputProcessing</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\ArtNetOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\ArtNetOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="ColourOrderDialog.cpp">
       <Filter>OutputProcessing</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\DDPOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\DDPOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="DeadChannelDialog.cpp">
@@ -82,10 +82,10 @@
     <ClCompile Include="DimWhiteDialog.cpp">
       <Filter>OutputProcessing</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\DMXOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\DMXOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\E131Output.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\E131Output.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="events\EventARTNet.cpp">
@@ -178,28 +178,28 @@
     <ClCompile Include="events\ListenerSerial.cpp">
       <Filter>Events</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\LorController.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\LorController.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\LorControllers.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\LorControllers.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\LOROptimisedOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\LOROptimisedOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\LOROutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\LOROutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\IPOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\IPOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\NullOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\NullOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\OpenDMXOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\OpenDMXOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\OpenPixelNetOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\OpenPixelNetOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="OutputProcess.cpp">
@@ -385,13 +385,13 @@
     <ClCompile Include="ThreeToFourDialog.cpp">
       <Filter>OutputProcessing</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\SerialOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\SerialOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\serial.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\serial.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\RenardOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\RenardOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="RemapDialog.cpp">
@@ -400,13 +400,13 @@
     <ClCompile Include="GammaDialog.cpp">
       <Filter>OutputProcessing</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\Output.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\Output.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\OutputManager.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\OutputManager.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\PixelNetOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\PixelNetOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="PlayList\PlayListItemProjector.cpp">
@@ -428,7 +428,7 @@
     <ClCompile Include="PlayList\PlayListItemMicrophone.cpp">
       <Filter>PlayList</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\ZCPPOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\ZCPPOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="ConfigureMIDITimecodeDialog.cpp" />
@@ -446,12 +446,12 @@
     <ClCompile Include="PlayList\PlayListItemDim.cpp">
       <Filter>PlayList</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\utils\Parallel.cpp" />
+    <ClCompile Include="..\xlights\xLights\utils\Parallel.cpp" />
     <ClCompile Include="events\EventState.cpp">
       <Filter>Events</Filter>
     </ClCompile>
     <ClCompile Include="EventStatePanel.cpp" />
-    <ClCompile Include="..\xLights\render\FSEQFile.cpp" />
+    <ClCompile Include="..\xlights\xLights\render\FSEQFile.cpp" />
     <ClCompile Include="ConfigureTest.cpp" />
     <ClCompile Include="SyncOSC.cpp" />
     <ClCompile Include="SyncManager.cpp" />
@@ -505,27 +505,27 @@
     <ClCompile Include="events\ListenerCSVFPP.cpp">
       <Filter>Events</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\utils\TraceLog.cpp" />
-    <ClCompile Include="..\xLights\outputs\xxxEthernetOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\xxxSerialOutput.cpp" />
-    <ClCompile Include="..\xLights\outputs\Controller.cpp">
+    <ClCompile Include="..\xlights\xLights\utils\TraceLog.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\xxxEthernetOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\xxxSerialOutput.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\Controller.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\ControllerEthernet.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\ControllerEthernet.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\ControllerNull.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\ControllerNull.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\ControllerSerial.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\ControllerSerial.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\controllers\ControllerCaps.cpp" />
+    <ClCompile Include="..\xlights\xLights\controllers\ControllerCaps.cpp" />
     <ClCompile Include="events\ListenerSMPTE.cpp">
       <Filter>Events</Filter>
     </ClCompile>
     <ClCompile Include="SyncSMPTE.cpp" />
-    <ClCompile Include="..\xLights\outputs\OPCOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\OPCOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
     <ClCompile Include="PlayList\PlayListItemColourOrgan.cpp">
@@ -540,54 +540,54 @@
     <ClCompile Include="PlayList\PlayerWindow.cpp">
       <Filter>PlayList</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\GenericSerialOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\GenericSerialOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\outputs\KinetOutput.cpp">
+    <ClCompile Include="..\xlights\xLights\outputs\KinetOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\ui/setup/Discovery.cpp" />
-    <ClCompile Include="..\xLights\controllers\Falcon.cpp" />
-    <ClCompile Include="..\xLights\controllers\BaseController.cpp" />
+    <ClCompile Include="..\xlights\xLights\ui/setup/Discovery.cpp" />
+    <ClCompile Include="..\xlights\xLights\controllers\Falcon.cpp" />
+    <ClCompile Include="..\xlights\xLights\controllers\BaseController.cpp" />
     <ClCompile Include="ExcludeDimDialog.cpp">
       <Filter>OutputProcessing</Filter>
     </ClCompile>
     <ClCompile Include="OutputProcessExcludeDim.cpp">
       <Filter>OutputProcessing</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\WindowsHardwareVideoReader.cpp" />
+    <ClCompile Include="..\xlights\xLights\WindowsHardwareVideoReader.cpp" />
     <ClCompile Include="events\EventFPPCommandPreset.cpp">
       <Filter>Events</Filter>
     </ClCompile>
     <ClCompile Include="EventFPPCommandPresetPanel.cpp">
       <Filter>Events</Filter>
     </ClCompile>
-    <ClCompile Include="..\common\xlBaseApp.cpp" />
-    <ClCompile Include="..\xLights\outputs\TwinklyOutput.cpp">
+    <ClCompile Include="..\xlights\common\xlBaseApp.cpp" />
+    <ClCompile Include="..\xlights\xLights\outputs\TwinklyOutput.cpp">
       <Filter>Outputs</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\utils\ip_utils.cpp">
+    <ClCompile Include="..\xlights\xLights\utils\ip_utils.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\utils\string_utils.cpp">
+    <ClCompile Include="..\xlights\xLights\utils\string_utils.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\utils\CurlManager.cpp">
+    <ClCompile Include="..\xlights\xLights\utils\CurlManager.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\xLights\SpecialOptions.cpp" />
+    <ClCompile Include="..\xlights\xLights\SpecialOptions.cpp" />
     <ClCompile Include="RGBEffects.cpp" />
-    <ClCompile Include="..\dependencies\pugixml\src\pugixml.cpp" />
-    <ClCompile Include="..\xLights\ui\wxUtilities.cpp" />
+    <ClCompile Include="..\xlights\dependencies\pugixml\src\pugixml.cpp" />
+    <ClCompile Include="..\xlights\xLights\ui\wxUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\xlBaseApp.h" />
-    <ClInclude Include="..\common\xlStackWalker.h" />
-    <ClInclude Include="..\xLights\utils\AudioManager.h" />
-    <ClInclude Include="..\xLights\kiss_fft\_kiss_fft_guts.h" />
-    <ClInclude Include="..\xLights\outputs\TestPreset.h" />
-    <ClInclude Include="..\xLights\VideoReader.h" />
-    <ClInclude Include="..\xLights\xLightsTimer.h" />
+    <ClInclude Include="..\xlights\common\xlBaseApp.h" />
+    <ClInclude Include="..\xlights\common\xlStackWalker.h" />
+    <ClInclude Include="..\xlights\xLights\utils\AudioManager.h" />
+    <ClInclude Include="..\xlights\xLights\kiss_fft\_kiss_fft_guts.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\TestPreset.h" />
+    <ClInclude Include="..\xlights\xLights\VideoReader.h" />
+    <ClInclude Include="..\xlights\xLights\xLightsTimer.h" />
     <ClInclude Include="BackgroundPlaylistDialog.h" />
     <ClInclude Include="ButtonDetailsDialog.h" />
     <ClInclude Include="CommandManager.h" />
@@ -615,11 +615,11 @@
     <ClInclude Include="VirtualMatricesDialog.h" />
     <ClInclude Include="VirtualMatrix.h" />
     <ClInclude Include="Control.h" />
-    <ClInclude Include="..\xLights\utils\AnimatedImage.h" />
-    <ClInclude Include="..\xLights\utils\xlImage.h" />
-    <ClInclude Include="..\xLights\xLightsVersion.h" />
+    <ClInclude Include="..\xlights\xLights\utils\AnimatedImage.h" />
+    <ClInclude Include="..\xlights\xLights\utils\xlImage.h" />
+    <ClInclude Include="..\xlights\xLights\xLightsVersion.h" />
     <ClInclude Include="Blend.h" />
-    <ClInclude Include="..\xLights\utils\UtilFunctions.h" />
+    <ClInclude Include="..\xlights\xLights\utils\UtilFunctions.h" />
     <ClInclude Include="FPPRemotesDialog.h" />
     <ClInclude Include="VideoCache.h" />
     <ClInclude Include="ConfigureOSC.h" />
@@ -629,13 +629,13 @@
     <ClInclude Include="AddReverseDialog.h">
       <Filter>OutputProcessing</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\ArtNetOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\ArtNetOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="ColourOrderDialog.h">
       <Filter>OutputProcessing</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\DDPOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\DDPOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="DeadChannelDialog.h">
@@ -647,13 +647,13 @@
     <ClInclude Include="DimWhiteDialog.h">
       <Filter>OutputProcessing</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\DLightOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\DLightOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\DMXOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\DMXOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\E131Output.h">
+    <ClInclude Include="..\xlights\xLights\outputs\E131Output.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="events\EventARTNet.h">
@@ -746,28 +746,28 @@
     <ClInclude Include="events\ListenerSerial.h">
       <Filter>Events</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\LorController.h">
+    <ClInclude Include="..\xlights\xLights\outputs\LorController.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\LorControllers.h">
+    <ClInclude Include="..\xlights\xLights\outputs\LorControllers.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\LOROptimisedOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\LOROptimisedOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\LOROutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\LOROutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\IPOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\IPOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\NullOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\NullOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\OpenDMXOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\OpenDMXOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\OpenPixelNetOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\OpenPixelNetOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="OutputProcess.h">
@@ -953,13 +953,13 @@
     <ClInclude Include="ThreeToFourDialog.h">
       <Filter>OutputProcessing</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\SerialOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\SerialOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\serial.h">
+    <ClInclude Include="..\xlights\xLights\outputs\serial.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\RenardOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\RenardOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="RemapDialog.h">
@@ -968,13 +968,13 @@
     <ClInclude Include="GammaDialog.h">
       <Filter>OutputProcessing</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\Output.h">
+    <ClInclude Include="..\xlights\xLights\outputs\Output.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\OutputManager.h">
+    <ClInclude Include="..\xlights\xLights\outputs\OutputManager.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\PixelNetOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\PixelNetOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="PlayList\PlayListItemProjector.h">
@@ -999,7 +999,7 @@
     <ClInclude Include="PlayList\PlayListItemMicrophone.h">
       <Filter>PlayList</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\ZCPPOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\ZCPPOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="ConfigureMIDITimecodeDialog.h" />
@@ -1021,7 +1021,7 @@
       <Filter>Events</Filter>
     </ClInclude>
     <ClInclude Include="EventStatePanel.h" />
-    <ClInclude Include="..\xLights\render\FSEQFile.h" />
+    <ClInclude Include="..\xlights\xLights\render\FSEQFile.h" />
     <ClInclude Include="ConfigureTest.h" />
     <ClInclude Include="SyncOSC.h" />
     <ClInclude Include="SyncManager.h" />
@@ -1076,28 +1076,28 @@
     <ClInclude Include="events\ListenerCSVFPP.h">
       <Filter>Events</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\SpecialOptions.h" />
-    <ClInclude Include="..\xLights\utils\TraceLog.h" />
-    <ClInclude Include="..\xLights\outputs\xxxEthernetOutput.h" />
-    <ClInclude Include="..\xLights\outputs\xxxSerialOutput.h" />
-    <ClInclude Include="..\xLights\outputs\Controller.h">
+    <ClInclude Include="..\xlights\xLights\SpecialOptions.h" />
+    <ClInclude Include="..\xlights\xLights\utils\TraceLog.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\xxxEthernetOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\xxxSerialOutput.h" />
+    <ClInclude Include="..\xlights\xLights\outputs\Controller.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\ControllerEthernet.h">
+    <ClInclude Include="..\xlights\xLights\outputs\ControllerEthernet.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\ControllerNull.h">
+    <ClInclude Include="..\xlights\xLights\outputs\ControllerNull.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\ControllerSerial.h">
+    <ClInclude Include="..\xlights\xLights\outputs\ControllerSerial.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\controllers\ControllerCaps.h" />
+    <ClInclude Include="..\xlights\xLights\controllers\ControllerCaps.h" />
     <ClInclude Include="events\ListenerSMPTE.h">
       <Filter>Events</Filter>
     </ClInclude>
     <ClInclude Include="SyncSMPTE.h" />
-    <ClInclude Include="..\xLights\outputs\OPCOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\OPCOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
     <ClInclude Include="PlayList\PlayListItemColourOrgan.h">
@@ -1112,43 +1112,43 @@
     <ClInclude Include="PlayList\PlayerWindow.h">
       <Filter>PlayList</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\GenericSerialOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\GenericSerialOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\KinetOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\KinetOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\ui/setup/Discovery.h" />
-    <ClInclude Include="..\xLights\controllers\Falcon.h" />
-    <ClInclude Include="..\xLights\controllers\BaseController.h" />
+    <ClInclude Include="..\xlights\xLights\ui/setup/Discovery.h" />
+    <ClInclude Include="..\xlights\xLights\controllers\Falcon.h" />
+    <ClInclude Include="..\xlights\xLights\controllers\BaseController.h" />
     <ClInclude Include="ExcludeDimDialog.h">
       <Filter>OutputProcessing</Filter>
     </ClInclude>
     <ClInclude Include="OutputProcessExcludeDim.h">
       <Filter>OutputProcessing</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\utils/ExternalHooks.h" />
-    <ClInclude Include="..\xLights\WindowsHardwareVideoReader.h" />
+    <ClInclude Include="..\xlights\xLights\utils/ExternalHooks.h" />
+    <ClInclude Include="..\xlights\xLights\WindowsHardwareVideoReader.h" />
     <ClInclude Include="events\EventFPPCommandPreset.h">
       <Filter>Events</Filter>
     </ClInclude>
     <ClInclude Include="EventFPPCommandPresetPanel.h">
       <Filter>Events</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\outputs\TwinklyOutput.h">
+    <ClInclude Include="..\xlights\xLights\outputs\TwinklyOutput.h">
       <Filter>Outputs</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\utils\ip_utils.h">
+    <ClInclude Include="..\xlights\xLights\utils\ip_utils.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\utils\string_utils.h">
+    <ClInclude Include="..\xlights\xLights\utils\string_utils.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\xLights\utils\CurlManager.h">
+    <ClInclude Include="..\xlights\xLights\utils\CurlManager.h">
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="RGBEffects.h" />
-    <ClInclude Include="..\xLights\ui\wxUtilities.h" />
+    <ClInclude Include="..\xlights\xLights\ui\wxUtilities.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="PlayList">

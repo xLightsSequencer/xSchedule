@@ -17,9 +17,9 @@
 
 
 #include "RemoteFalconOptions.h"
-#include "../../xLights/utils/SpecialOptions.h"
+#include "../../xlights/xLights/utils/SpecialOptions.h"
 
-#include "../../xLights/utils/string_utils.h"
+#include "../../xlights/xLights/utils/string_utils.h"
 
 #include <nlohmann/json.hpp>
 #include <log.h>

@@ -11,13 +11,13 @@
 #include "SyncOSC.h"
 #include "OSCPacket.h"
 #include "ScheduleOptions.h"
-#include "../xLights/outputs/IPOutput.h"
+#include "../xlights/xLights/outputs/IPOutput.h"
 #include "events/ListenerManager.h"
 
 #include <wx/socket.h>
 
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
 #include <log.h>
 
 SyncOSC::SyncOSC(SYNCMODE mode, REMOTEMODE remoteMode, const ScheduleOptions& options, ScheduleManager* schm, ListenerManager* listenerManager, const std::string& localIP) :

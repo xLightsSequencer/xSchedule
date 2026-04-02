@@ -25,10 +25,10 @@
 #include <wx/msgdlg.h>
 
 #include "ScheduleManager.h"
-#include "../xLights/outputs/OutputManager.h"
-#include "../xLights/xLightsVersion.h"
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/xLightsVersion.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
 #include <wx/cmdline.h>
 #include <wx/confbase.h>
 #include <wx/debugrpt.h>

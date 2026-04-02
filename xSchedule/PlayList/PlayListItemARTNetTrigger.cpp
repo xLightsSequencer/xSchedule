@@ -15,8 +15,8 @@
 #include <wx/notebook.h>
 #include <log.h>
 #include <wx/socket.h>
-#include "../xLights/outputs/IPOutput.h"
-#include "../xLights/outputs/ArtNetOutput.h"
+#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/xLights/outputs/ArtNetOutput.h"
 #include "../Control.h"
 #include <wx/protocol/http.h>
 #include "../../xLights/utils/UtilFunctions.h"

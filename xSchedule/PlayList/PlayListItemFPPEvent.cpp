@@ -14,8 +14,8 @@
 #include "../../xLights/utils/UtilFunctions.h"
 #include "../../xLights/ui/wxUtilities.h"
 #include "../Control.h"
-#include "../xLights/outputs/IPOutput.h"
-#include "../xLights/utils/ip_utils.h"
+#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/xLights/utils/ip_utils.h"
 #include "utils/CurlManager.h"
 #include <log.h>
 #include <wx/notebook.h>

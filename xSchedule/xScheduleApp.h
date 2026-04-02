@@ -10,7 +10,7 @@
  * License: https://github.com/xLightsSequencer/xLights/blob/master/License.txt
  **************************************************************/
 
-#include "../common/xlBaseApp.h"
+#include "../xlights/common/xlBaseApp.h"
 
 
 class wxSingleInstanceChecker;

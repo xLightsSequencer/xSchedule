@@ -11,7 +11,7 @@
 #include "MatricesDialog.h"
 #include "MatrixDialog.h"
 #include "MatrixMapper.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 
 //(*InternalHeaders(MatricesDialog)
 #include <wx/intl.h>

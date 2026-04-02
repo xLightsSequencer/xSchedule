@@ -16,8 +16,8 @@
 
 #include "PlayListItemJukebox.h"
 #include "PlayListItemJukeboxPanel.h"
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
 
 #include <log.h>
 

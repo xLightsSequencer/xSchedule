@@ -15,7 +15,7 @@
 #include <wx/string.h>
 //*)
 
-#include "../xLights/utils/ip_utils.h"
+#include "../xlights/xLights/utils/ip_utils.h"
 
 //(*IdInit(ExtraIPDialog)
 const long ExtraIPDialog::ID_STATICTEXT1 = wxNewId();

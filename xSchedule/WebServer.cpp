@@ -19,8 +19,8 @@
 #include "ScheduleManager.h"
 #include "xScheduleApp.h"
 #include "ScheduleOptions.h"
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
 #include "md5.h"
 
 #include <log.h>

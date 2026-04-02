@@ -11,7 +11,7 @@
 #include "RemapDialog.h"
 #include "xScheduleMain.h"
 #include "ScheduleManager.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 
 //(*InternalHeaders(RemapDialog)
 #include <wx/intl.h>

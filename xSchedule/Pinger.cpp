@@ -9,11 +9,11 @@
  **************************************************************/
 
 #include "Pinger.h"
-#include "../xLights/utils/UtilFunctions.h"
-#include "../xLights/ui/wxUtilities.h"
-#include "../xLights/outputs/ControllerEthernet.h"
-#include "../xLights/outputs/ControllerSerial.h"
-#include "../xLights/outputs/OutputManager.h"
+#include "../xlights/xLights/utils/UtilFunctions.h"
+#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/xLights/outputs/ControllerEthernet.h"
+#include "../xlights/xLights/outputs/ControllerSerial.h"
+#include "../xlights/xLights/outputs/OutputManager.h"
 #include "events/ListenerManager.h"
 
 #include <atomic>

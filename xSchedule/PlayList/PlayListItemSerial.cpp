@@ -16,7 +16,7 @@
 #include "../../xLights/utils/UtilFunctions.h"
 #include "../../xLights/ui/wxUtilities.h"
 #include "../../xLights/outputs/SerialOutput.h"
-#include "../xLights/outputs/serial.h"
+#include "../xlights/xLights/outputs/serial.h"
 
 #include <log.h>
 

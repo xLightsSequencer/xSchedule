@@ -16,7 +16,7 @@
 #include <wx/file.h>
 
 #include "Blend.h"
-#include "../xLights/render/FSEQFile.h"
+#include "../xlights/xLights/render/FSEQFile.h"
 
 
 class ESEQFile
