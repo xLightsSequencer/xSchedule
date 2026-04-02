@@ -36,8 +36,8 @@
 					<Add directory="../../xlights/include" />
 					<Add directory="../../xLights" />
 					<Add directory="../../xlights/xLights/utils" />
-					<Add directory="../../xlights/dependencies/pugixml/src" />
-					<Add directory="../../xlights/dependencies/spdlog/include" />
+					<Add directory="../../dependencies/pugixml/src" />
+					<Add directory="../../dependencies/spdlog/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-lGL -lGLU -lglut -ldl -lX11 -lz -lzstd" />
@@ -79,8 +79,8 @@
 					<Add directory="../../xlights/include" />
 					<Add directory="../../xLights" />
 					<Add directory="../../xlights/xLights/utils" />
-					<Add directory="../../xlights/dependencies/pugixml/src" />
-					<Add directory="../../xlights/dependencies/spdlog/include" />
+					<Add directory="../../dependencies/pugixml/src" />
+					<Add directory="../../dependencies/spdlog/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-lGL -lGLU -lglut -ldl -lX11 -lz -lzstd" />
@@ -106,7 +106,7 @@
 		<Unit filename="../../xlights/common/xlBaseApp.cpp" />
 		<Unit filename="../../xlights/common/xlBaseApp.h" />
 		<Unit filename="../../xlights/common/xlStackWalker.h" />
-		<Unit filename="../../xlights/dependencies/pugixml/src/pugixml.cpp" />
+		<Unit filename="../../dependencies/pugixml/src/pugixml.cpp" />
 		<Unit filename="../../xlights/xLights/utils/UtilFunctions.cpp" />
 		<Unit filename="../../xlights/xLights/utils/UtilFunctions.h" />
 		<Unit filename="../../xlights/xLights/ui/wxUtilities.cpp" />

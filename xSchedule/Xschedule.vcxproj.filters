@@ -577,7 +577,7 @@
     </ClCompile>
     <ClCompile Include="..\xlights\xLights\SpecialOptions.cpp" />
     <ClCompile Include="RGBEffects.cpp" />
-    <ClCompile Include="..\xlights\dependencies\pugixml\src\pugixml.cpp" />
+    <ClCompile Include="..\dependencies\pugixml\src\pugixml.cpp" />
     <ClCompile Include="..\xlights\xLights\ui\wxUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
