@@ -52,7 +52,7 @@ jobs:
     - name: Upload Installer
       uses: actions/upload-artifact@v4
       with:
-        name: xSchedule_x64_Installer
+        name: xSchedule_Installer
         path: 'build_scripts\msw\output\**'
     - name: Create prerelease
       if: github.ref == 'refs/heads/main'

@@ -3,8 +3,6 @@
 
 #include "xSchedule_common.iss"
 
-#define Bits 64
-
 [Setup]
 ChangesEnvironment=yes
 DisableDirPage=no
@@ -20,7 +18,7 @@ UninstallDisplayIcon={app}\{#MyTitleName}.exe
 Compression=lzma2
 SolidCompression=yes
 OutputDir=output
-OutputBaseFilename={#MyTitleName}{#Bits}_{#Year}_{#Version}{#Other}
+OutputBaseFilename={#MyTitleName}_{#Year}_{#Version}{#Other}
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "Do you want to create desktop icon?"; Flags: checkablealone
