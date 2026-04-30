@@ -2801,7 +2801,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                     "\",\"id\":\"" + wxString::Format(wxT("%i"), it->GetId()).ToStdString() +
                     "\",\"nextscheduled\":\"" + it->GetNextScheduledTime() +
                     "\",\"length\":\"" + FormatTime(it->GetLengthMS()) +
-                    "\",\"lengthms\":\"" + wxString::Format("{}", (long)it->GetLengthMS()) + "\"}";
+                    "\",\"lengthms\":\"" + wxString::Format("%ld", (long)it->GetLengthMS()) + "\"}";
         }
         data += "],\"reference\":\"" + reference + "\"}";
     } else if (c == "getplayingeffects") {
@@ -2850,7 +2850,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                         "\",\"everystep\":\"" + ((*it)->GetEveryStep() ? _("true") : _("false")) +
                         "\",\"offset\":\"" + (*it)->GetStartTime(p) +
                         "\",\"length\":\"" + FormatTime((*it)->GetLengthMS()) +
-                        "\",\"lengthms\":\"" + wxString::Format("{}", (long)(*it)->GetLengthMS()) + "\"}";
+                        "\",\"lengthms\":\"" + wxString::Format("%ld", (long)(*it)->GetLengthMS()) + "\"}";
             }
             data += "],\"reference\":\"" + reference + "\"}";
         } else {
@@ -2896,8 +2896,8 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             if (!first) {
                 data += ",";
             }
-            data += "{\"startchannel\":\"" + wxString::Format("{}", (long)it->GetStartChannel()) +
-                    "\",\"channels\":\"" + wxString::Format(wxT("{}"), (long)it->GetSize()) +
+            data += "{\"startchannel\":\"" + wxString::Format("%ld", (long)it->GetStartChannel()) +
+                    "\",\"channels\":\"" + wxString::Format(wxT("%ld"), (long)it->GetSize()) +
                     "\"}";
             first = false;
         }
@@ -2914,7 +2914,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             data += "{\"name\":\"" + (*it)->GetNameNoTime() +
                     "\",\"id\":\"" + wxString::Format(wxT("%i"), (*it)->GetId()).ToStdString() +
                     "\",\"length\":\"" + FormatTime((*it)->GetLengthMS()) +
-                    "\",\"lengthms\":\"" + wxString::Format("{}", (long)((*it)->GetLengthMS())) + "\"}";
+                    "\",\"lengthms\":\"" + wxString::Format("%ld", (long)((*it)->GetLengthMS())) + "\"}";
         }
         data += "],\"reference\":\"" + reference + "\"}";
     } else if (c == "listwebfolders") {
@@ -3063,15 +3063,15 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                    "\",\"steplooping\":\"" + (p->IsStepLooping() || p->GetRunningStep()->GetLoopsLeft() > 0 ? "true" : "false") +
                    "\",\"steploopsleft\":\"" + wxString::Format(wxT("%i"), p->GetRunningStep()->GetLoopsLeft()).ToStdString() +
                    "\",\"length\":\"" + FormatTime(p->GetRunningStep()->GetLengthMS()) +
-                   "\",\"lengthms\":\"" + wxString::Format("{}", (long)(p->GetRunningStep()->GetLengthMS())) +
+                   "\",\"lengthms\":\"" + wxString::Format("%ld", (long)(p->GetRunningStep()->GetLengthMS())) +
                    "\",\"position\":\"" + FormatTime(p->GetRunningStep()->GetPosition()) +
-                   "\",\"positionms\":\"" + wxString::Format("{}", (long)(p->GetRunningStep()->GetPosition())) +
+                   "\",\"positionms\":\"" + wxString::Format("%ld", (long)(p->GetRunningStep()->GetPosition())) +
                    "\",\"left\":\"" + FormatTime(p->GetRunningStep()->GetLengthMS() - p->GetRunningStep()->GetPosition()) +
-                   "\",\"leftms\":\"" + wxString::Format("{}", (long)(p->GetRunningStep()->GetLengthMS() - p->GetRunningStep()->GetPosition())) +
+                   "\",\"leftms\":\"" + wxString::Format("%ld", (long)(p->GetRunningStep()->GetLengthMS() - p->GetRunningStep()->GetPosition())) +
                    "\",\"playlistposition\":\"" + FormatTime(p->GetPosition()) +
-                   "\",\"playlistpositionms\":\"" + wxString::Format("{}", (long)(p->GetPosition())) +
+                   "\",\"playlistpositionms\":\"" + wxString::Format("%ld", (long)(p->GetPosition())) +
                    "\",\"playlistleft\":\"" + FormatTime(p->GetLengthMS() - p->GetPosition()) +
-                   "\",\"playlistleftms\":\"" + wxString::Format("{}", (long)(p->GetLengthMS() - p->GetPosition())) +
+                   "\",\"playlistleftms\":\"" + wxString::Format("%ld", (long)(p->GetLengthMS() - p->GetPosition())) +
                    "\",\"trigger\":\"" + std::string(IsCurrentPlayListScheduled() ? "scheduled" : (_immediatePlay != nullptr) ? "manual"
                                                                                                                               : "queued") +
                    "\",\"schedulename\":\"" + std::string((IsCurrentPlayListScheduled() && rs != nullptr) ? rs->GetSchedule()->GetName() : "N/A") +
@@ -3141,7 +3141,7 @@ std::string ScheduleManager::GetPingStatus() {
             res += "{\"controller\":\"" + it->GetIP() + " " + it->GetName() +
                    "\",\"ip\":\"" + it->GetIP() +
                    "\",\"result\":\"" + APinger::GetPingResultName(it->GetPingResult()) +
-                   "\",\"failcount\":\"" + wxString::Format("{}", it->GetFailCount()) + "\"}";
+                   "\",\"failcount\":\"" + wxString::Format("%i", it->GetFailCount()) + "\"}";
         }
     }
 

@@ -75,29 +75,29 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\xLights\ffmpeg-dev\include;..\xlights\include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
-    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\xlights\lib\windows;..\xlights\xLights\ffmpeg-dev\lib;GL;$(LibraryPath);$(VCToolsInstallDir)lib\x86</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\include\ffmpeg-6\include;..\xlights\include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
+    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\xlights\lib\windows;GL;$(LibraryPath);$(VCToolsInstallDir)lib\x86</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);../xlights/xLights/ffmpeg-dev/include;..\xlights\include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\xlights\lib\windows64;..\xlights\xLights\ffmpeg-dev\lib;GL;$(VCToolsInstallDir)lib\x64</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\include\ffmpeg-6\include;..\xlights\include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\xlights\lib\windows64;GL;$(VCToolsInstallDir)lib\x64</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\xLights\ffmpeg-dev\include;..\xlights\include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
-    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\xlights\lib\windows;..\xlights\xLights\ffmpeg-dev\lib;GL;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\include\ffmpeg-6\include;..\xlights\include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
+    <LibraryPath>..\..\wxWidgets\lib\vc_lib;..\xlights\lib\windows;GL;$(LibraryPath)</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\include;../xlights/xLights/ffmpeg-dev/include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\xlights\lib\windows64;..\xlights\xLights\ffmpeg-dev\lib;</LibraryPath>
+    <IncludePath>..\..\wxWidgets\include;..\..\wxWidgets\include\msvc;$(IncludePath);..\xlights\include\ffmpeg-6\include;..\xlights\include;..\xlights\include\zlib;..\xlights\xLights;..\xlights\xLights\utils;..\xlights\xLights\ui;..\xlights\common;..\dependencies;..\dependencies\pugixml\src;..\dependencies\spdlog\include;..\xlights\dependencies</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\wxWidgets\lib\vc_x64_lib;..\xlights\lib\windows64;</LibraryPath>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>

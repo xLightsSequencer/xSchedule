@@ -45,7 +45,7 @@
 
 	// Pass is replaced by a valid value when the page is served - assuming you are allowing authenticated pages
 	var pass = "!PASS!";
-	url = 'ws://' + location.hostname + (location.port ? ':' + location.port : '');
+	url = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + (location.port ? ':' + location.port : '');
 	const socket = new ReconnectingWebSocket(url);
 
 	socket.addEventListener('message', function(event) {

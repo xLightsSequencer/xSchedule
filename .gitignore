@@ -7,3 +7,5 @@ xSchedule/xSMSDaemon/xSMSDaemon.cbp.mak
 xSchedule/xSMSDaemon/xSMSDaemon.cbp.mak.orig
 xSchedule/xSchedule.cbp.mak
 xSchedule/xSchedule.cbp.mak.orig
+*.json
+*.wsuo
