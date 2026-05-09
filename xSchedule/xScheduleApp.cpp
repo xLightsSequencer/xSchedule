@@ -337,11 +337,11 @@ bool xScheduleApp::OnInit()
         }
         if (parser.Found("s", &showDir)) {
             parmfound = true;
-            spdlog::info("-s: Show directory set to %s.", (const char*)showDir.c_str());
+            spdlog::info("-s: Show directory set to {}.", (const char*)showDir.c_str());
         }
         if (parser.Found("p", &playlist)) {
             parmfound = true;
-            spdlog::info("-p: Playlist to play %s.", (const char*)playlist.c_str());
+            spdlog::info("-p: Playlist to play {}.", (const char*)playlist.c_str());
         }
         if (!parmfound && parser.GetParamCount() > 0) {
             spdlog::info("Unrecognised command line parameter found.");

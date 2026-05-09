@@ -42,7 +42,7 @@ public:
     }
 
     void Stop() {
-        spdlog::debug("Asking pinging thread %s to stop", (const char*)_pinger->GetName().c_str());
+        spdlog::debug("Asking pinging thread {} to stop", (const char*)_pinger->GetName().c_str());
         _stop = true;
     }
 

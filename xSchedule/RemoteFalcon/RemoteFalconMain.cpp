@@ -417,14 +417,14 @@ void RemoteFalconFrame::OnMenuItem_ViewLogSelected(wxCommandEvent& event)
         wxString command = ft->GetOpenCommand("foo.txt");
         command.Replace("foo.txt", fn);
 
-        spdlog::debug("Viewing log file %s.", (const char*)fn.c_str());
+        spdlog::debug("Viewing log file {}.", (const char*)fn.c_str());
 
         wxExecute(command);
         delete ft;
     }
     else
     {
-        spdlog::warn("Unable to view log file %s.", (const char*)fn.c_str());
+        spdlog::warn("Unable to view log file {}.", (const char*)fn.c_str());
         wxMessageBox(_("Unable to show log file."), _("Error"));
     }
 }
