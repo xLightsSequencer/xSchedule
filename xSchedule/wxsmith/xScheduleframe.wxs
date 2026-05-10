@@ -587,6 +587,20 @@
 					<help>Show info about this application</help>
 					<handler function="OnAbout" entry="EVT_MENU" />
 				</object>
+				<object class="wxMenuItem" name="ID_MNU_DOWNLOAD" variable="MenuItem_Download" member="yes">
+					<label>Download</label>
+					<handler function="OnMenuItem_DownloadSelected" entry="EVT_MENU" />
+				</object>
+				<object class="wxMenuItem" name="ID_MNU_DONATE" variable="MenuItem_Donate" member="yes">
+					<label>Donate</label>
+					<help>Donate to the xLights project.</help>
+					<handler function="OnMenuItem_DonateSelected" entry="EVT_MENU" />
+				</object>
+				<object class="wxMenuItem" name="ID_MNU_UPDATE" variable="MenuItem_Update" member="yes">
+					<label>Check for Updates</label>
+					<help>Check for newer xSchedule updates</help>
+					<handler function="OnMenuItem_UpdateSelected" entry="EVT_MENU" />
+				</object>
 			</object>
 		</object>
 		<object class="wxStatusBar" name="ID_STATUSBAR1" variable="StatusBar1" member="yes">

@@ -71,6 +71,8 @@
 #include "../xlights/xLights/outputs/ControllerSerial.h"
 #include "RemoteModeConfigDialog.h"
 #include "utils/ExternalHooks.h"
+#include "utils/CurlManager.h"
+#include <nlohmann/json.hpp>
 
 #include "../xlights/include/xs_save.xpm"
 #include "../xlights/include/xs_otlon.xpm"
@@ -224,6 +226,9 @@ const wxWindowID xScheduleFrame::ID_MNU_OSCOPTION = wxNewId();
 const wxWindowID xScheduleFrame::MNU_CONFIGUREMIDITIMECODE = wxNewId();
 const wxWindowID xScheduleFrame::ID_MNU_CONFIGURE_TEST = wxNewId();
 const wxWindowID xScheduleFrame::idMenuAbout = wxNewId();
+const wxWindowID xScheduleFrame::ID_MNU_UPDATE = wxNewId();
+const wxWindowID xScheduleFrame::ID_MNU_DONATE = wxNewId();
+const wxWindowID xScheduleFrame::ID_MNU_DOWNLOAD = wxNewId();
 const wxWindowID xScheduleFrame::ID_STATUSBAR1 = wxNewId();
 const wxWindowID xScheduleFrame::ID_TIMER1 = wxNewId();
 const wxWindowID xScheduleFrame::ID_TIMER2 = wxNewId();
@@ -613,6 +618,12 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     Menu2 = new wxMenu();
     MenuItem2 = new wxMenuItem(Menu2, idMenuAbout, _("About\tF1"), _("Show info about this application"), wxITEM_NORMAL);
     Menu2->Append(MenuItem2);
+    MenuItem_Download = new wxMenuItem(Menu2, ID_MNU_DOWNLOAD, _("Download"), wxEmptyString, wxITEM_NORMAL);
+    Menu2->Append(MenuItem_Download);
+    MenuItem_Donate = new wxMenuItem(Menu2, ID_MNU_DONATE, _("Donate"), _("Donate to the xLights project."), wxITEM_NORMAL);
+    Menu2->Append(MenuItem_Donate);
+    MenuItem_Update = new wxMenuItem(Menu2, ID_MNU_UPDATE, _("Check for Updates"), _("Check for newer xSchedule updates"), wxITEM_NORMAL);
+    Menu2->Append(MenuItem_Update);
     MenuBar1->Append(Menu2, _("Help"));
     SetMenuBar(MenuBar1);
     StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, 0, _T("ID_STATUSBAR1"));
@@ -691,6 +702,9 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     Connect(MNU_CONFIGUREMIDITIMECODE, wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnMenuItem5MenuItem_ConfigureMIDITimecodeSelected);
     Connect(ID_MNU_CONFIGURE_TEST, wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnMenuItem_ConfigureTestSelected);
     Connect(idMenuAbout, wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnAbout);
+    Connect(ID_MNU_DOWNLOAD, wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnMenuItem_DownloadSelected);
+    Connect(ID_MNU_UPDATE, wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnMenuItem_UpdateSelected);
+    Connect(ID_MNU_DONATE, wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnMenuItem_DonateSelected);
     Connect(ID_TIMER1, wxEVT_TIMER, (wxObjectEventFunction)&xScheduleFrame::On_timerTrigger);
     Connect(ID_TIMER2, wxEVT_TIMER, (wxObjectEventFunction)&xScheduleFrame::On_timerScheduleTrigger);
     Connect(wxID_ANY, wxEVT_CLOSE_WINDOW, (wxObjectEventFunction)&xScheduleFrame::OnClose);
@@ -913,6 +927,10 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
         }
     }
     spdlog::debug("Plugins loaded.");
+
+#if !defined(_DEBUG)
+    CheckForUpdate(false);
+#endif
 }
 
 void xScheduleFrame::LoadSchedule()
@@ -922,6 +940,7 @@ void xScheduleFrame::LoadSchedule()
     // reset our special options
     SpecialOptions::StashShowDir(_showDir);
     SpecialOptions::GetOption("", "");
+    spdlog::info("Special options file: {}", _showDir + GetPathSeparator() + "special.options");
 
     if (_f != nullptr)
     {
@@ -941,6 +960,13 @@ void xScheduleFrame::LoadSchedule()
 	{
         wxLog::SetActiveTarget(new wxLogStderr());
 	}
+
+    // Re-apply spdlog levels from special.options now that show dir is known
+    spdlog::default_logger()->set_level(spdlog::level::from_str(SpecialOptions::GetOption("xschedule_logger", "info")));
+    auto curl_log = spdlog::get("curl");
+    if (curl_log) curl_log->set_level(spdlog::level::from_str(SpecialOptions::GetOption("curl_logger", "info")));
+    auto frame_log = spdlog::get("frame");
+    if (frame_log) frame_log->set_level(spdlog::level::from_str(SpecialOptions::GetOption("frame_logger", "info")));
 
     spdlog::debug("Loading schedule.");
 
@@ -1146,6 +1172,136 @@ void xScheduleFrame::OnAbout(wxCommandEvent& event)
 {
     auto about = wxString::Format(wxT("xSchedule v{}, the xLights scheduler."), GetDisplayVersionString());
     wxMessageBox(about, _("Welcome to..."));
+}
+
+void xScheduleFrame::OnMenuItem_DownloadSelected(wxCommandEvent& event)
+{
+    ::wxLaunchDefaultBrowser("https://github.com/xLightsSequencer/xSchedule");
+}
+
+void xScheduleFrame::OnMenuItem_DonateSelected(wxCommandEvent& event)
+{
+    ::wxLaunchDefaultBrowser("https://www.paypal.com/donate/?hosted_button_id=BB6366BT755H6");
+}
+
+void xScheduleFrame::OnMenuItem_UpdateSelected(wxCommandEvent& event)
+{
+    bool update_found = CheckForUpdate(true);
+    if (!update_found) {
+        DisplayInfo("Update check complete: No update found", this);
+    }
+}
+
+bool xScheduleFrame::CheckForUpdate(bool showMessageBoxes)
+{
+    bool found_update = false;
+    std::string githubTagURL = "https://api.github.com/repos/xLightsSequencer/xSchedule/releases?per_page=6";
+    int rc = 0;
+    spdlog::info("Checking for xSchedule updates at {}", githubTagURL);
+
+    bool didConnect = false;
+    std::string resp;
+    nlohmann::json val;
+    int maxRetries = showMessageBoxes ? 3 : 1;
+    for (int retry = 0; retry < maxRetries && !didConnect; retry++) {
+        resp = CurlManager::INSTANCE.doGet(githubTagURL, rc);
+        spdlog::info("xSchedule update check: HTTP {} response length {}", rc, resp.size());
+        if (rc == 200 && !resp.empty()) {
+            try {
+                val = nlohmann::json::parse(resp, nullptr, false);
+                if (!val.is_discarded()) {
+                    didConnect = true;
+                    spdlog::info("xSchedule update check: {} releases found", (int)val.size());
+                }
+            } catch (...) {
+                spdlog::info("xSchedule update check: JSON parse exception");
+            }
+        } else {
+            wxSleep(1);
+        }
+    }
+    if (!didConnect) {
+        spdlog::info("xSchedule version update check failed. Unable to connect.");
+        if (showMessageBoxes) {
+            wxMessageBox("Unable to connect.", "xSchedule version update check failed");
+        }
+        return false;
+    }
+
+    wxString skipver;
+    wxConfigBase* config = wxConfigBase::Get();
+    if (!showMessageBoxes && config != nullptr) {
+        config->Read("xsSkipVersion", &skipver);
+    }
+
+#ifdef LINUX
+    const std::string ASSET_EXT = "AppImage";
+#else
+    const std::string ASSET_EXT = "exe";
+#endif
+
+    std::string downloadURL;
+    std::string urlVersion;
+    for (int x = 0; x < (int)val.size() && downloadURL.empty(); x++) {
+        if (val[x].contains("name")) {
+            std::string verName = val[x].contains("tag_name") ? val[x]["tag_name"].get<std::string>() : val[x]["name"].get<std::string>();
+            if (verName != "nightly" && val[x].contains("assets")) {
+                for (int a = 0; a < (int)val[x]["assets"].size(); a++) {
+                    std::string url = val[x]["assets"][a]["browser_download_url"].get<std::string>();
+                    if (url.ends_with(ASSET_EXT)) {
+                        downloadURL = url;
+                        urlVersion = verName;
+                    }
+                }
+            }
+        }
+    }
+
+    std::string currentVersion = xlights_version_string;
+    spdlog::info("xSchedule current version: '{}'. Latest available: '{}'. Skip version: '{}'.",
+                 currentVersion, urlVersion, skipver.ToStdString());
+
+    if (!downloadURL.empty()) {
+        if ((urlVersion != skipver) && (urlVersion != currentVersion) && IsVersionOlder(urlVersion, currentVersion)) {
+            found_update = true;
+            wxDialog dlg(this, wxID_ANY, "xSchedule Update Available");
+            wxBoxSizer* vs = new wxBoxSizer(wxVERTICAL);
+            wxStaticText* lbl = new wxStaticText(&dlg, wxID_ANY,
+                "You are currently running xSchedule " + currentVersion + "\n" +
+                "Whereas the current release is " + urlVersion,
+                wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
+            vs->Add(lbl, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 10);
+            wxBoxSizer* hs = new wxBoxSizer(wxHORIZONTAL);
+            wxButton* btnDownload = new wxButton(&dlg, wxID_OK, "Download new release");
+            wxButton* btnIgnore = new wxButton(&dlg, wxID_NO, "Ignore this version");
+            wxButton* btnSkip = new wxButton(&dlg, wxID_CANCEL, "Skip this time");
+            btnSkip->SetDefault();
+            hs->Add(btnDownload, 1, wxALL, 5);
+            hs->Add(btnIgnore, 1, wxALL, 5);
+            hs->Add(btnSkip, 1, wxALL, 5);
+            vs->Add(hs, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 5);
+            dlg.SetSizerAndFit(vs);
+            dlg.Centre();
+            int result = dlg.ShowModal();
+            if (result == wxID_OK) {
+                spdlog::info("User downloading xSchedule update to version {}.", urlVersion);
+                wxLaunchDefaultBrowser(downloadURL);
+                if (config) config->Write("xsSkipVersion", "");
+            } else if (result == wxID_NO) {
+                spdlog::info("User ignoring xSchedule update to version {}.", urlVersion);
+                if (config) config->Write("xsSkipVersion", wxString(urlVersion));
+            } else {
+                spdlog::info("User skipping xSchedule update to version {}.", urlVersion);
+                if (config) config->Write("xsSkipVersion", "");
+            }
+        }
+    } else {
+        spdlog::info("xSchedule version update check failed. Unable to read available versions.");
+        if (showMessageBoxes) {
+            wxMessageBox("Unable to read available versions.", "xSchedule version update check failed");
+        }
+    }
+    return found_update;
 }
 
 bool xScheduleFrame::IsPlayList(wxTreeItemId id) const
@@ -1534,7 +1690,7 @@ void xScheduleFrame::On_timerTrigger(wxTimerEvent& event)
 
     auto logger_frame = spdlog::get("frame");
 
-    logger_frame->info("Timer: Start frame elapsed {} now {} last {}", elapsed, now, lastms);
+    logger_frame->trace("Timer: Start frame elapsed {} now {} last {}", elapsed, now, lastms);
 
     if (elapsed < _timer.GetInterval() / 2)
     {
@@ -1607,7 +1763,7 @@ void xScheduleFrame::On_timerTrigger(wxTimerEvent& event)
     wxCommandEvent event3(EVT_SLOWFRAMEPROCESSING);
     wxPostEvent(this, event3);
 
-    logger_frame->info("Timer: End Frame: Time {}", ms);
+    logger_frame->trace("Timer: End Frame: Time {}", ms);
 }
 
 void xScheduleFrame::UpdateSchedule()

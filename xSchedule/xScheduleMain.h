@@ -216,9 +216,13 @@ private:
     void OnMenuItem_ResetWindowLocationsSelected(wxCommandEvent& event);
     void OnBitmapButton_BrightnessDownClick(wxCommandEvent& event);
     void OnBitmapButton_BrightnessUpClick(wxCommandEvent& event);
+    void OnMenuItem_UpdateSelected(wxCommandEvent& event);
+    void OnMenuItem_DonateSelected(wxCommandEvent& event);
+    void OnMenuItem_DownloadSelected(wxCommandEvent& event);
     //*)
 
     void SlowFrameProcessing(wxCommandEvent& event);
+    bool CheckForUpdate(bool showMessageBoxes);
     void OnCustom_BrightnessLeftDown(wxMouseEvent& event);
     void OnListView_PingMouseMove(wxMouseEvent& event);
     void OnListView_RunningItemSelected(wxListEvent& event);
@@ -321,6 +325,9 @@ private:
     static const wxWindowID MNU_CONFIGUREMIDITIMECODE;
     static const wxWindowID ID_MNU_CONFIGURE_TEST;
     static const wxWindowID idMenuAbout;
+    static const wxWindowID ID_MNU_UPDATE;
+    static const wxWindowID ID_MNU_DONATE;
+    static const wxWindowID ID_MNU_DOWNLOAD;
     static const wxWindowID ID_STATUSBAR1;
     static const wxWindowID ID_TIMER1;
     static const wxWindowID ID_TIMER2;
@@ -400,6 +407,9 @@ private:
     wxMenuItem* MenuItem_Save;
     wxMenuItem* MenuItem_ShowFolder;
     wxMenuItem* MenuItem_UsexLightsFolder;
+    wxMenuItem* MenuItem_Update;
+    wxMenuItem* MenuItem_Donate;
+    wxMenuItem* MenuItem_Download;
     wxMenuItem* MenuItem_ViewLog;
     wxMenuItem* MenuItem_VirtualMatrices;
     wxMenuItem* MenuItem_WebInterface;

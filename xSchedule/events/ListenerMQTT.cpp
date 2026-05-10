@@ -156,7 +156,7 @@ bool ListenerMQTT::Subscribe(const std::string& topic)
     index += PlayListItemMQTT::EncodeString(&buffer[index], topic);
     buffer[index++] = 0x00;
 
-    spdlog::info("MQTT subscribing to topic %s.", topic);
+    spdlog::info("MQTT subscribing to topic {}.", topic);
     _client.Write(buffer, index);
     wxASSERT((int)_client.LastWriteCount() == index);
 
