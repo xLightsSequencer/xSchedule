@@ -27,6 +27,7 @@
 #include "ScheduleManager.h"
 #include "../xlights/xLights/outputs/OutputManager.h"
 #include "../xlights/xLights/xLightsVersion.h"
+#include "xScheduleVersion.h"
 #include "../xlights/xLights/utils/UtilFunctions.h"
 #include "../xlights/xLights/ui/wxUtilities.h"
 #include <wx/cmdline.h>
@@ -166,9 +167,9 @@ std::string DecodeOS(wxOperatingSystemId o)
 
 void DumpConfig()
 {
-    spdlog::info("Version: " + xlights_version_string);
+    spdlog::info("Version: " + xschedule_version_string);
     spdlog::info("Bits: " + GetBitness());
-    spdlog::info("Build Date: " + xlights_build_date);
+    spdlog::info("Build Date: " + xschedule_build_date);
     spdlog::info("WX Version: " + std::string(wxString(wxVERSION_STRING).c_str()));
 
     spdlog::info("Machine configuration:");

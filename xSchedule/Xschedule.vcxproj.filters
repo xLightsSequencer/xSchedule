@@ -618,6 +618,7 @@
     <ClInclude Include="..\xlights\xLights\utils\AnimatedImage.h" />
     <ClInclude Include="..\xlights\xLights\utils\xlImage.h" />
     <ClInclude Include="..\xlights\xLights\xLightsVersion.h" />
+    <ClInclude Include="xScheduleVersion.h" />
     <ClInclude Include="Blend.h" />
     <ClInclude Include="..\xlights\xLights\utils\UtilFunctions.h" />
     <ClInclude Include="FPPRemotesDialog.h" />

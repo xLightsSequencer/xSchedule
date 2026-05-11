@@ -40,7 +40,7 @@
 #include "../xlights/xLights/outputs/IPOutput.h"
 #include "../xlights/xLights/outputs/Output.h"
 #include "../xlights/xLights/outputs/OutputManager.h"
-#include "../xlights/xLights/xLightsVersion.h"
+#include "xScheduleVersion.h"
 #include "PlayList/PlayList.h"
 #include "PlayList/PlayListItemAudio.h"
 #include "PlayList/PlayListItemFSEQ.h"
@@ -3026,7 +3026,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                    "\",\"volume\":\"" + wxString::Format(wxT("%i"), GetVolume()) +
                    "\",\"brightness\":\"" + wxString::Format(wxT("%i"), GetBrightness()) +
                    "\",\"ip\":\"" + ip +
-                   "\",\"version\":\"" + xlights_version_string +
+                   "\",\"version\":\"" + xschedule_version_string +
                    "\",\"reference\":\"" + reference +
                    "\",\"passwordset\":\"" + (_scheduleOptions->GetPassword() == "" ? "false" : "true") +
                    "\",\"time\":\"" + wxDateTime::Now().Format("%Y-%m-{} %H:%M:{}") +
@@ -3079,7 +3079,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                    "\",\"scheduleid\":\"" + std::string((IsCurrentPlayListScheduled() && rs != nullptr) ? wxString::Format(wxT("%i"), rs->GetSchedule()->GetId()).ToStdString() : "N/A") +
                    "\",\"nextstep\":\"" + nextsong +
                    "\",\"nextstepid\":\"" + nextsongid +
-                   "\",\"version\":\"" + xlights_version_string +
+                   "\",\"version\":\"" + xschedule_version_string +
                    "\",\"queuelength\":\"" + wxString::Format(wxT("%i"), (long)_queuedSongs->GetSteps().size()) +
                    "\",\"volume\":\"" + wxString::Format(wxT("%i"), GetVolume()) +
                    "\",\"brightness\":\"" + wxString::Format(wxT("%i"), GetBrightness()) +
@@ -3613,7 +3613,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
         msg += addr.IPAddress();
         msg += "'. Is the network connected?    ";
         if (testSocket != nullptr && testSocket->IsOk()) {
-            msg = msg + wxString::Format("Error {} : ", testSocket->LastError()) + DecodeIPError(testSocket->LastError());
+            msg = msg + wxString::Format("Error %d : ", testSocket->LastError()) + DecodeIPError(testSocket->LastError());
         }
         LogAndWrite(f, msg.ToStdString());
         errcount++;
@@ -3633,7 +3633,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     wxString file = GetShowDir() + "/" + _outputManager->GetNetworksFileName();
 
     if (!wxFile::Exists(file)) {
-        wxString msg = wxString::Format("    ERR: {} not found. It should be here '{}'.", _outputManager->GetNetworksFileName(), file);
+        wxString msg = wxString::Format("    ERR: %s not found. It should be here '%s'.", _outputManager->GetNetworksFileName(), file);
         LogAndWrite(f, msg.ToStdString());
         errcount++;
     }
@@ -3652,7 +3652,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     std::string xssd = xScheduleShowDir();
 
     if (xlsd != "" && xssd != "" && xlsd != xssd) {
-        wxString msg = wxString::Format("    ERR: xLights show directory {} does not match xSchedule show directory {}.", xlsd, xssd);
+        wxString msg = wxString::Format("    ERR: xLights show directory %s does not match xSchedule show directory %s.", xlsd.c_str(), xssd.c_str());
         LogAndWrite(f, msg.ToStdString());
         errcount++;
     }
@@ -3669,8 +3669,8 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     // Check for inactive outputs
     for (const auto& it : _outputManager->GetControllers()) {
         if (!it->IsActive()) {
-            wxString msg = wxString::Format("    WARN: Inactive controller {}:{}:{}.",
-                                            it->GetName(), it->GetColumn1Label(), it->GetColumn2Label());
+            wxString msg = wxString::Format("    WARN: Inactive controller %s:%s:%s.",
+                                            it->GetName().c_str(), it->GetColumn1Label().c_str(), it->GetColumn2Label().c_str());
             LogAndWrite(f, msg.ToStdString());
             warncount++;
         }
@@ -3693,7 +3693,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
             std::string usedval = (*n)->GetIP() + "|" + (*n)->GetUniverseString();
 
             if (std::find(used.begin(), used.end(), usedval) != used.end()) {
-                wxString msg = wxString::Format("    ERR: Multiple outputs being sent to the same controller ({}) and universe {}.", (*n)->GetIP(), (*n)->GetUniverseString());
+                wxString msg = wxString::Format("    ERR: Multiple outputs being sent to the same controller (%s) and universe %s.", (*n)->GetIP().c_str(), (*n)->GetUniverseString().c_str());
                 LogAndWrite(f, msg.ToStdString());
                 errcount++;
             } else {
@@ -3701,7 +3701,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
             }
         } else if ((*n)->IsSerialOutput()) {
             if (std::find(used.begin(), used.end(), (*n)->GetCommPort()) != used.end()) {
-                wxString msg = wxString::Format("    ERR: Multiple outputs being sent to the same comm port {} {}.", (*n)->GetType(), (*n)->GetCommPort());
+                wxString msg = wxString::Format("    ERR: Multiple outputs being sent to the same comm port %s %s.", (*n)->GetType().c_str(), (*n)->GetCommPort().c_str());
                 LogAndWrite(f, msg.ToStdString());
                 errcount++;
             } else {
@@ -3726,7 +3726,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
 
         while (n1 != _playLists.end()) {
             if ((*n1)->GetNameNoTime() == (*n)->GetNameNoTime()) {
-                wxString msg = wxString::Format("    ERR: Multiple PlayLists named '{}'. Commands which rely on playlist name may pick up the wrong one.", (*n)->GetNameNoTime());
+                wxString msg = wxString::Format("    ERR: Multiple PlayLists named '%s'. Commands which rely on playlist name may pick up the wrong one.", (*n)->GetNameNoTime().c_str());
                 LogAndWrite(f, msg.ToStdString());
                 errcount++;
             }
@@ -3753,7 +3753,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
 
             while (s1 != steps.end()) {
                 if ((*s1)->GetNameNoTime() == (*s)->GetNameNoTime()) {
-                    wxString msg = wxString::Format("    ERR: Multiple playlists steps named '{}' exist in playlist '{}'. Commands which rely on step name may pick up the wrong one.", (*s)->GetNameNoTime(), (*n)->GetNameNoTime());
+                    wxString msg = wxString::Format("    ERR: Multiple playlists steps named '%s' exist in playlist '%s'. Commands which rely on step name may pick up the wrong one.", (*s)->GetNameNoTime().c_str(), (*n)->GetNameNoTime().c_str());
                     LogAndWrite(f, msg.ToStdString());
                     errcount++;
                 }
@@ -3781,7 +3781,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
 
             while (s1 != scheds.end()) {
                 if ((*s1)->GetName() == (*s)->GetName()) {
-                    wxString msg = wxString::Format("    ERR: Multiple playlists schedules named '{}' exist in playlist '{}'. Commands which rely on schedule name may pick up the wrong one.", (*s)->GetName(), (*n)->GetNameNoTime());
+                    wxString msg = wxString::Format("    ERR: Multiple playlists schedules named '%s' exist in playlist '%s'. Commands which rely on schedule name may pick up the wrong one.", (*s)->GetName().c_str(), (*n)->GetNameNoTime().c_str());
                     LogAndWrite(f, msg.ToStdString());
                     errcount++;
                 }
@@ -3803,7 +3803,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
 
     for (auto n = _playLists.begin(); n != _playLists.end(); ++n) {
         if ((*n)->GetSteps().size() == 0) {
-            wxString msg = wxString::Format("    WARN: Playlist '{}' has no steps.", (*n)->GetNameNoTime());
+            wxString msg = wxString::Format("    WARN: Playlist '%s' has no steps.", (*n)->GetNameNoTime().c_str());
             LogAndWrite(f, msg.ToStdString());
             warncount++;
         }
@@ -3823,7 +3823,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
         auto steps = (*n)->GetSteps();
         for (auto s = steps.begin(); s != steps.end(); ++s) {
             if ((*s)->GetItems().size() == 0) {
-                wxString msg = wxString::Format("    WARN: Playlist '{}' has step '{}' with no items.", (*n)->GetNameNoTime(), (*s)->GetNameNoTime());
+                wxString msg = wxString::Format("    WARN: Playlist '%s' has step '%s' with no items.", (*n)->GetNameNoTime().c_str(), (*s)->GetNameNoTime().c_str());
                 LogAndWrite(f, msg.ToStdString());
                 warncount++;
             }
@@ -3854,7 +3854,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
             }
 
             if (fseqcount > 1) {
-                wxString msg = wxString::Format("    WARN: Playlist '{}' has step '{}' with more than one FSEQ item.", (*n)->GetNameNoTime(), (*s)->GetNameNoTime());
+                wxString msg = wxString::Format("    WARN: Playlist '%s' has step '%s' with more than one FSEQ item.", (*n)->GetNameNoTime().c_str(), (*s)->GetNameNoTime().c_str());
                 LogAndWrite(f, msg.ToStdString());
                 warncount++;
             }
@@ -3870,7 +3870,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     // FSEQ files with wrong number of channels
     LogAndWrite(f, "");
     long totalChannels = _outputManager->GetTotalChannels();
-    std::string title = wxString::Format("FSEQs without {} channels", totalChannels).ToStdString();
+    std::string title = wxString::Format("FSEQs without %ld channels", totalChannels).ToStdString();
     LogAndWrite(f, title);
     totalChannels = roundTo4(totalChannels);
 
@@ -3883,19 +3883,19 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
                 if (wxString((*i)->GetTitle()).Contains("FSEQ")) {
                     long ch = roundTo4((*i)->GetFSEQChannels());
                     if (ch < totalChannels) {
-                        wxString msg = wxString::Format("    ERR: Playlist '{}' has step '{}' with FSEQ item {} with {} channels when it should be {} channels.",
-                                                        (*n)->GetNameNoTime(),
-                                                        (*s)->GetNameNoTime(),
-                                                        (*i)->GetNameNoTime(),
+                        wxString msg = wxString::Format("    ERR: Playlist '%s' has step '%s' with FSEQ item %s with %ld channels when it should be %ld channels.",
+                                                        (*n)->GetNameNoTime().c_str(),
+                                                        (*s)->GetNameNoTime().c_str(),
+                                                        (*i)->GetNameNoTime().c_str(),
                                                         ch,
                                                         totalChannels);
                         LogAndWrite(f, msg.ToStdString());
                         errcount++;
                     } else if (ch > totalChannels) {
-                        wxString msg = wxString::Format("    WARN: Playlist '{}' has step '{}' with FSEQ item {} with {} channels when only {} channels are configured to be sent out.",
-                                                        (*n)->GetNameNoTime(),
-                                                        (*s)->GetNameNoTime(),
-                                                        (*i)->GetNameNoTime(),
+                        wxString msg = wxString::Format("    WARN: Playlist '%s' has step '%s' with FSEQ item %s with %ld channels when only %ld channels are configured to be sent out.",
+                                                        (*n)->GetNameNoTime().c_str(),
+                                                        (*s)->GetNameNoTime().c_str(),
+                                                        (*i)->GetNameNoTime().c_str(),
                                                         ch,
                                                         totalChannels);
                         LogAndWrite(f, msg.ToStdString());
@@ -3932,7 +3932,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
             }
 
             if (audiocount > 1) {
-                wxString msg = wxString::Format("    WARN: Playlist '{}' has step '{}' with more than one item playing audio.", (*n)->GetNameNoTime(), (*s)->GetNameNoTime());
+                wxString msg = wxString::Format("    WARN: Playlist '%s' has step '%s' with more than one item playing audio.", (*n)->GetNameNoTime().c_str(), (*s)->GetNameNoTime().c_str());
                 LogAndWrite(f, msg.ToStdString());
                 warncount++;
             }
@@ -3963,7 +3963,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
             }
 
             if (videocount > 3) {
-                wxString msg = wxString::Format("    WARN: Playlist '{}' has step '{}' with more than 3 videos ... this can cause performance issues.", (*n)->GetNameNoTime(), (*s)->GetNameNoTime());
+                wxString msg = wxString::Format("    WARN: Playlist '%s' has step '%s' with more than 3 videos ... this can cause performance issues.", (*n)->GetNameNoTime().c_str(), (*s)->GetNameNoTime().c_str());
                 LogAndWrite(f, msg.ToStdString());
                 warncount++;
             }
@@ -3986,7 +3986,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
         if (std::find(used.begin(), used.end(), (*n)->GetName()) == used.end()) {
             used.push_back((*n)->GetName());
         } else {
-            wxString msg = wxString::Format("    ERR: Duplicate matrix '{}'.", (*n)->GetName());
+            wxString msg = wxString::Format("    ERR: Duplicate matrix '%s'.", (*n)->GetName().c_str());
             LogAndWrite(f, msg.ToStdString());
             errcount++;
         }
@@ -4005,7 +4005,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     m = GetOptions()->GetMatrices();
     for (auto n = m->begin(); n != m->end(); ++n) {
         if ((*n)->GetStartChannelAsNumber() + (*n)->GetChannels() >= (size_t)_outputManager->GetTotalChannels()) {
-            wxString msg = wxString::Format("    ERR: Matrix '{}' is meant to finish at channel {} but last available channel is {}.", (*n)->GetName(), (long)((*n)->GetStartChannelAsNumber() + (*n)->GetChannels()), (long)_outputManager->GetTotalChannels());
+            wxString msg = wxString::Format("    ERR: Matrix '%s' is meant to finish at channel %ld but last available channel is %ld.", (*n)->GetName().c_str(), (long)((*n)->GetStartChannelAsNumber() + (*n)->GetChannels()), (long)_outputManager->GetTotalChannels());
             LogAndWrite(f, msg.ToStdString());
             errcount++;
         }
@@ -4024,7 +4024,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     auto vm = GetOptions()->GetVirtualMatrices();
     for (auto n = vm->begin(); n != vm->end(); ++n) {
         if ((*n)->GetStartChannelAsNumber() + (*n)->GetChannels() - 1 > (size_t)_outputManager->GetTotalChannels()) {
-            wxString msg = wxString::Format("    ERR: Virtual Matrix '{}' is meant to finish at channel {} but last available channel is {}.", (*n)->GetName(), (long)((*n)->GetStartChannelAsNumber() + (*n)->GetChannels() - 1), (long)_outputManager->GetTotalChannels());
+            wxString msg = wxString::Format("    ERR: Virtual Matrix '%s' is meant to finish at channel %ld but last available channel is %ld.", (*n)->GetName().c_str(), (long)((*n)->GetStartChannelAsNumber() + (*n)->GetChannels() - 1), (long)_outputManager->GetTotalChannels());
             LogAndWrite(f, msg.ToStdString());
             errcount++;
         }
@@ -4046,7 +4046,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
         if (std::find(used.begin(), used.end(), (*n)->GetName()) == used.end()) {
             used.push_back((*n)->GetName());
         } else {
-            wxString msg = wxString::Format("    ERR: Duplicate virtual matrix '{}'.", (*n)->GetName());
+            wxString msg = wxString::Format("    ERR: Duplicate virtual matrix '%s'.", (*n)->GetName().c_str());
             LogAndWrite(f, msg.ToStdString());
             errcount++;
         }
@@ -4063,7 +4063,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     LogAndWrite(f, "Output processing present");
 
     if (_outputProcessing.size() > 0) {
-        wxString msg = wxString::Format("    WARN: {} Output Processes present. This would explain why xSchedule output looks different to xlights output.", (int)_outputProcessing.size());
+        wxString msg = wxString::Format("    WARN: %d Output Processes present. This would explain why xSchedule output looks different to xlights output.", (int)_outputProcessing.size());
         LogAndWrite(f, msg.ToStdString());
         warncount++;
     }
@@ -4090,7 +4090,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
 
     for (uint32_t i = 0; i < 20; ++i) {
         if (priorities[i] > 1) {
-            wxString msg = wxString::Format("    WARN: More than one schedule has priority {}. If these trigger at the same time then it is not certain which we will choose.", i);
+            wxString msg = wxString::Format("    WARN: More than one schedule has priority %u. If these trigger at the same time then it is not certain which we will choose.", i);
             LogAndWrite(f, msg.ToStdString());
             warncount++;
         }
@@ -4123,7 +4123,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     LogAndWrite(f, "Non standard web port");
 
     if (_scheduleOptions->GetWebServerPort() != 80) {
-        wxString msg = wxString::Format("    WARN: Website is listening on a non standard port {}.", _scheduleOptions->GetWebServerPort());
+        wxString msg = wxString::Format("    WARN: Website is listening on a non standard port %d.", _scheduleOptions->GetWebServerPort());
         LogAndWrite(f, msg.ToStdString());
         warncount++;
     }
@@ -4185,7 +4185,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     file = d + "/" + _scheduleOptions->GetWWWRoot() + "/index.html";
 
     if (_scheduleOptions->GetWWWRoot() != "" && !wxFile::Exists(file)) {
-        wxString msg = wxString::Format("    ERR: index.html not found. It should be here '{}'.", file);
+        wxString msg = wxString::Format("    ERR: index.html not found. It should be here '%s'.", file);
         LogAndWrite(f, msg.ToStdString());
         errcount++;
     }
@@ -4209,13 +4209,13 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
                 auto missing = (*i)->GetMissingFiles();
 
                 for (auto ff = missing.begin(); ff != missing.end(); ++ff) {
-                    wxString msg = wxString::Format("    ERR: Playlist '{}' step '{}' item '{}' references file '{}' which does not exist.", (*n)->GetNameNoTime(), (*s)->GetNameNoTime(), (*i)->GetNameNoTime(), (ff->c_str()));
+                    wxString msg = wxString::Format("    ERR: Playlist '%s' step '%s' item '%s' references file '%s' which does not exist.", (*n)->GetNameNoTime().c_str(), (*s)->GetNameNoTime().c_str(), (*i)->GetNameNoTime().c_str(), ff->c_str());
                     LogAndWrite(f, msg.ToStdString());
                     errcount++;
 
                     for (size_t j = 0; j < ff->length(); ++j) {
                         if (ff->at(j) < 32) {
-                            msg = wxString::Format("    ERR: Playlist '{}' step '{}' item '{}' references file '{}' which contains illegal character 0x%x.", (*n)->GetNameNoTime(), (*s)->GetNameNoTime(), (*i)->GetNameNoTime(), (ff->c_str()), (int)ff->at(j));
+                            msg = wxString::Format("    ERR: Playlist '%s' step '%s' item '%s' references file '%s' which contains illegal character 0x%x.", (*n)->GetNameNoTime().c_str(), (*s)->GetNameNoTime().c_str(), (*i)->GetNameNoTime().c_str(), ff->c_str(), (int)ff->at(j));
                             LogAndWrite(f, msg.ToStdString());
                             errcount++;
                         }
@@ -4231,7 +4231,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
 
     LogAndWrite(f, "");
     LogAndWrite(f, "Check schedule done.");
-    LogAndWrite(f, wxString::Format("Errors: {}. Warnings: {}", errcount, warncount).ToStdString());
+    LogAndWrite(f, wxString::Format("Errors: %d. Warnings: %d", errcount, warncount).ToStdString());
 
     if (f.IsOpened()) {
         f.Close();

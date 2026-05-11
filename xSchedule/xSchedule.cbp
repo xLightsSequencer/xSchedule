@@ -226,6 +226,7 @@
 		<Unit filename="../xlights/xLights/ui/shared/utils/xLightsTimer.cpp" />
 		<Unit filename="../xlights/xLights/ui/shared/utils/xLightsTimer.h" />
 		<Unit filename="../xlights/xLights/xLightsVersion.cpp" />
+		<Unit filename="xScheduleVersion.h" />
 		<Unit filename="AddReverseDialog.cpp" />
 		<Unit filename="AddReverseDialog.h" />
 		<Unit filename="BackgroundPlaylistDialog.cpp" />

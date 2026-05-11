@@ -13,7 +13,7 @@
 #include "../../xLights/utils/UtilFunctions.h"
 #include "../../xLights/ui/wxUtilities.h"
 #include "../../xLights/outputs/IPOutput.h"
-#include "../../xLights/xLightsVersion.h"
+#include "../xScheduleVersion.h"
 #include "../Control.h"
 #include <log.h>
 #include <wx/socket.h>
@@ -278,7 +278,7 @@ void ListenerFPP::Poll() {
 
                             uint8_t* ed = (uint8_t*)(outBuf + 7);
 
-                            auto v = wxSplit(xlights_version_string, '.');
+                            auto v = wxSplit(xschedule_version_string, '.');
                             int majorVersion = wxAtoi(v[0]);
                             int minorVersion = wxAtoi(v[1]);
 
@@ -302,7 +302,7 @@ void ListenerFPP::Poll() {
                             ed[11] = wxAtoi(ip[3]);
 
                             strncpy((char*)(ed + 12), wxGetHostName().c_str(), 65);
-                            strncpy((char*)(ed + 77), xlights_version_string.c_str(), 41);
+                            strncpy((char*)(ed + 77), xschedule_version_string.c_str(), 41);
                             strncpy((char*)(ed + 118), "xSchedule", 41);
                             // strncpy((char *)(ed + 159), sysInfo.ranges.c_str(), 41);
 

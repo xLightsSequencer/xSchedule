@@ -520,6 +520,7 @@ IF EXIST "$(SolutionDir)..\bin\*.cfg" copy "$(SolutionDir)..\bin\*.cfg" "$(Targe
     <ClInclude Include="..\xlights\xLights\render\WindowsHardwareVideoReader.h" />
     <ClInclude Include="..\xlights\xLights\ui\shared\utils\xLightsTimer.h" />
     <ClInclude Include="..\xlights\xLights\xLightsVersion.h" />
+    <ClInclude Include="xScheduleVersion.h" />
     <ClInclude Include="AddReverseDialog.h" />
     <ClInclude Include="BackgroundPlaylistDialog.h" />
     <ClInclude Include="Blend.h" />

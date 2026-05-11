@@ -18,7 +18,7 @@
 #include <wx/filename.h>
 #include "Control.h"
 #include "../xlights/xLights/outputs/IPOutput.h"
-#include "../xlights/xLights/xLightsVersion.h"
+#include "xScheduleVersion.h"
 
 #define FPP_MEDIA_SYNC_INTERVAL_MS 500
 #define FPP_SEQ_SYNC_INTERVAL_FRAMES 16
@@ -72,7 +72,7 @@ void SyncFPP::Ping(bool remote, const std::string& localIP)
     uint8_t* ed = (uint8_t*)(&buffer[7]);
     memset(ed, 0, cp->extraDataLen - 7);
 
-    auto v = wxSplit(xlights_version_string, '.');
+    auto v = wxSplit(xschedule_version_string, '.');
     int majorVersion = wxAtoi(v[0]);
     int minorVersion = wxAtoi(v[1]);
 
@@ -92,7 +92,7 @@ void SyncFPP::Ping(bool remote, const std::string& localIP)
     ed[11] = wxAtoi(ip[3]);
 
     strncpy((char*)(ed + 12), wxGetHostName().c_str(), 65);
-    strncpy((char*)(ed + 77), xlights_version_string.c_str(), 41);
+    strncpy((char*)(ed + 77), xschedule_version_string.c_str(), 41);
     strncpy((char*)(ed + 118), "xSchedule", 41);
     
     fppBroadcastSocket->SendTo(remoteAddr, &buffer[0], bufsize);

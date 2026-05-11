@@ -21,7 +21,7 @@
 #include "../xlights/xLights/utils/UtilFunctions.h"
 #include "../xlights/xLights/ui/wxUtilities.h"
 #include "../xlights/xLights/outputs/IPOutput.h"
-#include "../xlights/xLights/xLightsVersion.h"
+#include "xScheduleVersion.h"
 #include "PlayList/VideoWindowPositionDialog.h"
 #include <wx/file.h>
 #include <wx/xml/xml.h>
@@ -728,7 +728,7 @@ void OptionsDialog::OnButton_ExportClick(wxCommandEvent& event) {
         hotkey = ListView_Buttons->GetItemText(row, 3)[0];
     }
     std::string color = ListView_Buttons->GetItemText(row, 4).ToStdString();
-    wxString v = xlights_version_string;
+    wxString v = xschedule_version_string;
 
     wxString filename = wxFileSelector(_("Choose output file"), wxEmptyString, label, wxEmptyString, "xSchedule Button files (*.xbutton)|*.xbutton", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
     if (filename.IsEmpty())

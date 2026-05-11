@@ -3,5 +3,5 @@
 
 #define MyTitleName "xSchedule"
 #define Year 2026
-#define Version 03
-#define Other "_3"
+#define Version "05"
+#define Other ""

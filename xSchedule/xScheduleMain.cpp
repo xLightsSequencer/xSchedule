@@ -40,6 +40,7 @@
 #include "WebServer.h"
 #include "PlayList/PlayListStep.h"
 #include "../xlights/xLights/xLightsVersion.h"
+#include "xScheduleVersion.h"
 #include "../xlights/xLights/outputs/OutputManager.h"
 #include "RunningSchedule.h"
 #include "UserButton.h"
@@ -744,7 +745,7 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     _timer.SetName("xSchedule frame timer");
     _timerSchedule.SetName("xSchedule schedule timer");
 
-    SetTitle("xLights Scheduler " + GetDisplayVersionString());
+    SetTitle("xLights Scheduler " + GetXScheduleDisplayVersionString());
 
     StaticText_RemoteWarning->SetFont(wxFont(14, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
         wxFONTWEIGHT_BOLD, false, wxEmptyString, wxFONTENCODING_DEFAULT));
@@ -879,7 +880,7 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     _timer.Start(_useHalfFrames ? rate / 2 : rate, false, "FrameTimer");
     _timerSchedule.Start(500, false, "ScheduleTimer");
 
-    StaticText_IP->SetLabel("    " + __schedule->GetOurIP() + ":" + wxString::Format("{}", __schedule->GetOptions()->GetWebServerPort()) + "   ");
+    StaticText_IP->SetLabel("    " + __schedule->GetOurIP() + ":" + wxString::Format("%d", __schedule->GetOptions()->GetWebServerPort()) + "   ");
 
     StaticBitmap_WebIcon->SetBitmap(_nowebicon);
     StaticBitmap_Slow->SetBitmap(_nowebicon);
@@ -1170,7 +1171,7 @@ void xScheduleFrame::OnQuit(wxCommandEvent& event)
 
 void xScheduleFrame::OnAbout(wxCommandEvent& event)
 {
-    auto about = wxString::Format(wxT("xSchedule v{}, the xLights scheduler."), GetDisplayVersionString());
+    auto about = wxString::Format(wxT("xSchedule v%s, the xLights scheduler."), GetXScheduleDisplayVersionString());
     wxMessageBox(about, _("Welcome to..."));
 }
 
@@ -1257,7 +1258,7 @@ bool xScheduleFrame::CheckForUpdate(bool showMessageBoxes)
         }
     }
 
-    std::string currentVersion = xlights_version_string;
+    std::string currentVersion = xschedule_version_string;
     spdlog::info("xSchedule current version: '{}'. Latest available: '{}'. Skip version: '{}'.",
                  currentVersion, urlVersion, skipver.ToStdString());
 
@@ -1408,7 +1409,7 @@ void xScheduleFrame::DeleteSelectedItem()
     wxTreeItemId treeitem = TreeCtrl_PlayListsSchedules->GetSelection();
     if (treeitem.IsOk() && (IsPlayList(treeitem) || IsSchedule(treeitem)))
     {
-        if (wxMessageBox(wxString::Format("Are you sure you want to delete '{}'?", TreeCtrl_PlayListsSchedules->GetItemText(treeitem)),
+        if (wxMessageBox(wxString::Format("Are you sure you want to delete '%s'?", TreeCtrl_PlayListsSchedules->GetItemText(treeitem)),
             "Are you sure?", wxYES_NO) == wxYES)
         {
             wxTreeItemId parent = TreeCtrl_PlayListsSchedules->GetItemParent(treeitem);
@@ -1937,7 +1938,7 @@ void xScheduleFrame::OnMenuItem_OptionsSelected(wxCommandEvent& event)
         OutputManager::SetRetryOpen(__schedule->GetOptions()->IsRetryOpen());
         __schedule->GetOutputManager()->SetSyncEnabled(__schedule->GetOptions()->IsSync());
 
-        StaticText_IP->SetLabel("    " + __schedule->GetOurIP() + ":" + wxString::Format("{}", __schedule->GetOptions()->GetWebServerPort()) + "   ");
+        StaticText_IP->SetLabel("    " + __schedule->GetOurIP() + ":" + wxString::Format("%d", __schedule->GetOptions()->GetWebServerPort()) + "   ");
 
         VideoReader::SetHardwareAcceleratedVideo(__schedule->GetOptions()->IsHardwareAcceleratedVideo());
 
@@ -2159,7 +2160,7 @@ void xScheduleFrame::OnMenuItem_ViewLogSelected(wxCommandEvent& event)
     }
     else {
         spdlog::warn("Unable to view log file {}.", fn.ToStdString());
-        wxMessageBox(wxString::Format("Unable to show log file '{}'.", fn), _("Error"));
+        wxMessageBox(wxString::Format("Unable to show log file '%s'.", fn), _("Error"));
     }
 }
 
@@ -3215,7 +3216,7 @@ void xScheduleFrame::RemoteWarning()
 
 void xScheduleFrame::OnMenuItem_WebInterfaceSelected(wxCommandEvent& event)
 {
-    ::wxLaunchDefaultBrowser(wxString::Format("http://localhost:{}", __schedule->GetOptions()->GetWebServerPort()));
+    ::wxLaunchDefaultBrowser(wxString::Format("http://localhost:%d", __schedule->GetOptions()->GetWebServerPort()));
 }
 
 void xScheduleFrame::OnMenuItem_AddPlayListSelected(wxCommandEvent& event)
@@ -3426,7 +3427,7 @@ void xScheduleFrame::UpdateUI(bool force)
 
     if (!minimiseUIUpdates) {
 
-        StaticText_PacketsPerSec->SetLabel(wxString::Format("Packets/Sec: {}", __schedule->GetPPS()));
+        StaticText_PacketsPerSec->SetLabel(wxString::Format("Packets/Sec: %d", __schedule->GetPPS()));
 
         if (__schedule->GetWebRequestToggle()) {
             if (!_webIconDisplayed) {
@@ -3534,7 +3535,7 @@ void xScheduleFrame::UpdateUI(bool force)
                     ListView_Ping->SetItem(item, 1, "");
                 }
                 else {
-                    ListView_Ping->SetItem(item, 1, wxString::Format("{}", it->GetFailCount()));
+                    ListView_Ping->SetItem(item, 1, wxString::Format("%d", it->GetFailCount()));
                 }
 
                 switch (it->GetPingResult()) {
