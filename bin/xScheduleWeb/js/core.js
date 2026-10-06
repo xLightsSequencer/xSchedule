@@ -1,13 +1,14 @@
 $(document).ready(function() {
-  var i = "0";
+  var i = 0;
   var AJAXTimer = window.setInterval(function() {
     if (socket.readyState > '1') {
       updateStatus();
       updateNavStatus();
     }
     if (socket.readyState < '2') {
-      i = i++;
-      if (i = '3') {
+      // the socket is connected: stop the polling fallback after a few seconds
+      i++;
+      if (i >= 3) {
         clearInterval(AJAXTimer);
       }
     }
