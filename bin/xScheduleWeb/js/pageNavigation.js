@@ -54,7 +54,7 @@ function updatePage(type, pageName, args) {
     }
   } else if (type == "plugin") {
 	pageName = encodeURI(pageName);
-    $('#pageContent').load('plugins/' + pageName + '/' + pageName + '.html');
+    $('#pageContent').load('Plugins/' + pageName + '/' + pageName + '.html');
     $('#navPlugins').attr('class', "dropdown active");
     if (args != "") {
       window.history.pushState('page2', pageName, 'index.html?plugin=' +
