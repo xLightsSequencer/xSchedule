@@ -43,6 +43,12 @@ class Schedule;
 class RunningSchedule;
 class VolumeDisplay;
 class Pinger;
+class wxNotebook;
+class wxSearchCtrl;
+class PlayListStep;
+namespace ModernUI {
+class NowPlayingBar;
+}
 
 wxDECLARE_EVENT(EVT_FRAMEMS, wxCommandEvent);
 wxDECLARE_EVENT(EVT_STATUSMSG, wxCommandEvent);
@@ -123,6 +129,34 @@ class xScheduleFrame : public xlFrame {
     wxBitmap _brightnessup;
     wxBitmap _brightnessdown;
     wxBitmap _falconremote;
+    wxBitmap _inactiveScheduled;
+    wxBitmap _inactiveRandom;
+    wxBitmap _inactivePLLoop;
+    wxBitmap _inactiveStepLoop;
+    wxBitmap _saved;
+    wxBitmap _transportPlay;
+    wxBitmap _transportPause;
+
+    wxBitmapButton* _buttonPrior = nullptr;
+    wxBitmapButton* _buttonPlayPause = nullptr;
+    wxBitmapButton* _buttonStop = nullptr;
+    wxBitmapButton* _buttonNext = nullptr;
+    ModernUI::NowPlayingBar* _nowPlaying = nullptr;
+    wxNotebook* _rightBook = nullptr;
+    wxListView* _listUpcoming = nullptr;
+    wxSearchCtrl* _treeFilter = nullptr;
+    std::string _upcomingSignature;
+
+    void CreateModernBitmaps();
+    void ApplyModernLayout();
+    void OnTransportClick(wxCommandEvent& event);
+    void GetActionSelection(PlayList*& playlist, PlayListStep*& step, Schedule*& schedule);
+    void RunUICommand(const std::string& command);
+    void UpdateNowPlaying();
+    void UpdateUpcoming();
+    void OnTreeFilter(wxCommandEvent& event);
+    void RefreshTreeStates();
+    std::string GetPlayListLabel(PlayList* playlist) const;
 
     void SendStatus();
 

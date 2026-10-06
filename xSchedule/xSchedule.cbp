@@ -302,6 +302,8 @@
 		<Unit filename="MatrixDialog.h" />
 		<Unit filename="MatrixMapper.cpp" />
 		<Unit filename="MatrixMapper.h" />
+		<Unit filename="ModernUI.cpp" />
+		<Unit filename="ModernUI.h" />
 		<Unit filename="OSCPacket.cpp" />
 		<Unit filename="OSCPacket.h" />
 		<Unit filename="OptionsDialog.cpp" />

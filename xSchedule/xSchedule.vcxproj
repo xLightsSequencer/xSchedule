@@ -337,6 +337,7 @@ IF EXIST "$(SolutionDir)..\bin\*.cfg" copy "$(SolutionDir)..\bin\*.cfg" "$(Targe
     <ClCompile Include="GammaDialog.cpp" />
     <ClCompile Include="MatricesDialog.cpp" />
     <ClCompile Include="MatrixMapper.cpp" />
+    <ClCompile Include="ModernUI.cpp" />
     <ClCompile Include="md5.cpp" />
     <ClCompile Include="OptionsDialog.cpp" />
     <ClCompile Include="OSCPacket.cpp" />
@@ -584,6 +585,7 @@ IF EXIST "$(SolutionDir)..\bin\*.cfg" copy "$(SolutionDir)..\bin\*.cfg" "$(Targe
     <ClInclude Include="GammaDialog.h" />
     <ClInclude Include="MatricesDialog.h" />
     <ClInclude Include="MatrixMapper.h" />
+    <ClInclude Include="ModernUI.h" />
     <ClInclude Include="md5.h" />
     <ClInclude Include="MyTreeItemData.h" />
     <ClInclude Include="OptionsDialog.h" />
