@@ -105,8 +105,9 @@ void SyncFPP::SendSync(uint32_t frameMS, uint32_t stepLengthMS, uint32_t stepMS,
     static size_t lastfseqmsec = 0;
     static size_t lastmediamsec = 0;
 
-    if (fseq == "")
+    if (fseq == "" && media == "")
     {
+        // nothing to sync (or SendStop) ... stop whatever we last started, once
         if (lastfseq != "")
         {
             SendFPPSync(lastfseq, 0xFFFFFFFF, 50);
@@ -117,7 +118,28 @@ void SyncFPP::SendSync(uint32_t frameMS, uint32_t stepLengthMS, uint32_t stepMS,
             SendFPPSync(lastmedia, 0xFFFFFFFF, 50);
         }
 
+        lastfseq = "";
+        lastfseqmsec = 0;
+        lastmedia = "";
+        lastmediamsec = 0;
+
         return;
+    }
+
+    // a step with media but no fseq (eg audio only) still syncs the media like FPP does
+    if (fseq == "" && lastfseq != "")
+    {
+        SendFPPSync(lastfseq, 0xFFFFFFFF, frameMS);
+        lastfseq = "";
+        lastfseqmsec = 0;
+    }
+
+    // and a step with an fseq but no media stops the previous step's media
+    if (media == "" && lastmedia != "")
+    {
+        SendFPPSync(lastmedia, 0xFFFFFFFF, frameMS);
+        lastmedia = "";
+        lastmediamsec = 0;
     }
 
     bool dosendFSEQ = false;
@@ -192,11 +214,11 @@ void SyncFPP::SendSync(uint32_t frameMS, uint32_t stepLengthMS, uint32_t stepMS,
         }
     }
 
-    if (dosendFSEQ) {
+    if (dosendFSEQ && fseq != "") {
         SendFPPSync(fseq, stepMS, frameMS);
         lastfseqmsec = stepMS;
     }
-    if (dosendMedia) {
+    if (dosendMedia && media != "") {
         SendFPPSync(media, stepMS, frameMS);
         lastmediamsec = stepMS;
     }
