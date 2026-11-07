@@ -10,6 +10,8 @@
 
 #include "City.h"
 
+#include <algorithm>
+
 std::list<City> City::_cities = {
     City("Canada","Vancouver","",49.25f, -123.133333f,-8),
     City("United States","Portland","OR", 45.5236111f, -122.675f, -8),
@@ -73,3 +75,69 @@ std::list<City> City::_cities = {
     City("Australia","Brisbane","QLD",-27.47101f,153.024292f,10),
     City("New Zealand","Auckland","",-36.866667f,174.766667f,12)
 };
+
+namespace {
+double Radians(double degrees) { return degrees * PI / 180.0; }
+double Degrees(double radians) { return radians * 180.0 / PI; }
+double Wrap(double value, double range) { value = std::fmod(value, range); return value < 0 ? value + range : value; }
+}
+
+// Algorithm from http://edwilliams.org/sunrise_sunset_algorithm.htm
+wxDateTime City::GetSunTime(double latitude, double longitude, const wxDateTime& date, SunEvent event)
+{
+    bool morning = event == SunEvent::Dawn || event == SunEvent::Sunrise;
+    double zenith = (event == SunEvent::Dawn || event == SunEvent::Dusk) ? 96.0 : 90.83333333333333;
+
+    int N = date.GetDayOfYear();
+    double lngHour = longitude / 15.0;
+    double t = N + ((morning ? 6.0 : 18.0) - lngHour) / 24.0;
+
+    // the sun's mean anomaly, true longitude and right ascension
+    double M = (0.9856 * t) - 3.289;
+    double L = Wrap(M + (1.916 * std::sin(Radians(M))) + (0.020 * std::sin(Radians(2 * M))) + 282.634, 360.0);
+    double RA = Wrap(Degrees(std::atan(0.91764 * std::tan(Radians(L)))), 360.0);
+    RA += std::floor(L / 90) * 90 - std::floor(RA / 90) * 90;
+    RA /= 15.0;
+
+    double sinDec = 0.39782 * std::sin(Radians(L));
+    double cosDec = std::cos(std::asin(sinDec));
+
+    // beyond +-1 the sun never reaches the zenith that day (polar day or night, or a summer night that never gets
+    // dark enough for dusk); clamping gives solar noon or midnight instead of no time at all
+    double cosH = (std::cos(Radians(zenith)) - (sinDec * std::sin(Radians(latitude)))) / (cosDec * std::cos(Radians(latitude)));
+    cosH = std::clamp(cosH, -1.0, 1.0);
+
+    double H = Degrees(std::acos(cosH));
+    if (morning) H = 360.0 - H;
+    H /= 15.0;
+
+    double T = H + RA - (0.06571 * t) - 6.622;
+    double UT = Wrap(T - lngHour, 24.0);
+
+    wxDateTime noon = date.GetDateOnly();
+    noon.SetHour(12);
+    int utcOffsetMins = (noon.FromUTC() - noon).GetMinutes();
+
+    int mins = (int)Wrap(std::floor(UT * 60.0) + utcOffsetMins, 24 * 60);
+    wxDateTime res = date.GetDateOnly();
+    res.SetHour(mins / 60);
+    res.SetMinute(mins % 60);
+    return res;
+}
+
+std::string City::GetNearestCity(double latitude, double longitude)
+{
+    std::string nearest;
+    double best = 1e9;
+    for (const auto& c : _cities) {
+        // central angle between the two points
+        double cosAngle = std::sin(Radians(latitude)) * std::sin(Radians(c._latitude)) +
+                          std::cos(Radians(latitude)) * std::cos(Radians(c._latitude)) * std::cos(Radians(longitude - c._longitude));
+        double angle = std::acos(std::clamp(cosAngle, -1.0, 1.0));
+        if (angle < best) {
+            best = angle;
+            nearest = c._city;
+        }
+    }
+    return nearest;
+}

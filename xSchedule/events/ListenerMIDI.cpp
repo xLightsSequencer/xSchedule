@@ -186,8 +186,10 @@ void ListenerMIDI::Poll() {
                 break;
             }
         }
+        delete message; // Read() gives us a new message each time
         message = _midiIn->Read(&error);
     }
+    delete message;
     wxMilliSleep(10);
 }
 

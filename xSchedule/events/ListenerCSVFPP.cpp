@@ -10,9 +10,9 @@
 
 #include "ListenerCSVFPP.h"
 #include "ListenerManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/outputs/IPOutput.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/outputs/IPOutput.h"
 #include "../Control.h"
 #include <log.h>
 #include <wx/socket.h>

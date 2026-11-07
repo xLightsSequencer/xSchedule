@@ -16,6 +16,8 @@
 class wxSingleInstanceChecker;
 class xScheduleFrame;
 
+std::string GetXScheduleLogPath();
+
 class xScheduleApp : public xlBaseApp
 {
     wxSingleInstanceChecker* _checker = nullptr;
@@ -26,6 +28,7 @@ class xScheduleApp : public xlBaseApp
         virtual bool OnInit() override;
         void WipeSettings();
         virtual int OnExit() override;
+        virtual int FilterEvent(wxEvent& event) override;
         xScheduleFrame* GetFrame() { return (xScheduleFrame*)GetTopWindow(); }
 };
 

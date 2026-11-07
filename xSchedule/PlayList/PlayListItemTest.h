@@ -21,7 +21,6 @@ class PlayListItemTest : public PlayListItem
 protected:
 
     #pragma region Member Variables
-    std::string _name;
     std::string _mode;
     uint8_t _value1;
     uint8_t _value2;

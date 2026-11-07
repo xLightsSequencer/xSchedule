@@ -16,6 +16,7 @@ class OutputProcessSustain : public OutputProcess
 {
     size_t _channels;
     uint8_t* _save;
+    size_t _saveSize = 0;
 
     public:
 

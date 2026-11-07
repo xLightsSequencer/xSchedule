@@ -65,7 +65,7 @@ ButtonDetailsDialog::ButtonDetailsDialog(wxWindow* parent, CommandManager* comma
     FlexGridSizer1->Add(StaticText4, 1, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, 5);
     Choice_Hotkey = new wxChoice(this, ID_CHOICE2, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE2"));
     FlexGridSizer1->Add(Choice_Hotkey, 1, wxALL | wxEXPAND, 5);
-    StaticText5 = new wxStaticText(this, ID_STATICTEXT5, _("Web Color"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    StaticText5 = new wxStaticText(this, ID_STATICTEXT5, _("Web Color:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
     FlexGridSizer1->Add(StaticText5, 1, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, 5);
     Choice1 = new wxChoice(this, ID_CHOICE3, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE3"));
     Choice1->SetSelection(Choice1->Append(_("default")));

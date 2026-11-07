@@ -10,7 +10,7 @@
 
 #include "EventLorPanel.h"
 #include "events/EventLor.h"
-#include "../xlights/xLights/outputs/SerialOutput.h"
+#include "../xlights/src-core/outputs/SerialOutput.h"
 
 //(*InternalHeaders(EventLorPanel)
 #include <wx/intl.h>

@@ -16,10 +16,11 @@
 #include "PlayListItemMQTTPanel.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 #include <log.h>
+#include "../Diagnostics.h"
 
 class MQTTThread : public wxThread
 {
@@ -37,6 +38,7 @@ public:
 
     virtual void* Entry() override
     {
+        Diagnostics::ThreadName name("MQTT item");
         spdlog::debug("PlayListMQTT in thread.");
 
         wxSocketClient client(wxSOCKET_BLOCK);

@@ -11,7 +11,7 @@
 #include "GammaDialog.h"
 #include "xScheduleMain.h"
 #include "ScheduleManager.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(GammaDialog)
 #include <wx/intl.h>
@@ -55,7 +55,7 @@ GammaDialog::GammaDialog(wxWindow* parent, OutputManager* outputManager, std::st
 	wxBoxSizer* BoxSizer1;
 	wxFlexGridSizer* FlexGridSizer1;
 
-	Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxRESIZE_BORDER|wxMAXIMIZE_BOX, _T("id"));
+	Create(parent, id, _("Gamma"), wxDefaultPosition, wxDefaultSize, wxRESIZE_BORDER|wxMAXIMIZE_BOX, _T("id"));
 	SetClientSize(wxDefaultSize);
 	Move(wxDefaultPosition);
 	FlexGridSizer1 = new wxFlexGridSizer(0, 2, 0, 0);

@@ -1,0 +1,67 @@
+    <div class="xs-wrap">
+      <div class="xs-home">
+        <div class="xs-col">
+          <section class="xs-card">
+            <div class="xs-cal-bar">
+              <button type="button" class="xs-btn xs-cal-nav" id="calPrev" aria-label="Previous month"><span data-icon="back" data-size="16"></span></button>
+              <button type="button" class="xs-btn xs-cal-nav" id="calNext" aria-label="Next month"><span data-icon="forward" data-size="16"></span></button>
+              <h2 id="calTitle"></h2>
+              <button type="button" class="xs-btn" id="calToday">Today</button>
+              <label class="xs-cal-check"><input type="checkbox" id="calInactive"> Show inactive</label>
+            </div>
+            <div class="xs-cal-grid xs-cal-head" id="calWeekdays"></div>
+            <div class="xs-cal-grid" id="calGrid" aria-live="polite"></div>
+          </section>
+
+          <section class="xs-card" id="calDay">
+            <div class="xs-card-h"><h2 id="calDayTitle"></h2><span class="xs-pill p-wait" id="calDayHoliday" hidden></span><span class="sub" id="calDaySun"></span></div>
+            <div class="xs-cal-strip xs-wide-only" id="calStrip"></div>
+            <div id="calAgenda"></div>
+          </section>
+        </div>
+
+        <div class="xs-col">
+          <section class="xs-card">
+            <div class="xs-card-h"><h2>Tonight</h2><span class="sub" id="calTonightDate"></span></div>
+            <ul class="xs-list" id="calTonight"></ul>
+          </section>
+          <section class="xs-card">
+            <div class="xs-card-h"><h2>Schedules</h2><span class="sub">Higher priority plays first</span></div>
+            <ul class="xs-list" id="calSchedules"></ul>
+          </section>
+          <section class="xs-card">
+            <div class="xs-card-h"><h2>Season check</h2></div>
+            <div class="xs-cal-season">
+              <div class="xs-cal-range">
+                <label>From <input type="date" id="calFrom"></label>
+                <label>To <input type="date" id="calTo"></label>
+                <button type="button" class="xs-btn xs-btn-primary" id="calCheck">Check</button>
+              </div>
+              <div class="xs-cal-nights" id="calNights"></div>
+              <div id="calFindings"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help -->
+
+    <div class="modal fade" id="help" tabindex="-1" role="dialog" aria-labelledby="calHelpTitle">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="calHelpTitle">Help - Calendar</h4>
+          </div>
+          <div class="modal-body">
+            <p>Each night shows the schedules that start that evening, with sunrise and sunset based times worked out for that date. Pick a night to see what plays on the lights, minute by minute.</p>
+            <p>When schedules overlap, the higher priority one plays and the other waits, shown striped. Two schedules with the same priority that overlap are a clash: the one that started first keeps playing. Give one of them a higher priority to choose.</p>
+            <p>The Season check lists the nights in a range with no show, the clashes, and the nights a schedule skips. Schedules are edited in xSchedule on the PC.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Page -->
+
+    <script src="js/pageCalendar.js"></script>

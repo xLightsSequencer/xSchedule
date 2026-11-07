@@ -15,12 +15,12 @@
 #include <wx/notebook.h>
 #include <log.h>
 #include <wx/socket.h>
-#include "../xlights/xLights/outputs/IPOutput.h"
-#include "../xlights/xLights/outputs/ArtNetOutput.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/ArtNetOutput.h"
 #include "../Control.h"
 #include <wx/protocol/http.h>
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 PlayListItemARTNetTrigger::PlayListItemARTNetTrigger(wxXmlNode* node) : PlayListItem(node)
 {

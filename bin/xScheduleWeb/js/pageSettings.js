@@ -1,100 +1,54 @@
 $(document).ready(function() {
   loadSettings();
-  populateSideBar();
-
-
-        $('#webColorSetting').colorpicker();
-
-  $("#toggleMuteSetting").mouseup(function() {
-    if ($("#smartVolumeSetting").prop("checked") == true)
-      $("#smartVolumeSetting").prop("checked", false);
-  });
-  $("#smartVolumeSetting").mouseup(function() {
-    if ($("#toggleMuteSetting").prop("checked") == true)
-      $("#toggleMuteSetting").prop("checked", false);
-  });
-});
-
-//if enter
-$(document).keypress(function(e) {
-  if (e.which == 13) {
+  $('#webColorSetting').colorpicker();
+  $('#settingsForm').on('submit', function(e) {
+    e.preventDefault();
     updateSettings();
-  }
-})
+  });
+  $('#settingsAbout').html('xSchedule ' + xsEscape(playingStatus.version || '') + ' &middot; <a href="https://xlights.org" target="_blank" rel="noopener">xlights.org</a>');
+});
 
 function loadSettings() {
   if (uiSettings != undefined) {
+    var defaults = defaultUISettings();
+    var nb = (uiSettings.navbuttons && uiSettings.navbuttons[0]) || defaults.navbuttons[0];
     $('#webNameSetting').val(uiSettings.webName);
     $('#webColorSetting').val(uiSettings.webColor);
+    $('#themeSetting').val(uiSettings.theme == 'light' || uiSettings.theme == 'dark' ? uiSettings.theme : 'auto');
     $('#notificationLevelSetting').val(uiSettings.notificationLevel);
-    //home
-
-    $("#homeNavSetting").prop("checked", getPage(uiSettings, "home").values[0]);
-    $("#homeStatusSetting").prop("checked", getPage(uiSettings, "home").values[1]);
-    //playlists
-    $("#playlistsNavSetting").prop("checked", getPage(uiSettings, "playlists").values[0]);
-    $("#playlistsStatusSetting").prop("checked", getPage(uiSettings, "playlists").values[1]);
-    //settings
-    $("#settingsNavSetting").prop("checked", getPage(uiSettings, "settings").values[0]);
-    $("#settingsStatusSetting").prop("checked", getPage(uiSettings, "settings").values[1]);
-    //nav buttons
-    $("#smartVolumeSetting").prop("checked", uiSettings.navbuttons[0].volumeMute);
-    $("#smartBrightnessSetting").prop("checked", uiSettings.navbuttons[0].brightnessLevel);
-    $("#outputToLightsSetting").prop("checked", uiSettings.navbuttons[0].outputtolights);
-    $("#repeatPlaylistSetting").prop("checked", uiSettings.navbuttons[0].playlistlooping);
-    $("#repeatStepsSetting").prop("checked", uiSettings.navbuttons[0].steplooping);
-    $("#toggleRandomSetting").prop("checked", uiSettings.navbuttons[0].random);
-    $("#toggleMuteSetting").prop("checked", uiSettings.navbuttons[0].toggleMute);
-
+    $("#smartVolumeSetting").prop("checked", nb.volumeMute);
+    $("#smartBrightnessSetting").prop("checked", nb.brightnessLevel);
+    $("#outputToLightsSetting").prop("checked", nb.outputtolights);
+    $("#repeatPlaylistSetting").prop("checked", nb.playlistlooping);
+    $("#repeatStepsSetting").prop("checked", nb.steplooping);
+    $("#toggleRandomSetting").prop("checked", nb.random);
+    $("#toggleMuteSetting").prop("checked", nb.toggleMute);
   } else {
-    sleep(100),
-      function() {
-        loadSettings();
-      }
+    setTimeout(loadSettings, 100);
   }
 }
 
-
 function updateSettings() {
   window.scrollTo(0, 0);
-  var updatedSettings = {
+  // keep everything already stored (including keys this page does not show) and change only what it edits
+  var updatedSettings = $.extend(true, {}, defaultUISettings(), uiSettings, {
     "webName": $('#webNameSetting').val(),
     "webColor": $('#webColorSetting').val(),
     "notificationLevel": $('#notificationLevelSetting').val(),
-    "pages": [{
-      "page": "home",
-      "values": [
-        $("#homeNavSetting").prop("checked"),
-        $("#homeStatusSetting").prop("checked")
-      ]
-    }, {
-      "page": "playlists",
-      "values": [
-        $("#playlistsNavSetting").prop("checked"),
-        $("#playlistsStatusSetting").prop("checked")
-      ]
-    }, {
-      "page": "settings",
-      "values": [
-        $("#settingsNavSetting").prop("checked"),
-        $("#settingsStatusSetting").prop("checked")
-      ]
-    }],
-    "navbuttons": [{
-      "random": $("#toggleRandomSetting").prop("checked"),
-      "steplooping": $("#repeatStepsSetting").prop("checked"),
-      "playlistlooping": $("#repeatPlaylistSetting").prop("checked"),
-      "volumeMute": $("#smartVolumeSetting").prop("checked"),
-      "brightnessLevel": $("#smartBrightnessSetting").prop("checked"),
-      "outputtolights": $("#outputToLightsSetting").prop("checked"),
-      "toggleMute": $("#toggleMuteSetting").prop("checked")
-    }]
-  };
+    "theme": $('#themeSetting').val()
+  });
+  updatedSettings.pages = (uiSettings && uiSettings.pages) || defaultUISettings().pages;
+  updatedSettings.navbuttons = [{
+    "random": $("#toggleRandomSetting").prop("checked"),
+    "steplooping": $("#repeatStepsSetting").prop("checked"),
+    "playlistlooping": $("#repeatPlaylistSetting").prop("checked"),
+    "volumeMute": $("#smartVolumeSetting").prop("checked"),
+    "brightnessLevel": $("#smartBrightnessSetting").prop("checked"),
+    "outputtolights": $("#outputToLightsSetting").prop("checked"),
+    "toggleMute": $("#toggleMuteSetting").prop("checked")
+  }];
   //Save settings, Update UI
   storeKey('uiSettings', JSON.stringify(updatedSettings));
   uiSettings = updatedSettings;
   populateUI();
-  populateSideBar();
-
-
 }

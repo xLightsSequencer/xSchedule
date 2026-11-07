@@ -11,17 +11,18 @@
 #include "PlayListItemFPPEvent.h"
 #include "PlayList.h"
 #include "PlayListItemFPPEventPanel.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "../Control.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
-#include "../xlights/xLights/utils/ip_utils.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
+#include "../xlights/src-core/utils/ip_utils.h"
 #include "utils/CurlManager.h"
 #include <log.h>
 #include <wx/notebook.h>
 #include <wx/protocol/http.h>
 #include <wx/socket.h>
 #include <wx/xml/xml.h>
+#include "../Diagnostics.h"
 
 class FPPEventThread : public wxThread {
     std::string _ip;
@@ -39,9 +40,45 @@ public:
         return wxString::Format("%02d_%02d", _major, _minor).ToStdString();
     }
 
+    // An FPP command broadcast to every FPP on the network: [argument count][host][command][arguments], each
+    // string null terminated, with an empty host meaning all hosts (FPP's SendFPPCommandPacket)
+    void SendCommandToAll(const std::string& command, const std::vector<std::string>& args) {
+        std::vector<uint8_t> packet(sizeof(ControlPkt));
+        ControlPkt* cp = (ControlPkt*)packet.data();
+        memcpy(cp->fppd, "FPPD", 4);
+        cp->pktType = CTRL_PKT_CMD;
+        packet.push_back((uint8_t)args.size());
+        auto add = [&packet](const std::string& s) { packet.insert(packet.end(), s.begin(), s.end()); packet.push_back(0); };
+        add("");
+        add(command);
+        for (const auto& a : args) {
+            add(a);
+        }
+        ((ControlPkt*)packet.data())->extraDataLen = (uint16_t)(packet.size() - sizeof(ControlPkt));
+
+        wxIPV4address localaddr;
+        if (_localIP == "") {
+            localaddr.AnyAddress();
+        } else {
+            localaddr.Hostname(_localIP);
+        }
+        wxDatagramSocket socket(localaddr, wxSOCKET_NOWAIT | wxSOCKET_BROADCAST);
+        if (!socket.IsOk() || socket.Error()) {
+            spdlog::error("Error opening datagram to send FPP command {} from {}.", command, localaddr.IPAddress().ToStdString());
+            return;
+        }
+        wxIPV4address remoteAddr;
+        remoteAddr.Hostname("255.255.255.255");
+        remoteAddr.Service(FPP_CTRL_PORT);
+        socket.SendTo(remoteAddr, packet.data(), packet.size());
+        spdlog::info("FPP command '{}' sent to all FPPs.", command);
+        socket.Close();
+    }
+
     virtual void* Entry() override {
         
 
+        Diagnostics::ThreadName name("FPP event item");
         spdlog::debug("PlayListFPPEvent in thread.");
 
         if (ip_utils::IsIPValidOrHostname(_ip) && _ip != "255.255.255.255") {
@@ -63,10 +100,14 @@ public:
                 std::string url = "http://" + _ip + "/api/command";
                 std::string body = wxString::Format("{\"command\":\"Trigger Command Preset Slot\",\"args\":[\"%u\"]}", _major).ToStdString();
                 spdlog::debug("FPP Event sent {}:{}:{}", _ip, url, body);
-                auto res = CurlManager::HTTPSPost("http://" + _ip + "/api/command", body);
+                auto res = CurlManager::HTTPSPost("http://" + _ip + "/api/command", body, "", "", "JSON");
             }
+        } else if (_method == 2) {
+            // FPP 5 and newer: an FPP command sent to every FPP on the network, as an FPP master's "send to all
+            // hosts" does
+            SendCommandToAll("Trigger Command Preset Slot", { std::to_string(_major) });
         } else {
-            // I am pretty sure this no longer works in FPP ... at least I dont seem to be able to make it work
+            // Event packets for FPP 4 and older; FPP 5 dropped events in favor of commands
 
             // Open the socket
             wxIPV4address localaddr;
@@ -140,6 +181,10 @@ void PlayListItemFPPEvent::Load(wxXmlNode* node) {
     _minor = wxAtoi(node->GetAttribute("Minor", "1"));
     _ip = node->GetAttribute("IP", "");
     _method = wxAtoi(node->GetAttribute("Method", "2"));
+    // an earlier settings panel could save -1 or shift the value; treat anything unknown as the current method
+    if (_method < 0 || _method > 2) {
+        _method = 2;
+    }
 }
 
 PlayListItemFPPEvent::PlayListItemFPPEvent() :

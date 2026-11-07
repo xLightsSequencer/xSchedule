@@ -10,9 +10,9 @@
 
 #include "ListenerOSC.h"
 #include "ListenerManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/outputs/IPOutput.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/outputs/IPOutput.h"
 #include "../OSCPacket.h"
 #include "../ScheduleManager.h"
 #include "../ScheduleOptions.h"

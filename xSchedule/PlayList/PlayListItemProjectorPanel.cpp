@@ -13,7 +13,7 @@
 #include "PlayListDialog.h"
 
 #include "../ProjectorCodes.h"
-#include "../../xLights/outputs/SerialOutput.h"
+#include "../../xlights/src-core/outputs/SerialOutput.h"
 
 //(*InternalHeaders(PlayListItemProjectorPanel)
 #include <wx/intl.h>

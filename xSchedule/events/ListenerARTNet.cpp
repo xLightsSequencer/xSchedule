@@ -10,9 +10,9 @@
 
 #include "ListenerARTNet.h"
 #include "ListenerManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/outputs/ArtNetOutput.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/outputs/ArtNetOutput.h"
 #include "../ScheduleManager.h"
 #include "../ScheduleOptions.h"
 #include <log.h>
@@ -55,7 +55,6 @@ void ListenerARTNet::Stop() {
 }
 
 void ListenerARTNet::StartProcess(const std::string& localIP) {
-    static 
 
     wxIPV4address localaddr;
     if (localIP == "") {

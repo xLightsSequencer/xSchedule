@@ -10,9 +10,9 @@
 
 #include "EventPingPanel.h"
 #include "events/EventPing.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
-#include "../xlights/xLights/outputs/ControllerEthernet.h"
-#include "../xlights/xLights/outputs/ControllerSerial.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/ControllerEthernet.h"
+#include "../xlights/src-core/outputs/ControllerSerial.h"
 
 //(*InternalHeaders(EventPingPanel)
 #include <wx/intl.h>
@@ -53,11 +53,11 @@ EventPingPanel::EventPingPanel(wxWindow* parent, OutputManager* outputManager, w
 	Create(parent, id, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("id"));
 	FlexGridSizer1 = new wxFlexGridSizer(0, 2, 0, 0);
 	FlexGridSizer1->AddGrowableCol(1);
-	StaticText2 = new wxStaticText(this, ID_STATICTEXT2, _("Output"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
+	StaticText2 = new wxStaticText(this, ID_STATICTEXT2, _("Output:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
 	FlexGridSizer1->Add(StaticText2, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
 	Choice_IPs = new wxChoice(this, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
 	FlexGridSizer1->Add(Choice_IPs, 1, wxALL|wxEXPAND, 5);
-	StaticText1 = new wxStaticText(this, ID_STATICTEXT1, _("Failures before trigger"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+	StaticText1 = new wxStaticText(this, ID_STATICTEXT1, _("Failures before trigger:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
 	FlexGridSizer1->Add(StaticText1, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
 	SpinCtrl_PingFailures = new wxSpinCtrl(this, ID_SPINCTRL1, _T("1"), wxDefaultPosition, wxDefaultSize, 0, 1, 10, 1, _T("ID_SPINCTRL1"));
 	SpinCtrl_PingFailures->SetValue(_T("1"));

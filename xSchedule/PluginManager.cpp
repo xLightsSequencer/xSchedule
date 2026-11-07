@@ -18,6 +18,8 @@
 #include "xScheduleApp.h"
 #include "ScheduleManager.h"
 #include <log.h>
+#include <algorithm>
+#include "Diagnostics.h"
 
 uint32_t __nextId = 1;
 
@@ -84,23 +86,21 @@ void PluginManager::ScanFolder(const std::string& folder)
     wxArrayString files;
     wxDir::GetAllFiles(folder, &files, filespec);
 
-    // avfilter-9 causes the problem
-    std::vector<wxString> fileList = { "avcodec-58", "avcodec-59", "avcodec-60", "avdevice-60",
-                                       "avfilter-9", "avformat-58", "avformat-59", "avformat-60",
-                                       "avutil-56", "avutil-57", "avutil-58",
-                                       "hidapi", "libcurl-x64", "libgcc_s_seh-1",
-                                       "libstdc++-6", "libwinpthread-1",
-                                       "postproc-57", "SDL2", "LIBCURL", "libgcc_s_dw2-1",
-                                       "swresample-3", "swresample-4",
-                                       "swscale-5", "swscale-6", "swscale-7" };
+    // libraries shipped beside xSchedule are not plugins (loading avfilter causes problems); FFmpeg's
+    // names include the library version, so they are matched by prefix
+    const std::vector<std::string> ignore = { "hidapi", "libcurl", "libcurl-x64", "libgcc_s_seh-1", "libgcc_s_dw2-1",
+                                              "libstdc++-6", "libwinpthread-1", "sdl2" };
+    const std::vector<std::string> ignorePrefix = { "avcodec-", "avdevice-", "avfilter-", "avformat-", "avutil-",
+                                                    "postproc-", "swresample-", "swscale-" };
 
     for (auto f : files)
     {
         spdlog::debug("   Examining " + f.ToStdString());
 
         wxFileName filen(f);
-        auto it = std::find(fileList.begin(), fileList.end(), (const char*)filen.GetName().c_str());
-        if (it != fileList.end()) {
+        const std::string name = filen.GetName().Lower().ToStdString();
+        if (std::find(ignore.begin(), ignore.end(), name) != ignore.end() ||
+            std::any_of(ignorePrefix.begin(), ignorePrefix.end(), [&name](const std::string& p) { return name.rfind(p, 0) == 0; })) {
             spdlog::debug("   Ignored.");
             continue;
         }
@@ -459,6 +459,17 @@ bool Action(const char* command, const wchar_t* parameters, const char* data, ch
     memset(buffer, 0x00, bufferSize);
     std::string c(command);
     std::wstring p(parameters);
+
+    if (c == "Stop plugin") {
+        // A plugin closing its own window asks to be stopped. Stopping it shuts down its copy of wxWidgets, which
+        // can't happen while its close handler is still running, so it is done once that has returned, and saved
+        // like unticking the plugin in the Plugins menu.
+        std::string label = wxString(p).ToStdString();
+        wxTheApp->CallAfter([label]() {
+            ((xScheduleFrame*)wxTheApp->GetTopWindow())->StopPluginAndRemember(label);
+        });
+        return true;
+    }
     std::string d(data);
     wxString dd(data);
     size_t rate = 0;
@@ -483,6 +494,7 @@ bool Action(const char* command, const wchar_t* parameters, const char* data, ch
     }
     else
     {
+        Diagnostics::CommandSource source("a plugin");
         bool result = ((xScheduleFrame*)wxTheApp->GetTopWindow())->GetScheduleManager()->Action(c, p, d, nullptr, nullptr, nullptr, rate, msg);
         if (result || msg == "")
         {

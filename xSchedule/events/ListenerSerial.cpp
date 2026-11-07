@@ -10,8 +10,8 @@
 
 #include "ListenerSerial.h"
 #include <log.h>
-#include "../../xLights/outputs/serial.h"
-#include "../../xLights/outputs/SerialOutput.h"
+#include "../../xlights/src-core/outputs/serial.h"
+#include "../../xlights/src-core/outputs/SerialOutput.h"
 #include "ListenerManager.h"
 
 ListenerSerial::ListenerSerial(ListenerManager* listenerManager, const std::string& commPort, const std::string& serialConfig, int baudRate, const std::string& protocol) : ListenerBase(listenerManager, "")
@@ -101,12 +101,53 @@ void ListenerSerial::StopProcess()
     _isOk = false;
 }
 
+void ListenerSerial::ReopenPort()
+{
+    _lastReopen = wxGetUTCTimeMillis();
+    SerialPort* serial = new SerialPort();
+    if (serial->Open(_commPort, _baudRate, _serialConfig.c_str()) < 0) {
+        delete serial;
+        return;
+    }
+    spdlog::info("Serial port {} is back and has been reopened.", _commPort);
+    _serial = serial;
+    _portLost = false;
+    _valid = 0;
+}
+
 void ListenerSerial::Poll()
 {
-    if (_serial == nullptr) return;
+    if (_serial == nullptr) {
+        if (_portLost && wxGetUTCTimeMillis() - _lastReopen > 5000) {
+            ReopenPort();
+        }
+        wxMilliSleep(50);
+        return;
+    }
 
-    _valid += _serial->Read((char*)(_buffer + _valid), sizeof(_buffer) - _valid);
+    if (_valid >= (int)sizeof(_buffer)) {
+        // a full buffer that never made a packet is noise; start again
+        _valid = 0;
+    }
+    int read = _serial->Read((char*)(_buffer + _valid), sizeof(_buffer) - _valid);
     if (_stop) return;
+    if (read < 0) {
+        // logged once rather than on every pass
+        spdlog::warn("Serial port {} stopped responding; it will be reopened when it comes back.", _commPort);
+        _serial->Close();
+        delete _serial;
+        _serial = nullptr;
+        _portLost = true;
+        _lastReopen = wxGetUTCTimeMillis();
+        _valid = 0;
+        return;
+    }
+    if (read == 0) {
+        // the port returns straight away when nothing has arrived; without a pause this loop used a whole core
+        wxMilliSleep(2);
+        return;
+    }
+    _valid += read;
 
     if (_protocol == "DMX")
     {

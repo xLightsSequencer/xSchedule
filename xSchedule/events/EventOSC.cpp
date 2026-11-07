@@ -12,6 +12,7 @@
 #include <wx/xml/xml.h>
 #include <log.h>
 #include "../ScheduleManager.h"
+#include "../Diagnostics.h"
 
 EventOSC::EventOSC() : EventBase()
 {
@@ -140,6 +141,7 @@ void EventOSC::Process(const std::string& path, const std::string& p1, const std
 
     size_t rate = 0;
     wxString msg;
+    Diagnostics::CommandSource source("event " + GetType() + ":" + GetName());
     scheduleManager->Action(_command, parameters, "", nullptr, nullptr, nullptr, rate, msg);
     spdlog::debug("    Event processed.");
 }

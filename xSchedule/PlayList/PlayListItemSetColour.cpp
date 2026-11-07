@@ -12,7 +12,7 @@
 #include <wx/xml/xml.h>
 #include <wx/notebook.h>
 #include "PlayListItemSetColourPanel.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 
 PlayListItemSetColour::PlayListItemSetColour(OutputManager* outputManager, wxXmlNode* node) : PlayListItem(node)
 {

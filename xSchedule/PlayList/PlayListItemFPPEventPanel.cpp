@@ -13,6 +13,8 @@
 #include "PlayListItemFPPEvent.h"
 
 //(*InternalHeaders(PlayListItemFPPEventPanel)
+#include <algorithm>
+
 #include <wx/intl.h>
 #include <wx/string.h>
 //*)
@@ -51,21 +53,20 @@ PlayListItemFPPEventPanel::PlayListItemFPPEventPanel(wxWindow* parent, PlayListI
 	FlexGridSizer1->Add(StaticText3, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
 	TextCtrl_FPPEventName = new wxTextCtrl(this, ID_TEXTCTRL3, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL3"));
 	FlexGridSizer1->Add(TextCtrl_FPPEventName, 1, wxALL|wxEXPAND, 5);
-	StaticText6 = new wxStaticText(this, ID_STATICTEXT6, _("Method"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
+	StaticText6 = new wxStaticText(this, ID_STATICTEXT6, _("Method:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
 	FlexGridSizer1->Add(StaticText6, 1, wxALL|wxEXPAND, 5);
 	Choice_Method = new wxChoice(this, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
-	Choice_Method->Append(_("Oldest"));
-	Choice_Method->Append(_("Old"));
-	Choice_Method->SetSelection( Choice_Method->Append(_("Current")) );
+	Choice_Method->Append(_("FPP 4 and older: event"));
+	Choice_Method->Append(_("FPP 4: Trigger Event command"));
+	Choice_Method->SetSelection( Choice_Method->Append(_("FPP 5 and newer: command preset slot")) );
 	FlexGridSizer1->Add(Choice_Method, 1, wxALL|wxEXPAND, 5);
 	StaticText5 = new wxStaticText(this, ID_STATICTEXT5, _("IP Address:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
 	FlexGridSizer1->Add(StaticText5, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
 	TextCtrl_IPAddress = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL1"));
-	TextCtrl_IPAddress->SetMaxLength(15);
 	FlexGridSizer1->Add(TextCtrl_IPAddress, 1, wxALL|wxEXPAND, 5);
 	StaticText1 = new wxStaticText(this, ID_STATICTEXT1, _("Id - Major:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
 	FlexGridSizer1->Add(StaticText1, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-	SpinCtrl_Major = new wxSpinCtrl(this, ID_SPINCTRL1, _T("1"), wxDefaultPosition, wxDefaultSize, 0, 1, 24, 1, _T("ID_SPINCTRL1"));
+	SpinCtrl_Major = new wxSpinCtrl(this, ID_SPINCTRL1, _T("1"), wxDefaultPosition, wxDefaultSize, 0, 1, 255, 1, _T("ID_SPINCTRL1"));
 	SpinCtrl_Major->SetValue(_T("1"));
 	FlexGridSizer1->Add(SpinCtrl_Major, 1, wxALL|wxEXPAND, 5);
 	StaticText4 = new wxStaticText(this, ID_STATICTEXT4, _("Id - Minor:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
@@ -92,7 +93,9 @@ PlayListItemFPPEventPanel::PlayListItemFPPEventPanel(wxWindow* parent, PlayListI
     SpinCtrl_Major->SetValue(fppevent->GetMajor());
     SpinCtrl_Minor->SetValue(fppevent->GetMinor());
     TextCtrl_Delay->SetValue(wxString::Format(wxT("%.3f"), (float)fppevent->GetDelay() / 1000.0));
-	Choice_Method->SetSelection(fppevent->GetMethod()+1);
+	Choice_Method->SetSelection(std::clamp<int>((int)fppevent->GetMethod(), 0, (int)Choice_Method->GetCount() - 1));
+	TextCtrl_IPAddress->SetToolTip("The FPP's IP address or host name. Leave blank to send to every FPP on the network.");
+	ValidateWindow();
 }
 
 PlayListItemFPPEventPanel::~PlayListItemFPPEventPanel()
@@ -125,12 +128,10 @@ void PlayListItemFPPEventPanel::OnTextCtrl_IPAddressText(wxCommandEvent& event)
 
 void PlayListItemFPPEventPanel::ValidateWindow()
 {
-	if (Choice_Method->GetSelection() == 2) {
-		SpinCtrl_Minor->Enable(false);
-	}
-	else {
-		SpinCtrl_Minor->Enable();
-	}
+	bool preset = Choice_Method->GetSelection() == 2;
+	SpinCtrl_Minor->Enable(!preset);
+	StaticText1->SetLabel(preset ? "Preset slot:" : "Event major:");
+	StaticText4->SetLabel(preset ? "Not used:" : "Event minor:");
 }
 
 void PlayListItemFPPEventPanel::OnChoice_MethodSelect(wxCommandEvent& event)

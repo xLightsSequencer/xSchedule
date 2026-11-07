@@ -1,33 +1,78 @@
-    <section id="main">
-      <div class="container">
-        <div class="row">
-          <div id="sidebarContainer" class="col-md-3">
-            <div id='sideBar1'></div>
-            <div id='sideBar2'></div>
+    <div class="xs-wrap xs-home">
+      <div class="xs-col">
+        <section class="xs-card" id="playerCard" aria-label="Player">
+          <div class="xs-player" id="playerActive" hidden>
+            <div class="xs-meta">
+              <span id="playState" class="xs-pill p-ok"><span class="dot"></span><span>Playing</span></span>
+              <b id="playPlaylist"></b>
+              <span id="playSchedule"></span>
+              <span id="playQueue" class="xs-pill p-acc" hidden></span>
+            </div>
+            <h1 class="xs-step" id="playStep"></h1>
+            <div class="xs-prog">
+              <div class="xs-track"><div class="xs-fill" id="playFill"></div></div>
+              <div class="xs-times"><span id="playPos"></span><span id="playListLeft"></span><span id="playLeft"></span></div>
+            </div>
+            <div class="xs-next" id="playNext"></div>
+            <div class="xs-transport">
+              <button type="button" class="xs-tbtn" onclick="runCommand('Prior step in current playlist')" title="Previous step" aria-label="Previous step"><span data-icon="prev"></span></button>
+              <button type="button" class="xs-tbtn big" id="buttonPlayPause" onclick="runCommand('Pause')" title="Pause" aria-label="Pause"><span data-icon="pause" data-size="26"></span></button>
+              <button type="button" class="xs-tbtn" onclick="runCommand('Stop all now')" title="Stop all" aria-label="Stop all"><span data-icon="stop"></span></button>
+              <button type="button" class="xs-tbtn" onclick="runCommand('Next step in current playlist')" title="Next step" aria-label="Next step"><span data-icon="next"></span></button>
+              <div class="xs-toggles">
+                <button type="button" class="xs-toggle" id="random" onclick="runCommand('Toggle current playlist random')" aria-pressed="false" title="Play the playlist's steps in random order"><span data-icon="shuffle" data-size="16"></span>Shuffle</button>
+                <button type="button" class="xs-toggle" id="steplooping" onclick="runCommand('Toggle loop current step')" aria-pressed="false" title="Repeat the current step"><span data-icon="repeat" data-size="16"></span>Loop step</button>
+                <button type="button" class="xs-toggle" id="playlistlooping" onclick="runCommand('Toggle current playlist loop')" aria-pressed="false" title="Start the playlist again when it ends"><span data-icon="repeat" data-size="16"></span>Loop playlist</button>
+              </div>
+            </div>
           </div>
-          <div id="mainContainer" class="col-md-9">
-            <!-- Website Overview -->
-            <div class="panel panel-default">
-              <div class="panel-heading main-color-bg">
-                <h3 class="panel-title">Player Status
-                  <span id="homeTimeContainer" style="float:right;"></span>
-                </h3>
-              </div>
-              <div class="panel-body">
-                <div class="span6 text-center">
-                  <div id="currentStep"></div>
-                  <div id="stepStatusBarContainer" style="padding-left:12px; padding-right:16px;"></div>
-                  <div id="controlButtonContainer"></div>
-                </div>
-              </div>
-              </div>
 
-
-              <div id="playlistsTable"></div>
+          <div class="xs-player xs-idle" id="playerIdle" hidden>
+            <span class="xs-pill p-off" style="justify-self: start;"><span class="dot"></span>Idle</span>
+            <h3>Nothing playing</h3>
+            <p id="idleNext"></p>
+            <div class="xs-notice" id="idleRestart" hidden>
+              <p id="idleRestartText"></p>
+              <div><button type="button" class="xs-btn xs-btn-warn" id="idleRestartButton">Restart schedule</button></div>
+            </div>
+            <div class="xs-row-btns">
+              <button type="button" class="xs-btn xs-btn-primary" id="idlePlay" hidden><span data-icon="play" data-size="16"></span><span></span></button>
+              <button type="button" class="xs-btn" onclick="updatePage('page','playlists')">Choose a playlist</button>
+            </div>
           </div>
-        </div>
+
+          <div class="xs-levels" id="levels">
+            <div class="xs-level" id="volumeGroup">
+              <button type="button" id="toggleMute" onclick="runCommand('Toggle mute')" aria-pressed="false" title="Mute"><span data-icon="volume" data-size="18"></span></button>
+              <label id="volumeSliderWrap">Volume<input type="range" min="0" max="100" value="100" id="volumeSlider" aria-label="Volume"></label>
+              <output id="volumeValue"></output>
+            </div>
+            <div class="xs-level" id="brightnessGroup">
+              <button type="button" id="brightnessLevel" onclick="toggleLightsOff()" aria-pressed="false" title="Lights off"><span data-icon="sun" data-size="18"></span></button>
+              <label>Brightness<input type="range" min="0" max="100" value="100" id="brightnessSlider" aria-label="Brightness"></label>
+              <output id="brightnessValue"></output>
+            </div>
+          </div>
+        </section>
+
+        <section class="xs-card" id="playlistsTable"></section>
       </div>
-    </section>
+
+      <aside class="xs-col">
+        <section class="xs-card">
+          <div class="xs-card-h"><h2>Controllers</h2><span class="sub" id="controllerCount"></span></div>
+          <div id="controllerList"><p class="xs-empty">Waiting for xSchedule&hellip;</p></div>
+        </section>
+        <section class="xs-card">
+          <div class="xs-card-h"><h2>Coming up</h2></div>
+          <div id="comingUp"><p class="xs-empty">Loading&hellip;</p></div>
+        </section>
+        <section class="xs-card" id="quickButtonsCard" hidden>
+          <div class="xs-card-h"><h2>Buttons</h2><button type="button" class="xs-btn xs-btn-sm" onclick="updatePage('page','buttons')">All buttons</button></div>
+          <div class="xs-qb" id="quickButtons"></div>
+        </section>
+      </aside>
+    </div>
 
     <!-- Help -->
 
@@ -39,9 +84,11 @@
             <h4 class="modal-title" id="myModalLabel">Help - Home</h4>
           </div>
           <div class="modal-body">
+            <p>Shows what is playing and lets you control it. Click a step to play the playlist from there.</p>
+            <p>Which controls appear here is set on the Settings page.</p>
             <p>Please reference xLights.org for support</p>
+          </div>
         </div>
-      </div>
       </div>
     </div>
     <!-- Page -->

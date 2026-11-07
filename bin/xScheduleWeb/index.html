@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>xSchedule</title>
     <link rel="apple-touch-icon" sizes="57x57" href="img/favcon/apple-icon-57x57.png">
     <link rel="apple-touch-icon" sizes="60x60" href="img/favcon/apple-icon-60x60.png">
@@ -21,93 +21,100 @@
     <link rel="manifest" href="img/favcon/manifest.json">
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="img/favcon/ms-icon-144x144.png">
-    <meta name="theme-color" content="#ffffff">
-    <!-- Bootstrap core CSS -->
+    <meta name="theme-color" content="#004800">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-slider.min.css" rel="stylesheet">
     <link href="css/dataTables.bootstrap.min.css" rel="stylesheet">
     <link href="css/bootstrap-colorpicker.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script>
+      // apply the last theme and color before the page draws, so it does not flash
+      try {
+        var t = localStorage.getItem('xsTheme');
+        if (t == 'light' || t == 'dark') document.documentElement.setAttribute('data-theme', t);
+        var v = JSON.parse(localStorage.getItem('xsColorVars') || '{}');
+        for (var k in v) document.documentElement.style.setProperty(k, v[k]);
+      } catch (e) {}
+    </script>
   </head>
   <body>
 
-    <nav id='nav' class="navbar navbar-default">
-      <div id="page" class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
+    <nav id="nav" class="xs-nav">
+      <div class="xs-bar">
+        <a id="header" class="xs-brand" onclick="updatePage('page','home')" title="Home">
+          <img id="nutcrackerLogo" src="img/xlights.png" alt="xLights">
+          <span id="headerName">xLights Scheduler</span>
+        </a>
+        <ul id="navbar" class="xs-tabs">
+          <li data-page="home"><a onclick="updatePage('page','home')">Home</a></li>
+          <li data-page="playlists"><a onclick="updatePage('page','playlists')">Playlists</a></li>
+          <li data-page="calendar"><a onclick="updatePage('page','calendar')">Calendar</a></li>
+          <li data-page="buttons"><a onclick="updatePage('page','buttons')">Buttons</a></li>
+          <li id="plugins" data-page="plugins" class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Plugins <span class="caret"></span></a>
+            <ul class="dropdown-menu"></ul>
+          </li>
+          <li data-page="settings"><a onclick="updatePage('page','settings')">Settings</a></li>
+        </ul>
+        <div class="xs-right" id="toggleButtonContainer">
+          <button type="button" id="connectionChip" class="xs-chip is-warn" hidden title="Lost the connection to xSchedule. Reconnecting.">
+            <span class="dot"></span><span class="label">Reconnecting</span>
           </button>
-          <a class="navbar-brand" href="#">xLights Scheduler</a>
+          <button type="button" id="controllerChip" class="xs-chip" hidden onclick="updatePage('page','home')" title="Controller status">
+            <span class="dot"></span><span class="label"></span>
+          </button>
+          <button type="button" id="outputtolights" class="xs-chip" onclick="runCommand('Toggle output to lights')" title="Turn output to lights on or off">
+            <span data-icon="power"></span><span class="label">Lights</span>
+          </button>
+          <button type="button" class="xs-iconbtn" title="Help for this page" data-toggle="modal" data-target="#help"><span data-icon="help"></span></button>
+          <div class="dropdown">
+            <button type="button" class="xs-iconbtn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="More"><span data-icon="more"></span></button>
+            <ul class="dropdown-menu" id="moreMenu">
+              <li class="dropdown-header xs-narrow-only">Plugins</li>
+              <li class="xs-narrow-only" id="morePlugins"></li>
+              <li role="separator" class="divider xs-narrow-only"></li>
+              <li><a onclick="runCommand('Bring to foreground')">Open xSchedule on the PC</a></li>
+              <li><a onclick="logout()">Log out</a></li>
+            </ul>
+          </div>
         </div>
-        <div id="navbar" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            <li id="test"><a onclick="updatePage('page','home')">Home</a></li>
-            <!-- <li id="home" class="active"><a onclick="updatePage('page','test')">Test Lights</a></li> -->
-            <li id="playlists" class="dropdown">
-              <a class="dropdown-toggle" data-toggle="dropdown" onclick="updatePage('page','playlists')" >Playlists
-              <span class="caret"></span></a>
-              <ul class="dropdown-menu"></ul>
-            </li>
-            <li id="plugins" class="dropdown">
-              <a class="dropdown-toggle" data-toggle="dropdown" href="#">Plugins
-              <span class="caret"></span></a>
-              <ul class="dropdown-menu">
-              </ul>
-            </li>
-            <li id="settings"><a onclick="updatePage('page','settings')">Settings</a></li>
-          </ul>
-
-          <ul class="nav navbar-nav navbar-right">
-            <li><a onclick="runCommand('Bring to foreground')">Open xSchedule</a></li>
-            <li><a onclick="logout()">Logout</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
+      </div>
+      <div class="xs-bottom">
+        <a data-page="home" onclick="updatePage('page','home')"><span data-icon="play"></span>Home</a>
+        <a data-page="playlists" onclick="updatePage('page','playlists')"><span data-icon="list"></span>Playlists</a>
+        <a data-page="calendar" onclick="updatePage('page','calendar')"><span data-icon="calendar"></span>Calendar</a>
+        <a data-page="buttons" onclick="updatePage('page','buttons')"><span data-icon="grid"></span>Buttons</a>
+        <a data-page="settings" onclick="updatePage('page','settings')"><span data-icon="gear"></span>Settings</a>
       </div>
     </nav>
 
-    <header id="header">
-      <div class="container">
-        <div class="row">
-          <div class="col-md-7">
-            <h3><img id='nutcrackerLogo' src="img/xlights.png" height="50px"><span id='headerName'><span></h3>
-          </div>
-          <div id="toggleButtonContainer" class="col-md-5 text-right nav-buttons">
+    <div id="pageContent"></div>
 
-        </div>
-      </div>
-    </header>
-
-<div id="pageContent"></div>
-
-    <footer class="footer-box" id="footer">
-      <p><a onclick='openXyzzy()'>xSchedule</a><a id="version" onclick='openXyzzy2()'></a></p>
+    <footer id="footer">
+      <a onclick='openXyzzy()'>xSchedule</a><a id="version" onclick='openXyzzy2()'></a>
     </footer>
-    <!-- xyzzy name-->
+
     <div class="modal fade" id="xyzzy" tabindex="-1" role="dialog" aria-labelledby="xyzzy">
       <div class="modal-dialog" role="document">
-        <div id="xyzzySelectionDisable"class="modal-content disableSelection">
+        <div id="xyzzySelectionDisable" class="modal-content disableSelection">
           <div class="modal-header">
             <button type="button" class="close" onclick="xyzzyCommand('close')" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           </div>
           <div id="xyzzyContainer" class="modal-body text-center">
+          </div>
         </div>
-      </div>
       </div>
     </div>
     <div class="modal fade" id="xyzzy2" tabindex="-1" role="dialog" aria-labelledby="xyzzy">
       <div class="modal-dialog" role="document">
-        <div id="xyzzy2SelectionDisable"class="modal-content disableSelection">
+        <div id="xyzzy2SelectionDisable" class="modal-content disableSelection">
           <div class="modal-header">
             <button type="button" class="close" onclick="xyzzy2Command('close')" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           </div>
           <div id="xyzzy2Container" class="modal-body text-center">
+          </div>
         </div>
-      </div>
       </div>
     </div>
 
@@ -126,7 +133,6 @@
     <script src="js/xyzzy.js"></script>
     <script src="js/xyzzy2.js"></script>
     <script src="js/sidebar.js"></script>
-
 
   </body>
 </html>

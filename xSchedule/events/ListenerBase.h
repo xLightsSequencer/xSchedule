@@ -37,6 +37,8 @@ class ListenerBase
         virtual void StartProcess(const std::string& localIP) = 0;
         virtual void StopProcess() = 0;
         bool IsOk() const { return _isOk; }
+        // a listener that reconnects by itself keeps being polled when it isn't connected
+        virtual bool PollsWhenNotOk() const { return false; }
         virtual void Poll() {};
         void SetFrameMS(int frameMS) {
             _frameMS = frameMS;

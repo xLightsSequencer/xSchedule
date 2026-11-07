@@ -9,3 +9,6 @@ xSchedule/xSchedule.cbp.mak
 xSchedule/xSchedule.cbp.mak.orig
 *.json
 *.wsuo
+
+# schedule unit test build output
+xSchedule/tests/build/

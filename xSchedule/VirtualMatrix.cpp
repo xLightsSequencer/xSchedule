@@ -12,7 +12,7 @@
 #include "RGBEffects.h"
 #include "ScheduleOptions.h"
 #include "xScheduleApp.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include <wx/string.h>
 #include <wx/wx.h>
 #include <wx/xml/xml.h>
@@ -464,21 +464,24 @@ void VirtualMatrix::Start() {
     if (_fromModel != "") {
         _rotation = VMROTATION::VM_NORMAL;
         RGBEffects effects;
-        _modelNode = new wxXmlNode(*effects.GetModel(_fromModel));
+        // the model may have been renamed or deleted in xLights since this matrix was set up
+        wxXmlNode* model = effects.GetModel(_fromModel);
+        if (model == nullptr) {
+            spdlog::warn("Virtual matrix {}: model '{}' was not found in xlights_rgbeffects.xml.", _name, _fromModel);
+        }
+        _modelNode = model == nullptr ? nullptr : new wxXmlNode(*model);
 
         if (_modelNode != nullptr) {
             _displayAs = _modelNode->GetAttribute("DisplayAs").ToStdString();
             if (_displayAs == "Custom") {
-                _width = wxAtoi(_modelNode->GetAttribute("parm1", "0"));
-                _height = wxAtoi(_modelNode->GetAttribute("parm2", "0"));
+                _width = RGBEffects::GetCustomWidth(_modelNode);
+                _height = RGBEffects::GetCustomHeight(_modelNode);
                 _customModelData = MatrixMapper::ParseCustomModelDataFromXml(_modelNode);
             } else {
-                _strings = wxAtol(_modelNode->GetAttribute("parm1", "0"));
-                _nodes = wxAtol(_modelNode->GetAttribute("parm2", "0"));
-                _strandsPerString = wxAtol(_modelNode->GetAttribute("parm3", "1"));
-                // Legacy: orientation encoded in DisplayAs. New format: Vertical="true/false" attribute.
-                if (_displayAs == "Horiz Matrix" ||
-                    (_displayAs == "Matrix" && _modelNode->GetAttribute("Vertical", "false") != "true")) {
+                _strings = RGBEffects::GetStrings(_modelNode);
+                _nodes = RGBEffects::GetNodesPerString(_modelNode);
+                _strandsPerString = std::max(1L, RGBEffects::GetStrandsPerString(_modelNode));
+                if (!RGBEffects::IsVertical(_modelNode)) {
                     _width = _nodes / _strandsPerString;
                     _height = _strings * _strandsPerString;
                     _orientation = MMORIENTATION::HORIZONTAL;

@@ -25,6 +25,7 @@ public:
         void GeneratePass();
         void SendMessageToAllWebSockets(const wxString& message);
         bool IsSomeoneListening() const;
+        size_t GetConnectionCount() const { return ConnectionCount(); }
         void SetAllowUnauthenticatedPagesToBypassLogin(bool allowUnauthPages);
         void SetDefaultPage(const std::string& defaultPage);
 };

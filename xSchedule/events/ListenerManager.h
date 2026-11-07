@@ -12,7 +12,9 @@
 
 #include "ListenerBase.h"
 #include <wx/wx.h>
+#include <atomic>
 #include <list>
+#include <mutex>
 #include <string>
 
 wxDECLARE_EVENT(EVT_MIDI, wxCommandEvent);
@@ -23,8 +25,10 @@ class ListenerManager {
 protected:
     std::list<ListenerBase*> _listeners;
     int _sync;
-    bool _stop;
-    bool _pause;
+    std::atomic<bool> _stop;
+    std::atomic<bool> _pause;
+    // held while the event list is processed (recursive: an event's command can lead back here on the same thread)
+    std::recursive_mutex _eventsLock;
     ScheduleManager* _scheduleManager;
     wxWindow* _notifyScan;
     long _lastSyncMS = -1;
@@ -46,6 +50,8 @@ public:
     void Stop();
     void StartListeners(const std::string& localIP);
     ListenerBase* GetSyncListener() const;
+    // "E131 ok, MQTT not running"
+    std::string Describe() const;
     void SetRemoteOSC();
     void SetRemoteFPP();
     void SetRemoteCSVFPP();

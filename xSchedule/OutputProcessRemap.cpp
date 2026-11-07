@@ -49,13 +49,15 @@ wxXmlNode* OutputProcessRemap::Save()
 
 void OutputProcessRemap::Frame(uint8_t* buffer, size_t size, std::list<OutputProcess*>& processes)
 {
-    size_t sc = GetStartChannelAsNumber();
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
+    if (_to == 0 || _to > size) return;
+    if (off + 1 == _to) return;
 
-    if (sc == _to) return;
-
-    size_t chs1 = std::min(_channels, size - (sc - 1));
+    size_t chs1 = std::min(_channels, size - off);
     size_t chs2 = std::min(_channels, size - (_to - 1));
     size_t chs = std::min(chs1, chs2);
 
-    memcpy(buffer + _to - 1, buffer + sc - 1, chs);
+    // the two ranges can overlap
+    memmove(buffer + _to - 1, buffer + off, chs);
 }

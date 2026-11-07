@@ -17,7 +17,6 @@
  #include <wx/sizer.h>
  #include <wx/stattext.h>
  #include <wx/textctrl.h>
- #include <wx/timectrl.h>
  //*)
 
 class PlayListStep;
@@ -44,7 +43,7 @@ class PlayListStepPanel: public wxPanel
 		wxStaticText* StaticText3;
 		wxStaticText* StaticText_BaseTime;
 		wxTextCtrl* TextCtrl_PlayListStepName;
-		wxTimePickerCtrl* TimeCodeBaseTime;
+		wxTextCtrl* TimeCodeBaseTime;
 		//*)
 
 	protected:

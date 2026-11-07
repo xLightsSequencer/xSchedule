@@ -49,8 +49,9 @@ wxXmlNode* OutputProcessSet::Save()
 
 void OutputProcessSet::Frame(uint8_t* buffer, size_t size, std::list<OutputProcess*>& processes)
 {
-    size_t sc = GetStartChannelAsNumber();
-    size_t chs = std::min(_channels, size - (sc - 1));
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
+    size_t chs = std::min(_channels, size - off);
 
-    memset(buffer + sc - 1, (uint8_t)_value, chs);
+    memset(buffer + off, (uint8_t)_value, chs);
 }

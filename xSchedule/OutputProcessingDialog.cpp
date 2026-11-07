@@ -9,6 +9,9 @@
  **************************************************************/
 
 #include "OutputProcessingDialog.h"
+#include "ModernUI.h"
+
+#include <wx/settings.h>
 #include "OutputProcessDimWhite.h"
 #include "OutputProcessThreeToFour.h"
 #include "OutputProcessColourOrder.h"
@@ -36,6 +39,17 @@
 #include <wx/intl.h>
 #include <wx/string.h>
 //*)
+
+// disabled processes are shown (and recognized) by their muted text color
+static wxColour DisabledProcessColour()
+{
+    return ModernUI::GetTheme().muted;
+}
+
+static wxColour EnabledProcessColour()
+{
+    return wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT);
+}
 
 //(*IdInit(OutputProcessingDialog)
 const long OutputProcessingDialog::ID_LISTVIEW1 = wxNewId();
@@ -179,7 +193,7 @@ OutputProcessingDialog::OutputProcessingDialog(wxWindow* parent, OutputManager* 
         ListView_Processes->SetItem(i, 4, it->GetDescription());
         if (!it->IsEnabled())
         {
-            ListView_Processes->SetItemTextColour(i, *wxLIGHT_GREY);
+            ListView_Processes->SetItemTextColour(i, DisabledProcessColour());
         }
         i++;
     }
@@ -259,7 +273,7 @@ void OutputProcessingDialog::OnDragEnd(wxMouseEvent& event)
                 std::string p1 = ListView_Processes->GetItemText(dragitem, 2).ToStdString();
                 std::string p2 = ListView_Processes->GetItemText(dragitem, 3).ToStdString();
                 std::string d = ListView_Processes->GetItemText(dragitem, 4).ToStdString();
-                bool e = ListView_Processes->GetItemTextColour(dragitem) != *wxLIGHT_GREY;
+                bool e = ListView_Processes->GetItemTextColour(dragitem) != DisabledProcessColour();
 
                 ListView_Processes->DeleteItem(dragitem);
 
@@ -271,10 +285,10 @@ void OutputProcessingDialog::OnDragEnd(wxMouseEvent& event)
                 ListView_Processes->SetItem(dropitem, 3, p1);
                 ListView_Processes->SetItem(dropitem, 4, d);
                 if (!e) {
-                    ListView_Processes->SetItemTextColour(dropitem, *wxLIGHT_GREY);
+                    ListView_Processes->SetItemTextColour(dropitem, DisabledProcessColour());
                 }
                 else {
-                    ListView_Processes->SetItemTextColour(dropitem, *wxBLACK);
+                    ListView_Processes->SetItemTextColour(dropitem, EnabledProcessColour());
                 }
 
                 ListView_Processes->EnsureVisible(dropitem);
@@ -406,7 +420,7 @@ void OutputProcessingDialog::OnButton_OkClick(wxCommandEvent& event)
         }
 
         if (op != nullptr) {
-            op->Enable(ListView_Processes->GetItemTextColour(i) != *wxLIGHT_GREY);
+            op->Enable(ListView_Processes->GetItemTextColour(i) != DisabledProcessColour());
             _op->push_back(op);
         }
     }
@@ -457,7 +471,7 @@ bool OutputProcessingDialog::EditSelectedItem()
         size_t p2 = wxAtol(ListView_Processes->GetItemText(row, 3));
         std::string p2s = ListView_Processes->GetItemText(row, 3).ToStdString();
         std::string d = ListView_Processes->GetItemText(row, 4).ToStdString();
-        bool e = ListView_Processes->GetItemTextColour(row) != *wxLIGHT_GREY;
+        bool e = ListView_Processes->GetItemTextColour(row) != DisabledProcessColour();
 
         float gamma = 1.0;
         float gammaR = 1.0;
@@ -543,10 +557,10 @@ bool OutputProcessingDialog::EditSelectedItem()
             }
             ListView_Processes->SetItem(row, 4, d);
             if (!e) {
-                ListView_Processes->SetItemTextColour(row, *wxLIGHT_GREY);
+                ListView_Processes->SetItemTextColour(row, DisabledProcessColour());
             }
             else {
-                ListView_Processes->SetItemTextColour(row, *wxBLACK);
+                ListView_Processes->SetItemTextColour(row, EnabledProcessColour());
             }
             result = true;
         }

@@ -13,12 +13,13 @@
 #include <wx/xml/xml.h>
 #include <wx/notebook.h>
 #include <log.h>
-#include "../../xLights/outputs/serial.h"
+#include "../../xlights/src-core/outputs/serial.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
 #include "PlayListStep.h"
-#include "../../xLights/utils/AudioManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
 #include "PlayList.h"
+#include "../Diagnostics.h"
 
 #define MRDS_STARTBYTEWRITE (uint8_t)0xD6
 #define RDS_STARTBYTEREAD (uint8_t)0xD7
@@ -35,6 +36,7 @@ public:
 
     virtual void* Entry() override
     {
+        Diagnostics::ThreadName name("RDS item");
         spdlog::debug("PlayListRDS in thread.");
 
         spdlog::info("RDS: PS '{}' DPS '{}'.", (const char*)_stationName.c_str(), (const char*)_text.c_str());
@@ -315,8 +317,7 @@ void PlayListItemRDS::Frame(uint8_t* buffer, size_t size, size_t ms, size_t fram
         if (playlist != nullptr && !playlist->IsRandom())
         {
             step = playlist->GetRunningStep();
-            bool dummy;
-            auto nextstep = playlist->GetNextStep(dummy);
+            auto nextstep = playlist->PeekNextStep();
             if (nextstep != nullptr)
             {
                 text.Replace("%NEXTSTEPNAME%", nextstep->GetNameNoTime());

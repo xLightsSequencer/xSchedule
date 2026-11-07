@@ -26,3 +26,6 @@ public:
 };
 
 DECLARE_APP(xSMSDaemonApp)
+
+class PluginSettings;
+PluginSettings& SMSDaemonSettings();

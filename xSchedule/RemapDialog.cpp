@@ -11,7 +11,7 @@
 #include "RemapDialog.h"
 #include "xScheduleMain.h"
 #include "ScheduleManager.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(RemapDialog)
 #include <wx/intl.h>
@@ -68,7 +68,7 @@ RemapDialog::RemapDialog(wxWindow* parent, OutputManager* outputManager, std::st
     wxBoxSizer* BoxSizer1;
     wxFlexGridSizer* FlexGridSizer1;
 
-    Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
+    Create(parent, id, _("Remap Channels"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
     SetClientSize(wxDefaultSize);
     Move(wxDefaultPosition);
     FlexGridSizer1 = new wxFlexGridSizer(0, 2, 0, 0);

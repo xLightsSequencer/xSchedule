@@ -28,11 +28,16 @@ class BrightnessControl;
 #include <wx/statusbr.h>
 #include <wx/timer.h>
 #include <wx/treectrl.h>
+
+#include <future>
+#include <map>
+
+#include "../xlights/src-core/outputs/Output.h"
 //*)
 
 #include "PluginManager.h"
 #include "../xlights/common/xlBaseApp.h"
-#include "../xlights/xLights/ui/shared/utils/xLightsTimer.h"
+#include "../xlights/src-ui-wx/shared/utils/xLightsTimer.h"
 #include <list>
 
 class wxDebugReportCompress;
@@ -43,6 +48,12 @@ class Schedule;
 class RunningSchedule;
 class VolumeDisplay;
 class Pinger;
+class wxNotebook;
+class wxSearchCtrl;
+class PlayListStep;
+namespace ModernUI {
+class NowPlayingBar;
+}
 
 wxDECLARE_EVENT(EVT_FRAMEMS, wxCommandEvent);
 wxDECLARE_EVENT(EVT_STATUSMSG, wxCommandEvent);
@@ -67,6 +78,14 @@ class xScheduleFrame : public xlFrame {
     bool _timerOutputFrame = false;
     bool _suspendOTL = false;
     Pinger* _pinger = nullptr;
+    // Serial controllers aren't covered by the pinger, so the status list checks them. A check can open the port or,
+    // for an FPP model, ping it, so it runs off the UI thread; the list shows the last result.
+    struct SerialPing {
+        Output::PINGSTATE state = Output::PINGSTATE::PING_UNKNOWN;
+        wxLongLong checked = 0;
+        std::future<Output::PINGSTATE> pending;
+    };
+    std::map<std::string, SerialPing> _serialPings;
     wxBitmap _nowebicon;
     wxBitmap _webicon;
     wxBitmap _slowicon;
@@ -87,12 +106,17 @@ class xScheduleFrame : public xlFrame {
     void UpdateSchedule();
     std::string GetScheduleName(Schedule* schedule, const std::list<RunningSchedule*>& active) const;
     void LoadSchedule();
+    void ApplyLogLevel();
     void RebuildPluginsMenu();
+    // loads the show folder again, as choosing it does
+    void ReloadShow();
+    void RestoreFromBackup();
     bool HandleHotkeys(wxKeyEvent& event);
     bool HandleSpecialKeys(wxKeyEvent& event);
     void AddPlayList(bool forceadvanced = false);
     void EditSelectedItem(bool forceadvanced = false);
     void UpdateUI(bool force = false);
+    void LogHealth();
     void DoPaste();
     void DoCopy();
     void AddSchedule();
@@ -123,6 +147,39 @@ class xScheduleFrame : public xlFrame {
     wxBitmap _brightnessup;
     wxBitmap _brightnessdown;
     wxBitmap _falconremote;
+    wxBitmap _inactiveScheduled;
+    wxBitmap _inactiveRandom;
+    wxBitmap _inactivePLLoop;
+    wxBitmap _inactiveStepLoop;
+    wxBitmap _saved;
+    wxBitmap _transportPlay;
+    wxBitmap _transportPause;
+
+    wxBitmapButton* _buttonPrior = nullptr;
+    wxBitmapButton* _buttonPlayPause = nullptr;
+    wxBitmapButton* _buttonStop = nullptr;
+    wxBitmapButton* _buttonNext = nullptr;
+    ModernUI::NowPlayingBar* _nowPlaying = nullptr;
+    wxNotebook* _rightBook = nullptr;
+    wxListView* _listUpcoming = nullptr;
+    class CalendarPanel* _calendar = nullptr;
+    wxSearchCtrl* _treeFilter = nullptr;
+    std::string _upcomingSignature;
+
+    void CreateModernBitmaps();
+    void ApplyModernLayout();
+    void OnTransportClick(wxCommandEvent& event);
+    void GetActionSelection(PlayList*& playlist, PlayListStep*& step, Schedule*& schedule);
+    void RunUICommand(const std::string& command);
+    void UpdateNowPlaying();
+    void UpdateUpcoming();
+    void RefreshCalendar(bool force = false) const;
+    void EditSchedule(Schedule* schedule);
+    void AddScheduleOn(PlayList* playlist, const wxDateTime& night);
+    void OnTreeFilter(wxCommandEvent& event);
+    void RefreshTreeStates();
+    bool SaveSchedule();
+    std::string GetPlayListLabel(PlayList* playlist) const;
 
     void SendStatus();
 
@@ -142,6 +199,8 @@ public:
     wxString ProcessPluginRequest(const wxString& plugin, const wxString& command, const wxString& parameters, const wxString& data, const wxString& reference);
     void ManipulateBuffer(uint8_t* buffer, size_t bufferSize);
     void PluginStateChanged();
+    // stops a plugin and records it as off, so it stays off at the next start
+    void StopPluginAndRemember(const std::string& label);
     std::string GetShowDir() const {
         return _showDir;
     }

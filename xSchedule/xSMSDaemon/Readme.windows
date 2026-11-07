@@ -1,19 +1,7 @@
-xSMSDaemon needs to be built linked with a static copy of wxWidgets
+xSMSDaemon is built by build_scripts\msw\build_xSchedule_x64.cmd along with xSchedule.
 
-cd documents\wxWidgets\build\msw
+To build it in Visual Studio, run that script once (or xlights\ci_scripts\fetch_dependencies.ps1 -Only Dependencies)
+to stage the xLights dependency bundle, then open xSMSDaemon.sln and build Release x64. It needs the VS 2026 (v145)
+toolset.
 
-rem build for 64 bit
-set savepath=%path%
-SET Path=%PATH%;C:\Program Files\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin
-mingw32-make -f makefile.gcc --debug TARGET_CPU=X64 MONOLITHIC=1 RUNTIME_LIBS=static UNICODE=1 CXXFLAGS="-std=gnu++14" BUILD=release -j 10
-set path=%savepath%
-
-rename ..\..\lib\gcc_lib ..\..\wxWidgets\lib\gcc_x64_lib
-
-rem need to rename output folder to make sure 32 bit does not overwrite it
-
-pause
-
-rem build for 32 bit
-SET Path=C:\Program Files (x86)\mingw-w64\i686-7.2.0-posix-dwarf-rt_v5-rev1\mingw32\bin;%PATH%
-mingw32-make -f makefile.gcc --debug MONOLITHIC=1 RUNTIME_LIBS=static UNICODE=1 CXXFLAGS="-std=gnu++14" BUILD=release -j 10
+The plugin links its own static copy of wxWidgets from the bundle, so it runs alongside xSchedule's.

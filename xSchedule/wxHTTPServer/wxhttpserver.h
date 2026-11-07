@@ -21,6 +21,7 @@
 #endif // WX_PRECOMP
 
 #include <wx/socket.h>
+#include <wx/timer.h>
 #include <wx/dynarray.h>
 #include <wx/hash.h>
 
@@ -206,6 +207,14 @@ public:
 	virtual bool SendMessage(WebSocketMessage &message);
 	virtual bool Close();
 
+	// writes what the socket will take now; the rest goes when the socket says it can take more
+	void FlushOutbound();
+	bool HasOutbound() const { return _outboundSent < _outbound.GetDataLen(); }
+	// asks for output events only while something is waiting to be sent
+	void UpdateNotify();
+	// failed, closed by the client, not reading what we send, or an idle HTTP connection
+	bool IsStale(wxLongLong now) const;
+
 	// properties
 	inline bool IsOpen() { return (_socket && _socket->IsOk()); }
 	inline const HttpServer *Server() const { return _server; }
@@ -216,6 +225,8 @@ public:
 protected:
 	void ParseRequest(const wxString &content);
 	bool ParseFrame(wxMemoryBuffer &buffer);
+	bool Queue(const void *data, size_t length);
+	bool HandleHttpRequest(const wxString &content);
 	bool WebSocketHandshake(HttpRequest &request);
 
 protected:
@@ -224,6 +235,18 @@ protected:
 	IPaddress         _address;
 	bool              _isWebSocket;
 	WebSocketMessage *_message;
+	// received but not yet handled: a request can arrive over several reads
+	wxMemoryBuffer    _pending;
+	// websocket bytes that are not yet a whole frame
+	wxMemoryBuffer    _frames;
+	// Responses are queued and written without waiting. A blocking write on the main thread, to a client that
+	// stopped reading (a phone that left the wifi), held up the show's frames until the write timed out.
+	wxMemoryBuffer    _outbound;
+	size_t            _outboundSent = 0;
+	wxLongLong        _outboundSince = 0;
+	wxLongLong        _lastActivity = 0;
+	bool              _failed = false;
+	bool              _closing = false;
 };
 
 //WX_DECLARE_EXPORTED_HASH_MAP(wxSocketBase *, HttpConnection *, wxPointerHash, wxPointerEqual, ConnectionMap);
@@ -326,6 +349,8 @@ public:
 
 	bool Start(const HttpContext &context);
 	bool Stop();
+	void DropConnection(wxSocketBase *socket);
+	size_t ConnectionCount() const { return _connections.size(); }
 
 	// properties
 
@@ -341,10 +366,12 @@ protected:
 	// event handlers (these functions should _not_ be virtual)
 	void OnServerEvent(wxSocketEvent &event);
 	void OnSocketEvent(wxSocketEvent &event);
+	void OnSweep(wxTimerEvent &event);
     ConnectionMap   _connections;
 
 private:
 	wxSocketServer *_server;
+	wxTimer         _sweep;
 	HttpContext     _context;
 	IPaddress       _address;
 

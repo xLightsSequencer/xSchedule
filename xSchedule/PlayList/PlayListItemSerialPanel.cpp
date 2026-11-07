@@ -11,7 +11,7 @@
 #include "PlayListItemSerialPanel.h"
 #include "PlayListDialog.h"
 #include "PlayListItemSerial.h"
-#include "../../xLights/outputs/SerialOutput.h"
+#include "../../xlights/src-core/outputs/SerialOutput.h"
 
 //(*InternalHeaders(PlayListItemSerialPanel)
 #include <wx/intl.h>

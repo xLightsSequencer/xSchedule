@@ -12,7 +12,7 @@
 #include <wx/xml/xml.h>
 #include <wx/notebook.h>
 #include "PlayListItemAllOffPanel.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 
 PlayListItemAllOff::PlayListItemAllOff(OutputManager* outputManager, wxXmlNode* node) : PlayListItem(node)
 {

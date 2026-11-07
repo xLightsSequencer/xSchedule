@@ -12,7 +12,7 @@
 #include "RGBEffects.h"
 #include "ScheduleManager.h"
 #include "xScheduleMain.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "PlayList/VideoWindowPositionDialog.h"
 
 //(*InternalHeaders(VirtualMatrixDialog)
@@ -182,7 +182,8 @@ VirtualMatrixDialog::VirtualMatrixDialog(wxWindow* parent, OutputManager* output
         Choice_FromModel->SetStringSelection(_fromModel);
         RGBEffects effects;
         wxXmlNode* node = effects.GetModel(Choice_FromModel->GetStringSelection().ToStdString());
-        TextCtrl_StartChannel->SetValue(node->GetAttribute("StartChannel", ""));
+        // the model may have been renamed or deleted in xLights
+        TextCtrl_StartChannel->SetValue(node == nullptr ? wxString() : node->GetAttribute("StartChannel", ""));
         long sc = _outputManager->DecodeStartChannel(TextCtrl_StartChannel->GetValue().ToStdString());
         if (sc == 0 || sc > (long)xScheduleFrame::GetScheduleManager()->GetTotalChannels()) {
             StaticText6->SetLabel("Invalid");
@@ -216,7 +217,7 @@ void VirtualMatrixDialog::PopulateModels() {
     for (const auto& it : effects.GetModels("Custom")) {
         wxXmlNode* node = effects.GetModel(it);
         // we only add 2d custom models
-        if (node->GetAttribute("Depth") == "1")
+        if (node != nullptr && node->GetAttribute("Depth", "1") == "1")
             Choice_FromModel->Append(it);
     }
 
@@ -308,6 +309,10 @@ void VirtualMatrixDialog::OnChoice_FromModelSelect(wxCommandEvent& event) {
     if (Choice_FromModel->GetSelection() != 0) {
         RGBEffects effects;
         wxXmlNode* node = effects.GetModel(Choice_FromModel->GetStringSelection().ToStdString());
+        if (node == nullptr) {
+            ValidateWindow();
+            return;
+        }
         TextCtrl_StartChannel->SetValue(node->GetAttribute("StartChannel", ""));
         long sc = _outputManager->DecodeStartChannel(TextCtrl_StartChannel->GetValue().ToStdString());
         if (sc == 0 || sc > (long)xScheduleFrame::GetScheduleManager()->GetTotalChannels()) {
@@ -318,18 +323,18 @@ void VirtualMatrixDialog::OnChoice_FromModelSelect(wxCommandEvent& event) {
         Choice_Rotation->SetSelection(-1);
         Choice_PixelChannels->SetSelection(0);
         if (node->GetAttribute("DisplayAs") == "Custom") {
-            SpinCtrl_Width->SetValue(node->GetAttribute("parm1", "0"));
-            SpinCtrl_Height->SetValue(node->GetAttribute("parm2", "0"));
+            SpinCtrl_Width->SetValue(RGBEffects::GetCustomWidth(node));
+            SpinCtrl_Height->SetValue(RGBEffects::GetCustomHeight(node));
         } else {
-            long strings = wxAtol(node->GetAttribute("parm1", "0"));
-            long strandsPerString = wxAtol(node->GetAttribute("parm3", "1"));
-            // Legacy: "Horiz Matrix". New format: DisplayAs="Matrix" with Vertical="false".
-            if (node->GetAttribute("DisplayAs") == "Horiz Matrix" ||
-                (node->GetAttribute("DisplayAs") == "Matrix" && node->GetAttribute("Vertical", "false") != "true")) {
-                SpinCtrl_Width->SetValue(strings / strandsPerString);
+            long strings = RGBEffects::GetStrings(node);
+            long nodes = RGBEffects::GetNodesPerString(node);
+            long strandsPerString = std::max(1L, RGBEffects::GetStrandsPerString(node));
+            // the same sizes the virtual matrix uses when it starts
+            if (!RGBEffects::IsVertical(node)) {
+                SpinCtrl_Width->SetValue(nodes / strandsPerString);
                 SpinCtrl_Height->SetValue(strings * strandsPerString);
             } else {
-                SpinCtrl_Height->SetValue(strings / strandsPerString);
+                SpinCtrl_Height->SetValue(nodes / strandsPerString);
                 SpinCtrl_Width->SetValue(strings * strandsPerString);
             }
         }

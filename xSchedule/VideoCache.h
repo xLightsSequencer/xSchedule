@@ -14,12 +14,12 @@
 #include <wx/wx.h>
 #include <string>
 #include <map>
-#include "../xlights/xLights/utils/JobPool.h"
+#include "../xlights/src-core/utils/JobPool.h"
 
 class VideoReader;
 class VideoCacheItem;
 class CVRThread;
-struct AVFrame;
+struct VideoFrame;
 
 class CachedVideoReader
 {
@@ -37,7 +37,7 @@ public:
     CachedVideoReader(const std::string& videoFile, long startMillisecond, int frameTime, const wxSize& size, bool keepAspectRatio);
     virtual ~CachedVideoReader();
 
-    static wxImage CreateImageFromFrame(AVFrame* frame, const wxSize& size);
+    static wxImage CreateImageFromFrame(const VideoFrame* frame, const wxSize& size);
     static wxImage FadeImage(const wxImage& image, int brightness);
 
     bool HasFrame(long millisecond);

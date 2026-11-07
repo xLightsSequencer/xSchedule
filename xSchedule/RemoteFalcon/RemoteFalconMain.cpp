@@ -19,7 +19,6 @@
 
 #include <wx/mimetype.h>
 #include <wx/msgdlg.h>
-#include <wx/config.h>
 #include <wx/file.h>
 #include <wx/bitmap.h>
 #include <wx/protocol/http.h>
@@ -33,6 +32,8 @@
 #include "RemoteFalconOptions.h"
 #include "xSchedule.h"
 #include "RemoteFalcon.h"
+#include "RemoteFalconApp.h"
+#include "../SettingsFiles.h"
 
 #include <nlohmann/json.hpp>
 
@@ -170,10 +171,11 @@ void RemoteFalconFrame::DoSendPlaylists() {
 void RemoteFalconFrame::AddMessage(MESSAGE_LEVEL msgLevel, const std::string& msg)
 {
     if (msgLevel <= _options.GetMessageLevel()) {
+        // count before posting: the handler can run before wxPostEvent returns
+        _toProcess++;
         wxCommandEvent e(EVT_ADDMESSAGE);
         e.SetString(msg);
         wxPostEvent(this, e);
-        _toProcess++;
     }
 }
 
@@ -277,11 +279,11 @@ RemoteFalconFrame::RemoteFalconFrame(wxWindow* parent, const std::string& showDi
     icons.AddIcon(wxIcon(xlights_xpm));
     SetIcons(icons);
 
-    wxConfigBase* config = wxConfigBase::Get();
-    int x = config->ReadLong(_("RemoteFalconWindowPosX"), 50);
-    int y = config->ReadLong(_("RemoteFalconWindowPosY"), 50);
-    int w = config->ReadLong(_("RemoteFalconWindowPosW"), 800);
-    int h = config->ReadLong(_("RemoteFalconWindowPosH"), 600);
+    const auto& config = RemoteFalconSettings();
+    int x = config.ReadLong("RemoteFalconWindowPosX", 50);
+    int y = config.ReadLong("RemoteFalconWindowPosY", 50);
+    int w = config.ReadLong("RemoteFalconWindowPosW", 800);
+    int h = config.ReadLong("RemoteFalconWindowPosH", 600);
 
     // limit weirdness
     if (x < -100) x = 0;
@@ -352,12 +354,12 @@ RemoteFalconFrame::~RemoteFalconFrame()
     int w, h;
     GetSize(&w, &h);
 
-    wxConfigBase* config = wxConfigBase::Get();
-    config->Write(_("RemoteFalconWindowPosX"), x);
-    config->Write(_("RemoteFalconWindowPosY"), y);
-    config->Write(_("RemoteFalconWindowPosW"), w);
-    config->Write(_("RemoteFalconWindowPosH"), h);
-    config->Flush();
+    auto& config = RemoteFalconSettings();
+    config.Write("RemoteFalconWindowPosX", x);
+    config.Write("RemoteFalconWindowPosY", y);
+    config.Write("RemoteFalconWindowPosW", w);
+    config.Write("RemoteFalconWindowPosH", h);
+    config.Flush();
 
     //(*Destroy(RemoteFalconFrame)
     //*)
@@ -812,7 +814,9 @@ void RemoteFalconFrame::NotifyStatus(const std::string& status)
         }
     }
 
-    while (_toProcess > 0) {
+    // the plugin has no event loop of its own, so deliver its pending log messages here. Pumping once is enough;
+    // waiting for the count to reach zero hung xSchedule's main thread whenever the count was off.
+    if (_toProcess > 0) {
         ProcessPendingEvents();
     }
 }
@@ -921,6 +925,17 @@ void RemoteFalconFrame::OnClose(wxCloseEvent& event)
     spdlog::debug("RemoteFalconFrame::OnClose");
     if (event.CanVeto()) {
         event.Veto();
+        // turning the plugin off by accident would stop requests mid-show, so ask; xSchedule shuts it down once
+        // this handler has returned
+        wxMessageDialog dlg(this, "It stops taking requests until you turn it on again in xSchedule's Plugins menu.",
+                            "Turn off Remote Falcon?", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+        dlg.SetYesNoLabels("Turn off", "Keep running");
+        if (dlg.ShowModal() == wxID_YES) {
+            Hide();
+            xSchedule::StopPlugin("Remote Falcon");
+        } else {
+            Iconize(true);
+        }
     } else{
         event.Skip();
     }
@@ -930,10 +945,9 @@ void RemoteFalconFrame::HandleAddMessage(wxCommandEvent& event)
 {
     // while not technically an issue this likely means we are in the middle of exiting
     if (_remoteFalcon == nullptr) return;
-    if (_toProcess == 0) return;
 
     DoAddMessage(event.GetString());
-    _toProcess--;
+    if (_toProcess > 0) _toProcess--;
 }
 
 #define MAX_LOG_CHARS 10000

@@ -11,7 +11,7 @@
 #include "ThreeToFourDialog.h"
 #include "xScheduleMain.h"
 #include "ScheduleManager.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(ThreeToFourDialog)
 #include <wx/intl.h>
@@ -47,7 +47,7 @@ ThreeToFourDialog::ThreeToFourDialog(wxWindow* parent, OutputManager* outputMana
 	wxBoxSizer* BoxSizer1;
 	wxFlexGridSizer* FlexGridSizer1;
 
-	Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
+	Create(parent, id, _("Three To Four"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
 	SetClientSize(wxDefaultSize);
 	Move(wxDefaultPosition);
 	FlexGridSizer1 = new wxFlexGridSizer(0, 2, 0, 0);

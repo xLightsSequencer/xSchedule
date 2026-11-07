@@ -29,6 +29,8 @@
 
 #include "../xScheduleVersion.h"
 #include "xSMSDaemonMain.h"
+#include "xSMSDaemonApp.h"
+#include "../SettingsFiles.h"
 
 #include "../../xlights/include/xLights.xpm"
 #include "../../xlights/include/xLights-16.xpm"
@@ -122,19 +124,19 @@ xSMSDaemonFrame::xSMSDaemonFrame(wxWindow* parent, const std::string& showDir, c
     FlexGridSizer1->AddGrowableRow(1);
     FlexGridSizer2 = new wxFlexGridSizer(0, 2, 0, 0);
     FlexGridSizer2->AddGrowableCol(1);
-    StaticText4 = new wxStaticText(this, ID_STATICTEXT9, _("Phone"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
+    StaticText4 = new wxStaticText(this, ID_STATICTEXT9, _("Phone:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
     FlexGridSizer2->Add(StaticText4, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticText_Phone = new wxStaticText(this, ID_STATICTEXT10, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER, _T("ID_STATICTEXT10"));
     FlexGridSizer2->Add(StaticText_Phone, 1, wxALL|wxEXPAND, 5);
-    StaticText3 = new wxStaticText(this, ID_STATICTEXT3, _("Text Item"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    StaticText3 = new wxStaticText(this, ID_STATICTEXT3, _("Text Item:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
     FlexGridSizer2->Add(StaticText3, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticText_TextItemName = new wxStaticText(this, ID_STATICTEXT4, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER, _T("ID_STATICTEXT4"));
     FlexGridSizer2->Add(StaticText_TextItemName, 1, wxALL|wxEXPAND, 5);
-    StaticText5 = new wxStaticText(this, ID_STATICTEXT5, _("Messages last retrieved"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    StaticText5 = new wxStaticText(this, ID_STATICTEXT5, _("Messages last retrieved:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
     FlexGridSizer2->Add(StaticText5, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticText_LastRetrieved = new wxStaticText(this, ID_STATICTEXT6, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER, _T("ID_STATICTEXT6"));
     FlexGridSizer2->Add(StaticText_LastRetrieved, 1, wxALL|wxEXPAND, 5);
-    StaticText2 = new wxStaticText(this, ID_STATICTEXT7, _("Message last displayed"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
+    StaticText2 = new wxStaticText(this, ID_STATICTEXT7, _("Message last displayed:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
     FlexGridSizer2->Add(StaticText2, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticText_LastDisplayed = new wxStaticText(this, ID_STATICTEXT8, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER, _T("ID_STATICTEXT8"));
     FlexGridSizer2->Add(StaticText_LastDisplayed, 1, wxALL|wxEXPAND, 5);
@@ -207,11 +209,11 @@ xSMSDaemonFrame::xSMSDaemonFrame(wxWindow* parent, const std::string& showDir, c
     icons.AddIcon(wxIcon(xlights_xpm));
     SetIcons(icons);
 
-    wxConfigBase* config = wxConfigBase::Get();
-    int x = config->ReadLong(_("xsmsWindowPosX"), 50);
-    int y = config->ReadLong(_("xsmsWindowPosY"), 50);
-    int w = config->ReadLong(_("xsmsWindowPosW"), 800);
-    int h = config->ReadLong(_("xsmsWindowPosH"), 600);
+    const auto& config = SMSDaemonSettings();
+    int x = config.ReadLong("xsmsWindowPosX", 50);
+    int y = config.ReadLong("xsmsWindowPosY", 50);
+    int w = config.ReadLong("xsmsWindowPosW", 800);
+    int h = config.ReadLong("xsmsWindowPosH", 600);
 
     // limit weirdness
     if (x < -100) x = 0;
@@ -253,12 +255,12 @@ xSMSDaemonFrame::~xSMSDaemonFrame()
     int w, h;
     GetSize(&w, &h);
 
-    wxConfigBase* config = wxConfigBase::Get();
-    config->Write(_("xsmsWindowPosX"), x);
-    config->Write(_("xsmsWindowPosY"), y);
-    config->Write(_("xsmsWindowPosW"), w);
-    config->Write(_("xsmsWindowPosH"), h);
-    config->Flush();
+    auto& config = SMSDaemonSettings();
+    config.Write("xsmsWindowPosX", x);
+    config.Write("xsmsWindowPosY", y);
+    config.Write("xsmsWindowPosW", w);
+    config.Write("xsmsWindowPosH", h);
+    config.Flush();
 
     //(*Destroy(xSMSDaemonFrame)
     //*)
@@ -503,34 +505,16 @@ void xSMSDaemonFrame::OnMenuItem_ViewLogSelected(wxCommandEvent& event)
 
 std::string xSMSDaemonFrame::xScheduleShowDir()
 {
-    wxString showDir = "";
-
-    wxConfig *xsconfig = new wxConfig(_("xSchedule"));
-    if (xsconfig != nullptr)
-    {
-        xsconfig->Read(_("SchedulerLastDir"), &showDir);
-    }
-
-    return showDir.ToStdString();
+    return ReadXScheduleSetting("SchedulerLastDir", "");
 }
 
 std::string xSMSDaemonFrame::xSMSDaemonShowDir()
 {
-    wxString showDir = "";
-
-    wxConfigBase* config = wxConfigBase::Get();
-    if (config != nullptr)
-    {
-        config->Read(_("SMSDaemonDir"), &showDir);
-    }
-
-    return showDir.ToStdString();
+    return SMSDaemonSettings().Read("SMSDaemonDir", "");
 }
 
 void xSMSDaemonFrame::LoadShowDir()
 {
-    wxConfigBase* config = wxConfigBase::Get();
-    spdlog::debug("Config: AppName '{}' Path '{}' Entries {} Groups {} Style {} Vendor '{}'.", config->GetAppName().ToStdString(), config->GetPath().ToStdString(), config->GetNumberOfEntries(), config->GetNumberOfGroups(), config->GetStyle(), config->GetVendorName().ToStdString());
 
     // get the show directory
     wxString showDir = xSMSDaemonShowDir();
@@ -574,14 +558,9 @@ void xSMSDaemonFrame::LoadShowDir()
 
 void xSMSDaemonFrame::SaveShowDir() const
 {
-    wxConfigBase* config = wxConfigBase::Get();
-    auto sd = wxString(_showDir);
-    spdlog::debug("Saving show folder location {}.", (const char *)sd.c_str());
-    if (!config->Write(_("SMSDaemonDir"), sd))
-    {
-        spdlog::error("Error saving 'SMSDaemonDir'.");
-    }
-    config->Flush();
+    spdlog::debug("Saving show folder location {}.", _showDir);
+    SMSDaemonSettings().Write("SMSDaemonDir", _showDir);
+    SMSDaemonSettings().Flush();
 }
 
 void xSMSDaemonFrame::LoadOptions()
@@ -871,6 +850,20 @@ void xSMSDaemonFrame::OnClose(wxCloseEvent& event)
 
     if (event.CanVeto()) {
         event.Veto();
+        // turning the plugin off by accident would stop it handling texts mid-show, so ask; xSchedule shuts it
+        // down once this handler has returned
+        wxMessageDialog dlg(this, "It stops handling text messages until you turn it on again in xSchedule's Plugins menu.",
+                            "Turn off SMS?", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+        dlg.SetYesNoLabels("Turn off", "Keep running");
+        if (dlg.ShowModal() == wxID_YES) {
+            Hide();
+            if (_action != nullptr) {
+                char result[1024];
+                _action("Stop plugin", L"SMS", "", result, sizeof(result));
+            }
+        } else {
+            Iconize(true);
+        }
     } else{
         event.Skip();
     }

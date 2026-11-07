@@ -31,5 +31,6 @@ class ListenerFPP : public ListenerBase
         virtual void StartProcess(const std::string& localIP) override;
         virtual void StopProcess() override;
         virtual void Poll() override;
+        bool IsForThisHost(const std::string& hosts) const;
 };
 

@@ -1,69 +1,66 @@
+// Pages and plugins are loaded into this same document, so a timer a page starts would keep running after the user
+// moves on (the SMS plugin polls every 5 seconds). Timers are tracked and stopped when another page is shown.
+var xsPageTimers = [];
+var xsNativeSetInterval = window.setInterval;
+window.setInterval = function() {
+  var id = xsNativeSetInterval.apply(window, arguments);
+  xsPageTimers.push(id);
+  return id;
+};
+
 $(document).ready(function() {
   //populate current page
-  updateCurrentPage();
+  updateCurrentPage(true);
 
 });
 
 window.addEventListener('popstate', function(event) {
-  console.log("navagated");
-  updateCurrentPage();
+  updateCurrentPage(true);
 })
 var currentPage;
 
-function updateCurrentPage() {
+function updateCurrentPage(fromHistory) {
   var currentPageArgs = getQueryVariable("args");
-  if (getQueryVariable("args") == false) {
-    var currentPageArgs = "";
+  if (currentPageArgs == false) {
+    currentPageArgs = undefined;
   }
   if (getQueryVariable("page") != false) {
-    currentPage = getQueryVariable("page");
-    updatePage('page', currentPage, currentPageArgs);
+    updatePage('page', getQueryVariable("page"), currentPageArgs, fromHistory);
   } else if (getQueryVariable("plugin") != false) {
-    currentPage = getQueryVariable("plugin");
-    updatePage('plugin', currentPage, currentPageArgs);
+    updatePage('plugin', getQueryVariable("plugin"), currentPageArgs, fromHistory);
   } else {
-    currentPage = 'home';
-    updatePage('page', 'home');
+    updatePage('page', 'home', undefined, fromHistory);
   }
 }
 
-
-function updatePage(type, pageName, args) {
-  //defocus nav
-  $('#home').attr('class', "");
-  $('#playlists').attr('class', "dropdown");
-  $('#plugins').attr('class', "dropdown");
-  $('#settings').attr('class', "");
+// fromHistory: the URL already shows this page (first load, back/forward), so no new history entry is added
+function updatePage(type, pageName, args, fromHistory) {
   currentPage = pageName;
+  xsPageTimers.forEach(function(id) { clearInterval(id); });
+  xsPageTimers = [];
+  $('.xs-tabs li, .xs-bottom a').removeClass('active');
+  $('.dropdown.open').removeClass('open');
 
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
-    $('#navbar').collapse('hide');
-  }
-
+  var url;
   if (type == "page") {
-    //populate new page
-    $('#pageContent').load('pages/' + pageName + '.html');
-    $("#" + pageName).attr('class', "active");
-    if (args != undefined) {
-      window.history.pushState('page2', pageName, 'index.html?page=' +
-        pageName +
-        `&args=` + args);
-    } else {
-      window.history.pushState('page2', pageName, 'index.html?page=' +
-        pageName);
-    }
+    $('#pageContent').load('pages/' + pageName + '.html', function() {
+      xsFillIcons('#pageContent');
+    });
+    $('[data-page="' + pageName + '"]').addClass('active');
+    url = 'index.html?page=' + pageName;
   } else if (type == "plugin") {
-	pageName = encodeURI(pageName);
-    $('#pageContent').load('plugins/' + pageName + '/' + pageName + '.html');
-    $('#navPlugins').attr('class', "dropdown active");
-    if (args != "") {
-      window.history.pushState('page2', pageName, 'index.html?plugin=' +
-        pageName + `&args=` + args);
-    } else {
-      window.history.pushState('page2', pageName, 'index.html?plugin=' +
-        pageName);
-    }
+    var folder = encodeURI(pageName);
+    $('#pageContent').load('Plugins/' + folder + '/' + folder + '.html');
+    $('[data-page="plugins"]').addClass('active');
+    url = 'index.html?plugin=' + folder;
   }
+  if (args != undefined && args !== "") {
+    url += '&args=' + encodeURIComponent(args);
+  }
+  if (!fromHistory && url) {
+    window.history.pushState('page2', pageName, url);
+  }
+  window.scrollTo(0, 0);
 }
 
 function getQueryVariable(variable) {

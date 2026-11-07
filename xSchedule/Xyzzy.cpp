@@ -13,11 +13,11 @@
 #include "ScheduleManager.h"
 #include "ScheduleOptions.h"
 #include "MatrixMapper.h"
-#include <wx/config.h>
 #include <log.h>
 #include "xScheduleApp.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-ui-wx/settings/XLightsConfigAdapter.h"
 
 #ifdef SHOWVIRTUALMATRIX
 #include "VirtualMatrix.h"
@@ -104,9 +104,9 @@ Xyzzy::Xyzzy()
 {
     spdlog::debug("Xyzzy created.");
 
-    wxConfigBase* config = wxConfigBase::Get();
-    _highScore = config->ReadLong(_("XyzzyHighScore"), 0);
-    _highScoreOwner = config->Read(_("XyzzyHighScoreOwner"), "").ToStdString();
+    auto* config = GetXLightsConfig();
+    _highScore = config->ReadLong("XyzzyHighScore", 0);
+    _highScoreOwner = config->Read("XyzzyHighScoreOwner", std::string());
 
     spdlog::debug("High score {} {}.", _highScore, _highScoreOwner);
 
@@ -128,9 +128,9 @@ Xyzzy2::Xyzzy2()
 {
     spdlog::debug("Xyzzy2 created.");
 
-    wxConfigBase* config = wxConfigBase::Get();
-    _highScore = config->ReadLong(_("Xyzzy2HighScore"), 0);
-    _highScoreOwner = config->Read(_("Xyzzy2HighScoreOwner"), "").ToStdString();
+    auto* config = GetXLightsConfig();
+    _highScore = config->ReadLong("Xyzzy2HighScore", 0);
+    _highScoreOwner = config->Read("Xyzzy2HighScoreOwner", std::string());
 
     spdlog::debug("High score {} {}.", _highScore, _highScoreOwner);
 
@@ -396,9 +396,9 @@ bool Xyzzy2::Frame(uint8_t* buffer, size_t size, bool outputframe)
 
 void Xyzzy::GetHighScoreJSON(wxString& result, const wxString& reference)
 {
-    wxConfigBase* config = wxConfigBase::Get();
-    std::string highScore = wxString::Format("%ld", config->ReadLong(_("XyzzyHighScore"), 0)).ToStdString();
-    std::string highScoreOwner = config->Read(_("XyzzyHighScoreOwner"), "").ToStdString();
+    auto* config = GetXLightsConfig();
+    std::string highScore = wxString::Format("%ld", config->ReadLong("XyzzyHighScore", 0)).ToStdString();
+    std::string highScoreOwner = config->Read("XyzzyHighScoreOwner", std::string());
     result = "{\"result\":\"ok\",\"message\":\"\",\"highscore\":\"" + highScore +
         "\",\"r\":\"" + reference +
         "\",\"highscoreplayer\":\"" + highScoreOwner +
@@ -407,9 +407,9 @@ void Xyzzy::GetHighScoreJSON(wxString& result, const wxString& reference)
 
 void Xyzzy2::GetHighScoreJSON(wxString& result, const wxString& reference)
 {
-    wxConfigBase* config = wxConfigBase::Get();
-    std::string highScore = wxString::Format("%ld", config->ReadLong(_("Xyzzy2HighScore"), 0)).ToStdString();
-    std::string highScoreOwner = config->Read(_("Xyzzy2HighScoreOwner"), "").ToStdString();
+    auto* config = GetXLightsConfig();
+    std::string highScore = wxString::Format("%ld", config->ReadLong("Xyzzy2HighScore", 0)).ToStdString();
+    std::string highScoreOwner = config->Read("Xyzzy2HighScoreOwner", std::string());
     result = "{\"result\":\"ok\",\"message\":\"\",\"highscore\":\"" + highScore +
         "\",\"r\":\"" + reference +
         "\",\"highscoreplayer\":\"" + highScoreOwner +
@@ -1729,9 +1729,9 @@ void Xyzzy::SaveHighScore()
         _highScore = _score;
         _highScoreOwner = _playerName;
 
-        wxConfigBase* config = wxConfigBase::Get();
-        config->Write(_("XyzzyHighScore"), _highScore);
-        config->Write(_("XyzzyHighScoreOwner"), wxString(_highScoreOwner));
+        auto* config = GetXLightsConfig();
+        config->Write("XyzzyHighScore", _highScore);
+        config->Write("XyzzyHighScoreOwner", wxString(_highScoreOwner));
         config->Flush();
 
         wxCommandEvent event(EVT_XYZZY);
@@ -1746,9 +1746,9 @@ void Xyzzy2::SaveHighScore()
         _highScore = _score;
         _highScoreOwner = _playerName;
 
-        wxConfigBase* config = wxConfigBase::Get();
-        config->Write(_("Xyzzy2HighScore"), _highScore);
-        config->Write(_("Xyzzy2HighScoreOwner"), wxString(_highScoreOwner));
+        auto* config = GetXLightsConfig();
+        config->Write("Xyzzy2HighScore", _highScore);
+        config->Write("Xyzzy2HighScoreOwner", wxString(_highScoreOwner));
         config->Flush();
 
         wxCommandEvent event(EVT_XYZZY);

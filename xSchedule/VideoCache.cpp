@@ -9,11 +9,14 @@
  **************************************************************/
 
 #include "VideoCache.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/render/VideoReader.h"
+
+#include <atomic>
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/media/VideoReader.h"
 
 #include <log.h>
+#include "Diagnostics.h"
 
 // #define VIDEO_EXTRALOGGING
 
@@ -23,7 +26,7 @@ class CVRThread : public wxThread {
     int _maxFrames;
     std::mutex _access;
     wxSize _size;
-    bool _stop;
+    std::atomic<bool> _stop;
     bool _running;
     VideoReader* _videoReader;
     int _frameMS;
@@ -90,13 +93,14 @@ public:
     void Stop() {
 
         spdlog::debug("Asking video reading thread {} ({}x{}) to stop", _videoFile, _size.GetWidth(), _size.GetHeight());
-        _stop = true;
         std::unique_lock<std::mutex> mutLock(_access);
+        _stop = true;
         _signal.notify_all();
     }
 
     virtual void* Entry() override {
         _running = true;
+        Diagnostics::ThreadName name("video cache");
 
 
         spdlog::debug("Video reading thread {} ({}x{}) started", _videoFile, _size.GetWidth(), _size.GetHeight());
@@ -138,8 +142,9 @@ public:
 #ifdef VIDEO_EXTRALOGGING
                 spdlog::debug("Video reading thread {} ({}x{}) waiting for start time to change.", _videoFile, _size.GetWidth(), _size.GetHeight());
 #endif
+                // checked under the lock: a stop or a new start that arrived just before waiting would be missed
                 std::unique_lock<std::mutex> accessLock(_access);
-                _signal.wait(accessLock);
+                _signal.wait(accessLock, [&]() { return _stop || _currentStart != lastStart; });
 #ifdef VIDEO_EXTRALOGGING
                 spdlog::debug("Video reading thread {} ({}x{}) start time changed.", _videoFile, _size.GetWidth(), _size.GetHeight());
 #endif
@@ -225,10 +230,6 @@ CachedVideoReader::~CachedVideoReader() {
 #define TIMEOUT(a) a / 2
 
 void CachedVideoReader::CacheImage(long millisecond, const wxImage& image) {
-#ifdef VIDEO_EXTRALOGGING
-    static 
-#endif
-
     std::unique_lock<std::mutex> locker(_cacheAccess);
     auto it = _cache.find(millisecond);
     if (it == _cache.end()) {
@@ -291,21 +292,55 @@ wxImage CachedVideoReader::GetNextFrame(long ms) {
     return wxImage(_size);
 }
 
-wxImage CachedVideoReader::CreateImageFromFrame(AVFrame* frame, const wxSize& size) {
-    if (frame != nullptr) {
-        wxImage img(frame->width, frame->height, (unsigned char*)frame->data[0], true);
-        img.SetType(wxBitmapType::wxBITMAP_TYPE_BMP);
-        return img;
-    } else {
+wxImage CachedVideoReader::CreateImageFromFrame(const VideoFrame* frame, const wxSize& size) {
+    if (frame == nullptr || frame->data == nullptr || frame->width <= 0 || frame->height <= 0) {
         wxImage img(size.x, size.y, true);
         return img;
     }
+
+    // the reader hands back its own buffer, which may have padded rows and be BGR or carry alpha,
+    // so copy it out as packed RGB
+    int bpp = 3;
+    bool bgr = false;
+    switch (frame->format) {
+    case VideoPixelFormat::RGB24: break;
+    case VideoPixelFormat::BGR24: bgr = true; break;
+    case VideoPixelFormat::RGBA: bpp = 4; break;
+    case VideoPixelFormat::BGRA: bpp = 4; bgr = true; break;
+    default:
+        spdlog::warn("Video frame in an unsupported pixel format {}.", (int)frame->format);
+        return wxImage(size.x, size.y, true);
+    }
+    const int stride = frame->linesize > 0 ? frame->linesize : frame->width * bpp;
+
+    wxImage img(frame->width, frame->height, false);
+    unsigned char* dst = img.GetData();
+    for (int y = 0; y < frame->height; ++y) {
+        const uint8_t* src = frame->data + (size_t)y * stride;
+        if (bpp == 3 && !bgr) {
+            memcpy(dst, src, (size_t)frame->width * 3);
+            dst += frame->width * 3;
+        } else {
+            for (int x = 0; x < frame->width; ++x, src += bpp) {
+                *dst++ = bgr ? src[2] : src[0];
+                *dst++ = src[1];
+                *dst++ = bgr ? src[0] : src[2];
+            }
+        }
+    }
+    img.SetType(wxBitmapType::wxBITMAP_TYPE_BMP);
+    return img;
 }
 
 wxImage CachedVideoReader::FadeImage(const wxImage& image, int brightness) {
     unsigned char btable[256];
 
     wxImage faded;
+
+    if (image.IsOk() && brightness == 100) {
+        // wxImage shares its data, so this costs no copy of the frame
+        return image;
+    }
 
     if (!image.IsOk() || brightness == 0) {
         // create a blank image if it is invalid or faded to black

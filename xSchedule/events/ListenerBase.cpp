@@ -12,6 +12,7 @@
 #include "../ScheduleManager.h"
 #include <log.h>
 #include <wx/wx.h>
+#include "../Diagnostics.h"
 
 ListenerBase::ListenerBase(ListenerManager* listenerManager, const std::string& localIP) {
     _listenerManager = listenerManager;
@@ -43,11 +44,30 @@ void* ListenerThread::Entry() {
     }
 
     _running = true;
+    Diagnostics::ThreadName name("listener " + _listener->GetType());
     spdlog::info("Listener thread for {} running.", _listener->GetType());
 
     _listener->StartProcess(_localIP);
+    if (!_listener->IsOk() && !_listener->PollsWhenNotOk()) {
+        spdlog::warn("Listener {} could not start. Trying again every 30 s.", _listener->GetType());
+    }
 
-    if (_listener->IsOk()) {
+    // A listener that can't start (a network one whose address isn't up yet at boot, a port in use, a device
+    // unplugged) tries again every 30 s instead of staying off until xSchedule restarts.
+    while (!_stop && !_listener->IsOk() && !_listener->PollsWhenNotOk()) {
+        for (int i = 0; i < 300 && !_stop; i++) {
+            wxMilliSleep(100);
+        }
+        if (_stop) break;
+        spdlog::debug("Listener {} trying to start again.", _listener->GetType());
+        _listener->StopProcess();
+        _listener->StartProcess(_localIP);
+        if (_listener->IsOk()) {
+            spdlog::info("Listener {} started.", _listener->GetType());
+        }
+    }
+
+    if (_listener->IsOk() || _listener->PollsWhenNotOk()) {
         while (!_stop) {
             _listener->Poll();
         }

@@ -9,6 +9,9 @@
  **************************************************************/
 
 #include "ScheduleOptions.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+
+#include <cmath>
 
 #include <wx/dir.h> // Linux needs this
 #include <wx/filename.h>
@@ -16,9 +19,12 @@
 #include <wx/wxcrt.h>
 #include <wx/xml/xml.h>
 
+#include "City.h"
+#include "Holidays.h"
 #include "CommandManager.h"
+#include "Schedule.h"
 #include "UserButton.h"
-#include "../xlights/xLights/utils/AudioManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
 #include "events/EventARTNet.h"
 #include "events/EventARTNetTrigger.h"
 #include "events/EventBase.h"
@@ -73,11 +79,13 @@ ScheduleOptions::ScheduleOptions(OutputManager* outputManager, wxXmlNode* node, 
     _passwordTimeout = wxAtoi(node->GetAttribute("PasswordTimeout", "30"));
     _wwwRoot = node->GetAttribute("WWWRoot", "xScheduleWeb");
     _crashBehaviour = node->GetAttribute("CrashBehaviour", "Prompt user");
+    _logLevel = node->GetAttribute("LogLevel", "Normal").ToStdString();
+    _holidayCountry = node->GetAttribute("HolidayCountry", "").ToStdString();
     _artNetTimeCodeFormat = static_cast<TIMECODEFORMAT>(wxAtoi(node->GetAttribute("ARTNetTimeCodeFormat", "1")));
     _audioDevice = node->GetAttribute("AudioDevice", "").ToStdString();
     _inputAudioDevice = node->GetAttribute("InputAudioDevice", "").ToStdString();
-    AudioManager::GetSDLManager()->SetDefaultOutput(_audioDevice);
-    AudioManager::GetSDLManager()->SetDefaultInput(_inputAudioDevice);
+    AudioManager::GetAudioManager()->SetDefaultOutput(_audioDevice);
+    AudioManager::GetAudioManager()->SetDefaultInput(_inputAudioDevice);
     _password = node->GetAttribute("Password", "");
     _defaultPage = node->GetAttribute("DefaultPage", "index.html");
     _allowUnauth = node->GetAttribute("AllowUnauth", "FALSE") == "TRUE";
@@ -89,6 +97,14 @@ ScheduleOptions::ScheduleOptions(OutputManager* outputManager, wxXmlNode* node, 
 
     if (_city == "")
         _city = "Sydney"; // we always want to have a city and this is the best place to be :)
+    double latitude = 0;
+    double longitude = 0;
+    if (node->GetAttribute("Latitude", "").ToCDouble(&latitude) && node->GetAttribute("Longitude", "").ToCDouble(&longitude) &&
+        std::abs(latitude) <= 90 && std::abs(longitude) <= 180) {
+        _customLocation = true;
+        _latitude = latitude;
+        _longitude = longitude;
+    }
 
     for (auto n = node->GetChildren(); n != nullptr; n = n->GetNext()) {
         if (n->GetName() == "Button") {
@@ -149,7 +165,7 @@ ScheduleOptions::ScheduleOptions(OutputManager* outputManager, wxXmlNode* node, 
 void ScheduleOptions::SetAudioDevice(const std::string& audioDevice) {
     if (_audioDevice != audioDevice) {
         _audioDevice = audioDevice;
-        AudioManager::GetSDLManager()->SetDefaultOutput(_audioDevice);
+        AudioManager::GetAudioManager()->SetDefaultOutput(_audioDevice);
         _changeCount++;
     }
 }
@@ -157,7 +173,7 @@ void ScheduleOptions::SetAudioDevice(const std::string& audioDevice) {
 void ScheduleOptions::SetInputAudioDevice(const std::string& audioDevice) {
     if (_inputAudioDevice != audioDevice) {
         _inputAudioDevice = audioDevice;
-        AudioManager::GetSDLManager()->SetDefaultInput(_inputAudioDevice);
+        AudioManager::GetAudioManager()->SetDefaultInput(_inputAudioDevice);
         _changeCount++;
     }
 }
@@ -170,6 +186,56 @@ void ScheduleOptions::AddButton(const std::string& label, const std::string& com
     b->SetHotkey(hotkey);
     b->SetColor(color);
     _buttons.push_back(b);
+}
+
+namespace {
+wxString FormatCoordinate(double degrees) {
+    wxString s = wxString::FromCDouble(degrees, 6);
+    while (s.EndsWith("0")) s.RemoveLast();
+    if (s.EndsWith(".")) s.RemoveLast();
+    return s;
+}
+}
+
+bool ScheduleOptions::GetLocation(double& latitude, double& longitude) const {
+    if (_customLocation) {
+        latitude = _latitude;
+        longitude = _longitude;
+        return true;
+    }
+    float lat = 0;
+    float lon = 0;
+    bool known = City::GetCityLocation(_city, lat, lon);
+    latitude = lat;
+    longitude = lon;
+    return known;
+}
+
+void ScheduleOptions::ApplyLocation() const {
+    double latitude = 0;
+    double longitude = 0;
+    bool known = GetLocation(latitude, longitude);
+    Schedule::SetLocation(known, latitude, longitude);
+    Holidays::SetCountry(_holidayCountry == "all" ? std::string() : !_holidayCountry.empty() ? _holidayCountry : LocalCountry());
+}
+
+std::string ScheduleOptions::LocalCountry() const {
+    double latitude = 0;
+    double longitude = 0;
+    if (!GetLocation(latitude, longitude)) return "";
+    City* city = City::GetCity(City::GetNearestCity(latitude, longitude));
+    return city == nullptr ? std::string() : Holidays::CountryCode(city->_country);
+}
+
+bool ScheduleOptions::ParseLocation(const std::string& text, double& latitude, double& longitude) {
+    wxArrayString parts = wxSplit(wxString(text).Trim().Trim(false), ',');
+    if (parts.size() != 2) return false;
+    return parts[0].Trim().Trim(false).ToCDouble(&latitude) && parts[1].Trim().Trim(false).ToCDouble(&longitude) &&
+           std::abs(latitude) <= 90 && std::abs(longitude) <= 180;
+}
+
+std::string ScheduleOptions::FormatLocation(double latitude, double longitude) {
+    return (FormatCoordinate(latitude) + ", " + FormatCoordinate(longitude)).ToStdString();
 }
 
 std::pair<int, int> ScheduleOptions::ParsePair(const std::string& value, const std::pair<int, int>& def) {
@@ -288,13 +354,22 @@ wxXmlNode* ScheduleOptions::Save() {
     res->AddAttribute("InputAudioDevice", _inputAudioDevice);
     res->AddAttribute("WWWRoot", _wwwRoot);
     res->AddAttribute("CrashBehaviour", _crashBehaviour);
+    if (_logLevel != "Normal") res->AddAttribute("LogLevel", _logLevel);
+    if (!_holidayCountry.empty()) res->AddAttribute("HolidayCountry", _holidayCountry);
     res->AddAttribute("MIDITimecodeDevice", _MIDITimecodeDevice);
     res->AddAttribute("MIDITimecodeFormat", wxString::Format("%d", _MIDITimecodeFormat));
     res->AddAttribute("MIDITimecodeOffset", wxString::Format("%ld", (long)_MIDITimecodeOffset));
     res->AddAttribute("Password", _password);
     res->AddAttribute("DefaultPage", _defaultPage);
     res->AddAttribute("AllowUnauth", _allowUnauth ? _("TRUE") : _("FALSE"));
-    res->AddAttribute("City", _city);
+    if (_customLocation) {
+        // older versions only read the city, so give them the nearest one
+        res->AddAttribute("City", City::GetNearestCity(_latitude, _longitude));
+        res->AddAttribute("Latitude", FormatCoordinate(_latitude));
+        res->AddAttribute("Longitude", FormatCoordinate(_longitude));
+    } else {
+        res->AddAttribute("City", _city);
+    }
     res->AddAttribute("RemoteLatency", wxString::Format("%d", _remoteLatency));
     res->AddAttribute("RemoteAcceptableJitter", wxString::Format("%d", _remoteAcceptableJitter));
     res->AddAttribute("SMPTEMode", wxString::Format("%d", _SMPTEMode));
@@ -430,19 +505,19 @@ std::string ScheduleOptions::GetButtonsJSON(const CommandManager& cmdMgr, const 
             // dont return these
         } else {
             auto cmd = cmdMgr.GetCommand(it->GetCommand());
-            if (!cmd->IsUIOnly()) {
+            if (cmd != nullptr && !cmd->IsUIOnly()) {
                 if (!first) {
                     res += ",";
                 }
                 first = false;
                 res += "{\"label\":\"" +
-                       it->GetLabel() + "\",\"color\":\"" +
+                       JSONSafe(it->GetLabel()) + "\",\"color\":\"" +
                        it->GetColorName() + "\",\"id\":\"" +
                        wxString::Format("%i", it->GetId()).ToStdString() + "\"}";
             }
         }
     }
-    res += "],\"reference\":\"" + reference + "\"}";
+    res += "],\"reference\":\"" + JSONSafe(reference) + "\"}";
 
     return res;
 }

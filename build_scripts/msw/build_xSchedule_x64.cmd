@@ -1,50 +1,42 @@
+@echo off
+rem Builds xSchedule and its plugins (Release x64). Needs the VS 2026 (v145) toolset, any edition including
+rem Build Tools: the xLights dependency bundle it fetches is built with it.
+
 set cwd=%CD%
+cd /d "%~dp0..\.."
 
-IF NOT EXIST "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\amd64" GOTO Preview
-set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\amd64;%PATH%
-Echo VS Professional Detected
-GOTO Start
-
-:Preview
-IF NOT EXIST "C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\amd64" GOTO Community
-set PATH=C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\amd64;%PATH%
-Echo VS Preview Detected
-GOTO Start
-
-:Community
-IF NOT EXIST "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\amd64" GOTO Start
-set PATH=C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\amd64;%PATH%
-Echo VS Community Detected
-:Start
-
-cd ..
-cd ..
-
-cd xSchedule
-msbuild.exe -m:10 xSchedule.sln -p:Configuration="Release" -p:Platform="x64"
+powershell -NoProfile -ExecutionPolicy Bypass -File xlights\ci_scripts\fetch_dependencies.ps1 -Only Dependencies
+if %ERRORLEVEL% NEQ 0 goto error
+powershell -NoProfile -ExecutionPolicy Bypass -File xlights\ci_scripts\fetch_dependencies.ps1 -Only VCRedist
 if %ERRORLEVEL% NEQ 0 goto error
 
-cd xSMSDaemon
-msbuild.exe -m:10 xSMSDaemon.sln -p:Configuration="Release" -p:Platform="x64"
+set MSBUILD=
+for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -version [18.0^,19.0^) -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\amd64\MSBuild.exe`) do (
+    if not defined MSBUILD set "MSBUILD=%%i"
+)
+if not defined MSBUILD (
+    echo Visual Studio 2026 ^(or its Build Tools^) is needed to build against the xLights dependency bundle.
+    goto error
+)
+echo Using %MSBUILD%
+
+"%MSBUILD%" -m xSchedule\xSchedule.sln -p:Configuration="Release" -p:Platform="x64"
 if %ERRORLEVEL% NEQ 0 goto error
-cd ..
 
-cd RemoteFalcon
-msbuild.exe -m:10 RemoteFalcon.sln -p:Configuration="Release" -p:Platform="x64"
+"%MSBUILD%" -m xSchedule\xSMSDaemon\xSMSDaemon.sln -p:Configuration="Release" -p:Platform="x64"
 if %ERRORLEVEL% NEQ 0 goto error
-cd ..
 
-cd ..
+"%MSBUILD%" -m xSchedule\RemoteFalcon\RemoteFalcon.sln -p:Configuration="Release" -p:Platform="x64"
+if %ERRORLEVEL% NEQ 0 goto error
 
-cd build_scripts
-cd msw
-
+cd /d "%cwd%"
 goto exit
 
 :error
 
 @echo Error compiling xSchedule x64
+cd /d "%cwd%"
 pause
-exit 1
+exit /b 1
 
 :exit

@@ -13,10 +13,10 @@
 
 #include "PlayListItemSerial.h"
 #include "PlayListItemSerialPanel.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/outputs/SerialOutput.h"
-#include "../xlights/xLights/outputs/serial.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/outputs/SerialOutput.h"
+#include "../xlights/src-core/outputs/serial.h"
 
 #include <log.h>
 

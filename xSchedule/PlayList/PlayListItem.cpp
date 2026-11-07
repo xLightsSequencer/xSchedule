@@ -11,7 +11,7 @@
 #include "PlayListItem.h"
 #include "PlayList.h"
 #include "PlayListStep.h"
-#include "../../xLights/utils/AudioManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
 #include "../RunningSchedule.h"
 #include "../ScheduleManager.h"
 #include "../ScheduleOptions.h"
@@ -195,8 +195,7 @@ std::string PlayListItem::ReplaceTags(const std::string s) const {
             }
 
             if (pl != nullptr && !pl->IsRandom()) {
-                bool dummy;
-                auto nextstep = pl->GetNextStep(dummy);
+                auto nextstep = pl->PeekNextStep();
                 if (nextstep != nullptr) {
                     res.Replace("%NEXTSTEPNAME%", nextstep->GetNameNoTime());
                 }

@@ -13,8 +13,8 @@
 
 #include "PlayListItemMIDI.h"
 #include "PlayListItemMIDIPanel.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 #include <log.h>
 #include "../wxMIDI/src/wxMidi.h"

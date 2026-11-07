@@ -11,15 +11,16 @@
 #include "SyncArtNet.h"
 #include "ScheduleManager.h"
 #include "ScheduleOptions.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
 #include "PlayList/PlayList.h"
 #include "PlayList/PlayListStep.h"
 #include "events/ListenerManager.h"
 
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/outputs/ArtNetOutput.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/outputs/ArtNetOutput.h"
 #include <log.h>
+#include "Diagnostics.h"
 
 class ArtNetTimecodeThread : public wxThread {
     std::atomic<bool> _stop;
@@ -60,38 +61,38 @@ public:
     }
 
     void* Entry() {
-        wxLongLong last = 0;
+        Diagnostics::ThreadName name("ArtNet timecode");
         double interval = _syncArtNet->GetInterval() * 1000.0;
         _running = true;
+        // the time of the next send; sending only when it is due and sleeping until then keeps the thread idle
+        wxLongLong next = 0;
         while (!_stop) {
-            if (!_suspend) {
-                long long sleepfor = 0;
+            if (_suspend) {
+                wxMilliSleep(10);
+                continue;
+            }
 
-                if (wxGetUTCTimeUSec() - last > interval) {
-                    // get our absolute position
-                    PlayList* pl = _scheduleManager->GetRunningPlayList();
-                    if (pl != nullptr) {
-                        // sent a sync
-                        auto ms = pl->GetPosition();
-                        auto stepno = pl->GetRunningStepIndex();
-                        auto stepms = pl->GetRunningStep() == nullptr ? 0 : pl->GetRunningStep()->GetPosition();
-                        auto basesecs = pl->GetRunningStep() == nullptr ? -1 : pl->GetRunningStep()->GetBaseTimeCodeTime();
-                        _syncArtNet->SendSync(0, 0, stepms, ms, "", "", "", "", stepno, basesecs);
-                        _toSendStop = true;
-                    } else {
-                        if (_toSendStop) {
-                            _syncArtNet->SendStop();
-                            _toSendStop = false;
-                        }
+            wxLongLong now = wxGetUTCTimeUSec();
+            if (now >= next) {
+                // get our absolute position
+                PlaybackState playing = _scheduleManager->GetPlaybackSnapshot();
+                if (playing.playing) {
+                    // sent a sync
+                    _syncArtNet->SendSync(0, 0, playing.stepMS, playing.playlistMS, "", "", "", "", playing.stepNo, playing.baseTimeCodeSecs);
+                    _toSendStop = true;
+                } else {
+                    if (_toSendStop) {
+                        _syncArtNet->SendStop();
+                        _toSendStop = false;
                     }
-
-                    sleepfor = (int64_t)((last.GetValue()) + interval - wxGetUTCTimeUSec().GetValue());
-                    last = wxGetUTCTimeUSec().GetValue();
                 }
+                // a long way behind (a stall, or the first send) starts again from now rather than catching up in a burst
+                next = (next == 0 || (now - next).GetValue() > (long long)interval) ? now + (long long)interval : next + (long long)interval;
+            }
 
-                if (sleepfor > 0) {
-                    wxMicroSleep(sleepfor);
-                }
+            long long sleepfor = (next - wxGetUTCTimeUSec()).GetValue();
+            if (sleepfor > 0) {
+                wxMicroSleep(sleepfor);
             }
         }
         _running = false;

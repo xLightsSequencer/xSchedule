@@ -12,7 +12,7 @@
 #include "RGBEffects.h"
 #include "ScheduleManager.h"
 #include "xScheduleMain.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(MatrixDialog)
 #include <wx/intl.h>
@@ -146,7 +146,8 @@ MatrixDialog::MatrixDialog(wxWindow* parent, OutputManager* outputManager, std::
         Choice_FromModel->SetStringSelection(_fromModel);
         RGBEffects effects;
         wxXmlNode* node = effects.GetModel(Choice_FromModel->GetStringSelection().ToStdString());
-        TextCtrl_StartChannel->SetValue(node->GetAttribute("StartChannel", ""));
+        // the model may have been renamed or deleted in xLights
+        TextCtrl_StartChannel->SetValue(node == nullptr ? wxString() : node->GetAttribute("StartChannel", ""));
         long sc = _outputManager->DecodeStartChannel(TextCtrl_StartChannel->GetValue().ToStdString());
         if (sc == 0 || (size_t)sc > xScheduleFrame::GetScheduleManager()->GetTotalChannels()) {
             StaticText8->SetLabel("Invalid");
@@ -197,7 +198,7 @@ void MatrixDialog::PopulateModels() {
     for (const auto& it : effects.GetModels("Custom")) {
         wxXmlNode* node = effects.GetModel(it);
         // we only add 2d custom models
-        if (node->GetAttribute("Depth") == "1")
+        if (node != nullptr && node->GetAttribute("Depth", "1") == "1")
             Choice_FromModel->Append(it);
     }
 
@@ -258,6 +259,10 @@ void MatrixDialog::OnChoice_FromModelSelect(wxCommandEvent& event) {
     if (Choice_FromModel->GetSelection() != 0) {
         RGBEffects effects;
         wxXmlNode* node = effects.GetModel(Choice_FromModel->GetStringSelection().ToStdString());
+        if (node == nullptr) {
+            ValidateWindow();
+            return;
+        }
         TextCtrl_StartChannel->SetValue(node->GetAttribute("StartChannel", ""));
         long sc = _outputManager->DecodeStartChannel(TextCtrl_StartChannel->GetValue().ToStdString());
         if (sc == 0 || (size_t)sc > xScheduleFrame::GetScheduleManager()->GetTotalChannels()) {
@@ -272,16 +277,10 @@ void MatrixDialog::OnChoice_FromModelSelect(wxCommandEvent& event) {
             Choice_Orientation->SetSelection(-1);
             Choice_StartLocation->SetSelection(-1);
         } else {
-            SpinCtrl_Strings->SetValue(wxAtoi(node->GetAttribute("parm1", "0")));
-            SpinCtrl_StringLength->SetValue(wxAtoi(node->GetAttribute("parm2", "0")));
-            SpinCtrl_StrandsPerString->SetValue(wxAtoi(node->GetAttribute("parm3", "1")));
-            // Legacy: "Horiz Matrix". New format: DisplayAs="Matrix" with Vertical="false".
-            if (node->GetAttribute("DisplayAs") == "Horiz Matrix" ||
-                (node->GetAttribute("DisplayAs") == "Matrix" && node->GetAttribute("Vertical", "false") != "true")) {
-                Choice_Orientation->SetStringSelection("Horizontal");
-            } else {
-                Choice_Orientation->SetStringSelection("Vertical");
-            }
+            SpinCtrl_Strings->SetValue(RGBEffects::GetStrings(node));
+            SpinCtrl_StringLength->SetValue(RGBEffects::GetNodesPerString(node));
+            SpinCtrl_StrandsPerString->SetValue(RGBEffects::GetStrandsPerString(node));
+            Choice_Orientation->SetStringSelection(RGBEffects::IsVertical(node) ? "Vertical" : "Horizontal");
             std::string startSide = node->GetAttribute("StartSide", "B");
             std::string dir = node->GetAttribute("Dir", "L");
             if (startSide == "B" && dir == "L") {

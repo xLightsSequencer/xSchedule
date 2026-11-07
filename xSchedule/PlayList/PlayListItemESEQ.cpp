@@ -10,8 +10,8 @@
 
 #include "PlayListItemESEQ.h"
 #include "PlayListItemESEQPanel.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "wx/xml/xml.h"
 #include <wx/notebook.h>
 

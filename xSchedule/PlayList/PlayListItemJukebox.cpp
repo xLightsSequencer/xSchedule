@@ -14,12 +14,15 @@
 
 #include <nlohmann/json.hpp>
 
+#include <thread>
+
 #include "PlayListItemJukebox.h"
 #include "PlayListItemJukeboxPanel.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 #include <log.h>
+#include "../Diagnostics.h"
 
 PlayListItemJukebox::PlayListItemJukebox(wxXmlNode* node) :
     PlayListItem(node)
@@ -96,15 +99,27 @@ void PlayListItemJukebox::Frame(uint8_t* buffer, size_t size, size_t ms, size_t 
 
         spdlog::info("Launching xLights Jukebox Button {}.", _jukeboxButton);
 
-        nlohmann::json result = xLightsRequest(GetPort(), "{\"cmd\":\"lightsOn\"}");
-        if (result["res"].get<int>() != 200) {
-            spdlog::error("Failed to turn on output to lights: {}", (const char*)result["msg"].get<std::string>().c_str());
-        }
+        // xLights can take a while to answer (its request timeout is 30 minutes), so ask from another thread rather
+        // than holding up the frame loop and the lights with it
+        int port = GetPort();
+        int button = _jukeboxButton;
+        std::thread([port, button]() {
+            Diagnostics::ThreadName name("jukebox");
+            // an unexpected reply from xLights must not throw
+            try {
+                nlohmann::json result = xLightsRequest(port, "{\"cmd\":\"lightsOn\"}");
+                if (result.value("res", 0) != 200) {
+                    spdlog::error("Failed to turn on output to lights: {}", result.value("msg", std::string()));
+                }
 
-        result = xLightsRequest(GetPort(), wxString::Format("{\"cmd\":\"playJukebox\",\"button\":%d}", _jukeboxButton));
-        if (result["res"].get<int>() != 200) {
-            spdlog::error("Failed to send jukebox button press: {}", (const char*)result["msg"].get<std::string>().c_str());
-        }
+                result = xLightsRequest(port, wxString::Format("{\"cmd\":\"playJukebox\",\"button\":%d}", button));
+                if (result.value("res", 0) != 200) {
+                    spdlog::error("Failed to send jukebox button press: {}", result.value("msg", std::string()));
+                }
+            } catch (const std::exception& e) {
+                spdlog::error("Unexpected reply from xLights for jukebox button {}: {}", button, e.what());
+            }
+        }).detach();
     }
 }
 

@@ -13,6 +13,7 @@
 
 //(*InternalHeaders(EventFPPPanel)
 #include <wx/intl.h>
+#include <wx/sizer.h>
 #include <wx/string.h>
 //*)
 
@@ -50,6 +51,16 @@ EventFPPPanel::EventFPPPanel(wxWindow* parent,wxWindowID id,const wxPoint& pos,c
 	FlexGridSizer1->Fit(this);
 	FlexGridSizer1->SetSizeHints(this);
 	//*)
+
+    // a note above the wxSmith layout, added here so the generated code stays as generated
+    auto* note = new wxStaticText(this, wxID_ANY, _("Only FPP 4 and older send these. For FPP 5 and newer, use FPPCommandPreset."));
+    note->Wrap(FromDIP(340));
+    auto* outer = new wxBoxSizer(wxVERTICAL);
+    outer->Add(note, 0, wxALL, 5);
+    SetSizer(nullptr, false);
+    outer->Add(FlexGridSizer1, 1, wxEXPAND);
+    SetSizer(outer);
+    outer->SetSizeHints(this);
 }
 
 EventFPPPanel::~EventFPPPanel()

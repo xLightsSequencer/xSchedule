@@ -24,6 +24,7 @@ protected:
     std::string _command;
     bool _waitForCompletion;
     bool _started;
+    long _pid = 0;
     #pragma endregion Member Variables
 
 public:
@@ -41,6 +42,7 @@ public:
 
     void SetCommand(const std::string& command) { if (_command != command) { _command = command; _changeCount++; } }
     std::string GetCommand() const { return _command; }
+    virtual bool IsBusy() const override;
     bool GetWaitForCompletion() const { return _waitForCompletion; }
     void SetWaitForCompletion(bool waitForCompletion) {
         if (_waitForCompletion != waitForCompletion) { _waitForCompletion = waitForCompletion; _changeCount++; }

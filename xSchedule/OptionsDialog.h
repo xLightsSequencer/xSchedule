@@ -33,6 +33,7 @@ class OptionsDialog: public wxDialog
 
     void LoadButtons();
     void ValidateWindow();
+    void UpdateHolidayChoice();
     void OnButtonsDragEnd(wxMouseEvent& event);
     void OnButtonsDragQuit(wxMouseEvent& event);
     void OnButtonsMouseMove(wxMouseEvent& event);
@@ -44,12 +45,16 @@ class OptionsDialog: public wxDialog
         void EditButton(int row);
 
 		//(*Declarations(OptionsDialog)
+        wxStaticText* StaticText_SectionGeneral;
+        wxStaticText* StaticText_SectionWeb;
+        wxStaticText* StaticText_SectionAudio;
 		wxButton* Button_ButtonAdd;
 		wxButton* Button_ButtonDelete;
 		wxButton* Button_ButtonEdit;
 		wxButton* Button_Cancel;
 		wxButton* Button_DefaultWindowLocation;
 		wxButton* Button_Export;
+		wxButton* Button_FindLocation;
 		wxButton* Button_Import;
 		wxButton* Button_Ok;
 		wxCheckBox* CheckBoxSuppressDarkMode;
@@ -71,6 +76,7 @@ class OptionsDialog: public wxDialog
 		wxCheckBox* CheckBox_Sync;
 		wxCheckBox* CheckBox_TimecodeWaitForNextSong;
 		wxChoice* Choice1;
+		wxChoice* Choice_LogLevel;
 		wxChoice* Choice_ARTNetTimeCodeFormat;
 		wxChoice* Choice_AudioDevice;
 		wxChoice* Choice_InputAudioDevice;
@@ -82,11 +88,14 @@ class OptionsDialog: public wxDialog
 		wxSpinCtrl* SpinCtrl_PasswordTimeout;
 		wxSpinCtrl* SpinCtrl_WebServerPort;
 		wxStaticText* StaticText10;
+		wxStaticText* StaticText_LogLevel;
 		wxStaticText* StaticText11;
 		wxStaticText* StaticText12;
 		wxStaticText* StaticText13;
 		wxStaticText* StaticText14;
 		wxStaticText* StaticText1;
+		wxStaticText* StaticText_Coordinates;
+		wxStaticText* StaticText_Holidays;
 		wxStaticText* StaticText2;
 		wxStaticText* StaticText3;
 		wxStaticText* StaticText4;
@@ -95,6 +104,8 @@ class OptionsDialog: public wxDialog
 		wxStaticText* StaticText7;
 		wxStaticText* StaticText8;
 		wxStaticText* StaticText9;
+		wxTextCtrl* TextCtrl_Coordinates;
+		wxChoice* Choice_Holidays;
 		wxTextCtrl* TextCtrl_DefaultPage;
 		wxTextCtrl* TextCtrl_Password;
 		wxTextCtrl* TextCtrl_wwwRoot;
@@ -103,6 +114,9 @@ class OptionsDialog: public wxDialog
 	protected:
 
 		//(*Identifiers(OptionsDialog)
+        static const long ID_STATICTEXT_SECTIONGENERAL;
+        static const long ID_STATICTEXT_SECTIONWEB;
+        static const long ID_STATICTEXT_SECTIONAUDIO;
 		static const long ID_CHECKBOX4;
 		static const long ID_CHECKBOX3;
 		static const long ID_CHECKBOX5;
@@ -152,8 +166,15 @@ class OptionsDialog: public wxDialog
 		static const long ID_CHOICE4;
 		static const long ID_STATICTEXT1;
 		static const long ID_CHOICE3;
+		static const long ID_STATICTEXT_COORDINATES;
+		static const long ID_TEXTCTRL_COORDINATES;
+		static const long ID_STATICTEXT_HOLIDAYS;
+		static const long ID_CHOICE_HOLIDAYS;
+		static const long ID_BUTTON_FINDLOCATION;
 		static const long ID_STATICTEXT10;
 		static const long ID_CHOICE5;
+		static const long ID_STATICTEXT_LOGLEVEL;
+		static const long ID_CHOICE_LOGLEVEL;
 		static const long ID_BUTTONDEFAULTWINODOWLOC;
 		static const long ID_BUTTON1;
 		static const long ID_BUTTON2;
@@ -176,6 +197,9 @@ class OptionsDialog: public wxDialog
 		void OnButton_ExportClick(wxCommandEvent& event);
 		void OnCheckBox1Click(wxCommandEvent& event);
 		void OnButton_DefaultWindowLocationClick(wxCommandEvent& event);
+		void OnChoice_LocationSelect(wxCommandEvent& event);
+		void OnTextCtrl_CoordinatesText(wxCommandEvent& event);
+		void OnButton_FindLocationClick(wxCommandEvent& event);
 		//*)
 
 		DECLARE_EVENT_TABLE()

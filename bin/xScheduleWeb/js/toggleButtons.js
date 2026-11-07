@@ -1,186 +1,96 @@
-var volumePOS;
-var volumelastY;
-var volumeinterval;
-var volumeArray = ["RESET"];
+// Brightness the lights-off button restores
+var brightnessBeforeOff = 100;
+// sliders the user is dragging are not moved by status updates
+var levelDragging = {};
 
 function updateNavStatus() {
   checkLogInStatus();
+  if (playingStatus.status == undefined) return;
 
-  if (playingStatus.status == 'idle') {
+  var active = playingStatus.status != 'idle';
+  $('#random, #steplooping, #playlistlooping').prop('disabled', !active);
+  setPressed('#random', active && playingStatus['random'] == "true");
+  setPressed('#steplooping', active && playingStatus['steplooping'] == "true");
+  setPressed('#playlistlooping', active && playingStatus['playlistlooping'] == "true");
 
-    $('#random').attr('disabled', 'disabled');
-    $('#steplooping').attr('disabled', 'disabled');
-    $('#playlistlooping').attr('disabled', 'disabled');
-  } else {
-    $('#random').removeAttr("disabled");
-    $('#steplooping').removeAttr("disabled");
-    $('#playlistlooping').removeAttr("disabled");
-
-    if (playingStatus['random'] == "false") {
-      $('#random').attr('class',
-        "btn btn-default glyphicon glyphicon-random");
-    } else if (playingStatus['random'] == "true") {
-      $('#random').attr('class',
-        "btn btn-info glyphicon glyphicon-random");
-    }
-    if (playingStatus['steplooping'] == "false") {
-      $('#steplooping').attr('class',
-        "btn btn-default glyphicon glyphicon-repeat");
-    } else if (playingStatus['steplooping'] == "true") {
-      $('#steplooping').attr('class',
-        "btn btn-info glyphicon glyphicon-repeat");
-    }
-    if (playingStatus['playlistlooping'] == "false") {
-      $('#playlistlooping').attr('class',
-        "btn btn-default glyphicon glyphicon-refresh");
-    } else if (playingStatus['playlistlooping'] == "true") {
-      $('#playlistlooping').attr('class',
-        "btn btn-info glyphicon glyphicon-refresh");
-    }
+  // volume
+  var volume = parseInt(playingStatus['volume'], 10);
+  if (!isNaN(volume)) {
+    if (!levelDragging.volume) $('#volumeSlider').val(volume);
+    $('#volumeValue').text(volume == 0 ? 'Muted' : volume + '%');
+    setPressed('#toggleMute', volume == 0);
+    $('#toggleMute').html(xsIcon(volume == 0 ? 'mute' : 'volume', 18)).attr('title', volume == 0 ? 'Unmute' : 'Mute');
   }
 
-  if (playingStatus['volume'] == "0") {
-    $('#toggleMute').attr('class', "btn btn-danger glyphicon glyphicon-volume-off");
-    $('#toggleMute').html("");
-  } else if (playingStatus['volume'] > "0") {
-    if (playingStatus['volume'] == 100) {
-      $('#toggleMute').attr('class', "btn btn-success glyphicon glyphicon-volume-up");
-      $('#toggleMute').html("");
-    } else {
-      $('#toggleMute').attr('class', "btn btn-success glyphicon glyphicon-volume-down");
-      $('#toggleMute').html((0 + playingStatus['volume']).slice(-2));
-    }
-
-  }
-
-  if (playingStatus['volume'] == "0") {
-    $('#volumeMute').attr('class', "btn btn-danger glyphicon glyphicon-volume-off");
-    $('#volumeMute').html("");
-  } else if (playingStatus['volume'] > "0") {
-    //display test
-    if (playingStatus['volume'] == 100) {
-      $('#volumeMute').attr('class', "btn btn-success glyphicon glyphicon-volume-up");
-      $('#volumeMute').html("");
-    } else {
-      $('#volumeMute').attr('class', "btn btn-success glyphicon glyphicon-volume-down");
-      $('#volumeMute').html((0 + playingStatus['volume']).slice(-2));
-    }
-
-  }
-
-  if (playingStatus['brightness'] == "0") {
-    $('#brightnessLevel').attr('class', "btn btn-danger glyphicon glyphicon-flash");
-    $('#brightnessLevel').html("");
-  } else if (playingStatus['brightness'] > "0") {
-    //display test
-    if (playingStatus['brightness'] == 100) {
-      $('#brightnessLevel').attr('class', "btn btn-default glyphicon glyphicon-flash");
-      $('#brightnessLevel').html("");
-    } else {
-      $('#brightnessLevel').attr('class', "btn btn-default glyphicon glyphicon-flash");
-      $('#brightnessLevel').html((0 + playingStatus['brightness']).slice(-2));
-    }
-
+  // brightness
+  var brightness = parseInt(playingStatus['brightness'], 10);
+  if (!isNaN(brightness)) {
+    if (brightness > 0) brightnessBeforeOff = brightness;
+    if (!levelDragging.brightness) $('#brightnessSlider').val(brightness);
+    $('#brightnessValue').text(brightness == 0 ? 'Off' : brightness + '%');
+    setPressed('#brightnessLevel', brightness == 0);
+    $('#brightnessLevel').html(xsIcon(brightness == 0 ? 'dark' : 'sun', 18)).attr('title', brightness == 0 ? 'Restore brightness' : 'Lights off');
   }
 
   //output to lights
-  if (playingStatus['outputtolights'] == 'false') {
-    $('#outputtolights').attr('class',
-      "btn btn-danger glyphicon glyphicon-eye-close");
-  } else if (playingStatus['outputtolights'] == 'true') {
-    $('#outputtolights').attr('class',
-      "btn btn-success glyphicon glyphicon-eye-open");
-  }
+  var lightsOn = playingStatus['outputtolights'] == 'true';
+  $('#outputtolights').toggleClass('is-bad', !lightsOn)
+    .attr('title', lightsOn ? 'Output to lights is on. Click to turn it off.' : 'Output to lights is off. Click to turn it on.')
+    .find('.label').text(lightsOn ? 'Lights on' : 'Lights off');
+
+  updateControllerStatus();
 
   //update xlights version
-  $("#version").html(" " + playingStatus['version']);
-
-
+  $("#version").html(" " + xsEscape(playingStatus['version']) + (playingStatus['build'] ? ' (' + xsEscape(playingStatus['build']) + ')' : ''));
 }
 
-//SMART
+function setPressed(selector, pressed) {
+  $(selector).attr('aria-pressed', pressed ? 'true' : 'false');
+}
 
+// Wires the volume slider: sends the level while dragging (at most every 200ms) and when released.
 function smartVolume() {
-  $("#volumeMute").mousedown(function(evt) {
-    var e = $("#volumeMute").mousemove();
-    offset = $(this).offset();
-    volumelastY = Math.round(100 - ((evt.pageY - offset.top) * 100 / 33));
-    volumeinterval = window.setInterval(volumeDrag, 200, e, offset);
-  }).mouseup(function(evt) {
-    clearInterval(volumeinterval);
+  wireLevelSlider('#volumeSlider', 'volume', 'Set volume to', function(v) {
+    $('#volumeValue').text(v == 0 ? 'Muted' : v + '%');
   });
-
-  $("#volumeMute").mousemove(function handler(evt) {
-    var offset = $(this).offset();
-    volumePOS = Math.round(100 - ((evt.pageY - offset.top) * 100 / 33));
-  });
-
-  $("#volumeMute").mouseup(function handler(evt) {
-    var offset = $(this).offset();
-    var currentY = Math.round(100 - ((evt.pageY - offset.top) * 100 / 33));
-    if (volumelastY == currentY) {
-      //toggle mute
-      runCommand('Toggle mute');
-    }
-  });
-
-  function volumeDrag() {
-    volumeArray.push(volumePOS);
-    for (var i = volumeArray.length; i > 10; i--) {
-      volumeArray.shift();
-    }
-    if (volumeArray.every((val, i, arr) => val == arr[0]) == true) {
-      volumeArray = ["RESET"];
-      clearInterval(volumeinterval);
-    }
-    if (isNaN(volumePOS) == false && volumeArray.length > '1') {
-      runCommand('Set volume to', volumePOS)
-    }
-
-  }
 }
-
-var brightnessPOS;
-var brightnesslastY;
-var brightnessinterval;
-var brightnessArray = ["RESET"];
 
 function smartBrightness() {
-  $("#brightnessLevel").mousedown(function(evt) {
-    var e = $("#brightnessLevel").mousemove();
-    offset = $(this).offset();
-    brightnesslastY = Math.round(100 - ((evt.pageY - offset.top) * 100 / 33));
-    brightnessinterval = window.setInterval(brightnessDrag, 100, e, offset);
-  }).mouseup(function(evt) {
-    clearInterval(brightnessinterval);
+  wireLevelSlider('#brightnessSlider', 'brightness', 'Set brightness to n%', function(v) {
+    $('#brightnessValue').text(v == 0 ? 'Off' : v + '%');
   });
+}
 
-  $("#brightnessLevel").mousemove(function handler(evt) {
-    var offset = $(this).offset();
-    brightnessPOS = Math.round(100 - ((evt.pageY - offset.top) * 100 / 33));
+function wireLevelSlider(selector, key, command, show) {
+  var last = 0;
+  var pending;
+  $(selector).on('input', function() {
+    var value = $(this).val();
+    levelDragging[key] = true;
+    show(value);
+    clearTimeout(pending);
+    var now = Date.now();
+    if (now - last > 200) {
+      last = now;
+      runCommand(command, value);
+    } else {
+      pending = setTimeout(function() {
+        last = Date.now();
+        runCommand(command, value);
+      }, 200);
+    }
+  }).on('change', function() {
+    clearTimeout(pending);
+    runCommand(command, $(this).val());
+    setTimeout(function() { levelDragging[key] = false; }, 1500);
   });
+}
 
-  $("#brightnessLevel").mouseup(function handler(evt) {
-    var offset = $(this).offset();
-    var currentY = Math.round(100 - ((evt.pageY - offset.top) * 100 / 33));
-    if (brightnesslastY == currentY) {
-      //toggle mute
-      //runCommand('Toggle mute');
-    }
-  });
-
-  function brightnessDrag() {
-    brightnessArray.push(brightnessPOS);
-    for (var i = brightnessArray.length; i > 10; i--) {
-      brightnessArray.shift();
-    }
-    if (brightnessArray.every((val, i, arr) => val == arr[0]) == true) {
-      brightnessArray = ["RESET"];
-      clearInterval(brightnessinterval);
-    }
-    if (isNaN(brightnessPOS) == false && brightnessArray.length > '1') {
-      runCommand('Set brightness to n%', brightnessPOS)
-    }
-
+function toggleLightsOff() {
+  var brightness = parseInt(playingStatus['brightness'], 10);
+  if (brightness == 0) {
+    runCommand('Set brightness to n%', brightnessBeforeOff > 0 ? brightnessBeforeOff : 100);
+  } else {
+    runCommand('Set brightness to n%', 0);
   }
 }

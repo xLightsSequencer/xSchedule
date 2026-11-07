@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 /***************************************************************
  * This source files comes from the xLights project
  * https://www.xlights.org
@@ -11,6 +13,7 @@
  **************************************************************/
 
 #include "PlayListItem.h"
+#include "AudioPreload.h"
 #include "../Blend.h"
 #include <string>
 
@@ -23,6 +26,13 @@ class FSEQFile;
 #define FSEQFILES "FSEQ files|*.fseq|All files (*.*)|*.*"
 
 class PlayListItemFSEQ : public PlayListItem {
+    std::vector<uint8_t> _frameBuffer;
+    // the sequence clock when there is no audio to follow: real time since the last frame, so ticks a busy PC
+    // drops don't slow the sequence down
+    wxLongLong _lastTick = 0;
+    long _clockRemainder = 0;
+    void ResetClock() { _lastTick = 0; _clockRemainder = 0; }
+
 protected:
 #pragma region Member Variables
     APPLYMETHOD _applyMethod;
@@ -31,6 +41,7 @@ protected:
     bool _overrideAudio;
     FSEQFile* _fseqFile;
     AudioManager* _audioManager;
+    AudioPreload _preload;
     size_t _durationMS;
     bool _controlsTimingCache;
     size_t _sc;
@@ -139,6 +150,7 @@ public:
 #pragma region Playing
     virtual void Frame(uint8_t* buffer, size_t size, size_t ms, size_t framems, bool outputframe) override;
     virtual void Start(long stepLengthMS) override;
+    virtual void PreloadAudio() override;
     virtual void Stop() override;
     virtual void Restart() override;
     virtual void Pause(bool pause) override;

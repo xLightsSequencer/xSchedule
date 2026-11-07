@@ -51,8 +51,11 @@ void OutputProcessThreeToFour::Frame(uint8_t* buffer, size_t size, std::list<Out
 {
     if (!_enabled) return;
 
-    size_t sc = GetStartChannelAsNumber();
-    size_t nodes = std::min(_nodes, (size - (sc - 1)) / 4); // divide by 4 as that is what we are expanding it to
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
+    size_t sc = off + 1;
+    size_t nodes = std::min(_nodes, (size - off) / 4); // divide by 4 as that is what we are expanding it to
+    if (nodes == 0) return;
 
 	uint8_t* target = buffer + sc - 1 + (nodes - 1) * 4;
 	uint8_t* source = buffer + sc - 1 + (nodes - 1) * 3;

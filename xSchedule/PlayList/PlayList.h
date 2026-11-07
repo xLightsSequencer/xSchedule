@@ -50,6 +50,9 @@ protected:
     int _loops;
     bool _random;
     bool _suspendAtEndOfStep;
+    bool _restartStepOnResume = false;
+    int _loopNumber = 1;
+    std::string _pendingCall;
     bool _jumpToEndStepsAtEndOfCurrentStep;
     std::string _forceNextStep;
     std::list<wxUint32> _played;
@@ -68,6 +71,8 @@ public:
 #pragma region Constructors and Destructors
     PlayList(OutputManager* outputManager, wxXmlNode* node);
     PlayList(PlayList& playlist, bool newid = false);
+    // a copy with just one step, and the steps run with every step, for an event to play
+    PlayList(PlayList& playlist, const std::string& onlyStep);
     PlayList();
     virtual ~PlayList();
 #pragma endregion Constructors and Destructors
@@ -92,10 +97,30 @@ public:
     void SetSuspendAtEndOfCurrentStep() {
         _suspendAtEndOfStep = true;
     }
+    // when next unsuspended, start the current step again from the beginning rather than carrying on
+    void SetRestartStepOnResume(bool restart) {
+        _restartStepOnResume = restart;
+    }
     void JumpToStepAtEndOfCurrentStep(const std::string& step) {
         _forceNextStep = step;
     }
     PlayListStep* GetNextStep(bool& didloop);
+    // the pass through the playlist, counting from 1
+    int GetLoopNumber() const {
+        return _loopNumber;
+    }
+    // a playlist a branch asked to play before this one carries on; taking it clears it
+    std::string TakePendingCall() {
+        std::string call = _pendingCall;
+        _pendingCall = "";
+        return call;
+    }
+    // The step that plays after the current one, for display. Unlike GetNextStep it leaves the step loop count alone.
+    PlayListStep* PeekNextStep();
+    PlayListStep* GetNextStepIgnoringBranches(bool& didloop);
+    PlayListStep* FollowBranches(PlayListStep* step, bool& didloop, bool peek);
+    // decodes the next step's audio while this one plays (not when shuffling: the next step isn't known yet)
+    void PreloadNextStep();
     PlayListStep* GetRunningStep() const {
         return _currentStep;
     }
@@ -144,8 +169,10 @@ public:
         return _loops;
     }
     void DoLoop() {
+        ++_loopNumber;
+        if (_loops <= 0) return; // no limit
         --_loops;
-        if (_loops == 1) {
+        if (_loops <= 1) {
             _loops = -1;
             _looping = false;
         }
@@ -204,6 +231,9 @@ public:
     }
     bool IsLooping() const {
         return _looping;
+    }
+    bool IsStoppingAtEndOfThisLoop() const {
+        return _lastLoop;
     }
     void StopAtEndOfThisLoop() {
         _lastLoop = true;

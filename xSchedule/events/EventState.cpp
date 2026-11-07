@@ -15,6 +15,7 @@
 #include "../ScheduleManager.h"
 
 #include <log.h>
+#include "../Diagnostics.h"
 
 EventState::EventState() : EventBase()
 {
@@ -59,6 +60,7 @@ void EventState::ProcessState(const std::string& state, ScheduleManager* schedul
 
     size_t rate = 0;
     wxString msg;
+    Diagnostics::CommandSource source("event " + GetType() + ":" + GetName());
     scheduleManager->Action(_command, parameters, "", nullptr, nullptr, nullptr, rate, msg);
     spdlog::debug("    Event processed.");
 }

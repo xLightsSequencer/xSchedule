@@ -10,6 +10,7 @@
 
 #include <wx/xml/xml.h>
 #include <wx/notebook.h>
+#include <wx/process.h>
 
 #include "PlayListItemRunProcess.h"
 #include "PlayListItemRunProcessPanel.h"
@@ -95,16 +96,9 @@ void PlayListItemRunProcess::Frame(uint8_t* buffer, size_t size, size_t ms, size
     {
         _started = true;
 
-        // we need to run the process
-        int flags;
-        if (_waitForCompletion)
-        {
-            flags = wxEXEC_BLOCK;
-        }
-        else
-        {
-            flags = wxEXEC_ASYNC;
-        }
+        // Waiting for completion is done by keeping the step going (IsBusy), not by blocking: this runs on the
+        // main thread, which also sends the light frames.
+        int flags = wxEXEC_ASYNC;
 
         wxString cmd = _command;
         if (cmd.Contains("%SHOWDIR%"))
@@ -121,7 +115,7 @@ void PlayListItemRunProcess::Frame(uint8_t* buffer, size_t size, size_t ms, size
 
         if (cmd != "")
         {
-            wxExecute(cmd, flags, nullptr, &execEnv);
+            _pid = wxExecute(cmd, flags, nullptr, &execEnv);
             spdlog::info("Command launched.");
         }
         else
@@ -135,4 +129,10 @@ void PlayListItemRunProcess::Start(long stepLengthMS)
 {
     PlayListItem::Start(stepLengthMS);
     _started = false;
+    _pid = 0;
+}
+
+bool PlayListItemRunProcess::IsBusy() const
+{
+    return _waitForCompletion && _pid > 0 && wxProcess::Exists(_pid);
 }

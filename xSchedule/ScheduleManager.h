@@ -19,6 +19,9 @@
 #include <wx/thread.h>
 #include <wx/wx.h>
 #include <list>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <string>
 
 class PlayListItemText;
@@ -67,6 +70,15 @@ public:
     std::string _command;
     std::string _parameters;
     std::string _data;
+    std::string _source;
+};
+
+struct PlaybackState {
+    bool playing = false;
+    uint32_t playlistMS = 0;
+    uint32_t stepMS = 0;
+    uint32_t stepNo = 0;
+    int baseTimeCodeSecs = -1;
 };
 
 class ScheduleManager {
@@ -83,6 +95,17 @@ class ScheduleManager {
     uint8_t* _buffer = nullptr;
     wxUint32 _startTime = 0;
     PlayList* _immediatePlay = nullptr;
+    // GetNextScheduledPlayList searches up to 400 days per schedule and the idle window asks every second, so the
+    // answer is kept until a schedule changes, its time passes, or 30 s go by
+    PlayList* _nextPlayList = nullptr;
+    Schedule* _nextSchedule = nullptr;
+    wxDateTime _nextAt;
+    time_t _nextWorkedOut = 0;
+    size_t _nextSignature = 0;
+    // manual playlists interrupted by "play now then resume", resumed in reverse order
+    std::list<PlayList*> _interruptedPlays;
+    // the playlist "play next" starts once the running playlist reaches the end of its step
+    std::optional<wxUint32> _playNext;
     PlayList* _backgroundPlayList = nullptr;
     std::list<PlayList*> _eventPlayLists;
     int _overrideMS = 0;
@@ -108,6 +131,7 @@ class ScheduleManager {
     std::unique_ptr<SyncManager> _syncManager = nullptr;
 
     void DisableRemoteOutputs();
+    bool StartOutputToLights();
     std::string GetPingStatus();
     std::string FormatTime(size_t timems);
     void CreateBrightnessArray();
@@ -120,7 +144,15 @@ class ScheduleManager {
     PlayListItem* FindRunProcessNamed(const std::string& item) const;
     void TestFrame(uint8_t* buffer, long totalChannels, long msec);
 
+    // what the timecode threads read; see GetPlaybackSnapshot
+    mutable std::mutex _snapshotLock;
+    struct PlaybackSnapshot;
+    std::unique_ptr<PlaybackSnapshot> _snapshot;
+    void UpdatePlaybackSnapshot();
+
 public:
+    // true while output to lights is starting; the core's error dialogs are logged instead of shown then
+    static bool IsStartingOutputToLights();
     void SetPinger(Pinger* pinger) {
         _pinger = pinger;
     }
@@ -199,7 +231,7 @@ public:
     static std::string GetScheduleFile() {
         return "xlights.xschedule";
     }
-    void Save();
+    bool Save();
     void StopAll(bool sustain = false);
     void AddPlayList(PlayList* playlist);
     bool IsQueuedPlaylistRunning() const;
@@ -207,6 +239,8 @@ public:
     PlayList* GetRunningPlayList() const;
     PlayList* GetRunningPlayList(int id) const;
     std::list<PlayList*> GetPlayLists();
+    std::string CalendarJSON(bool day, const std::string& parameters, const std::string& reference, wxString& msg);
+    std::string NightPlanJSON(const std::string& parameters, const std::string& reference, wxString& msg);
     std::list<Command*> GetCommands() const {
         return _commandManager.GetCommands();
     }
@@ -244,6 +278,10 @@ public:
         return _showDir;
     }
     bool PlayPlayList(PlayList* playlist, size_t& rate, bool loop = false, const std::string& step = "", bool forcelast = false, int loops = -1, bool random = false, int steploops = -1);
+    // plays a playlist now and afterwards resumes whatever it interrupted, including another manual playlist
+    bool PlayPlayListThenResume(PlayList* playlist, size_t& rate, bool restartInterruptedStep);
+    // plays a playlist once the running playlist finishes its current step, then carries on with that playlist's next step
+    bool PlayPlayListNext(PlayList* playlist, size_t& rate);
     bool IsSomethingPlaying() const {
         return GetRunningPlayList() != nullptr;
     }
@@ -258,7 +296,16 @@ public:
     bool Query(const wxString& command, const wxString& parameters, wxString& data, wxString& msg, const wxString& ip, const wxString& reference);
     bool IsQuery(const wxString& command);
     PlayList* GetPlayList(const std::string& playlist) const;
-    void StopPlayList(PlayList* playlist, bool atendofcurrentstep, bool sustain = false);
+    void StopPlayList(PlayList* playlist, bool atendofcurrentstep, bool sustain = false, bool stopSchedules = false);
+    // The running playlist's position for the Art-Net and MIDI timecode threads. They must not read playlists
+    // directly: the main thread deletes and replaces those while the threads run. Taken every frame, and moved on
+    // by the time since then.
+    PlaybackState GetPlaybackSnapshot() const;
+    bool ReleaseFinishedImmediatePlay();
+    bool StartManualPlayList(PlayList* playlist, size_t& rate, bool loop = false, const std::string& step = "", bool forcelast = false, int loops = -1, bool random = false, int steploops = -1);
+    void ClearInterruptedPlays();
+    bool StartPlayNextIfReady(size_t& rate);
+    long OutputTimeMS() const;
     bool StoreData(const wxString& key, const wxString& data, wxString& msg) const;
     bool RetrieveData(const wxString& key, wxString& data, wxString& msg) const;
     bool ToggleOutputToLights(xScheduleFrame* frame, wxString& msg, bool interactive);

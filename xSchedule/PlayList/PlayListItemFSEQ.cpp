@@ -10,11 +10,11 @@
 
 #include "PlayListItemFSEQ.h"
 #include "PlayListItemFSEQPanel.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/render/FSEQFile.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
+#include "../../xlights/src-core/render/FSEQFile.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 #include "wx/xml/xml.h"
 #include <log.h>
 #include <wx/notebook.h>
@@ -25,6 +25,7 @@ PlayListItemFSEQ::PlayListItemFSEQ(OutputManager* outputManager, wxXmlNode* node
     _fastStartAudio = false;
     _cachedAudioFilename = "";
     _currentFrame = 0;
+    ResetClock();
     _channels = 0;
     _sc = 0;
     _startChannel = "1";
@@ -53,6 +54,7 @@ void PlayListItemFSEQ::Load(wxXmlNode* node) {
     _fastStartAudio = (node->GetAttribute("FastStartAudio", "FALSE") == "TRUE");
     _audioDevice = node->GetAttribute("AudioDevice", "");
     _currentFrame = 0;
+    ResetClock();
 
     // if (_fastStartAudio)
     //{
@@ -106,7 +108,7 @@ void PlayListItemFSEQ::LoadAudio() {
     if (IsInSlaveMode() && IsSuppressAudioOnSlaves()) {
     } else if (wxFile::Exists(af)) {
         spdlog::debug("FSEQ: Loading audio file '{}'.", (const char*)af.c_str());
-        _audioManager = new AudioManager(af, -1, _audioDevice);
+        _audioManager = _preload.TakeOrCreate(af, _audioDevice);
 
         if (!_audioManager->IsOk()) {
             spdlog::error("FSEQ: Audio file '{}' has a problem opening.", (const char*)af.c_str());
@@ -190,6 +192,7 @@ PlayListItemFSEQ::PlayListItemFSEQ(OutputManager* outputManager) :
     _audioManager = nullptr;
     _fseqFile = nullptr;
     _currentFrame = 0;
+    ResetClock();
 }
 
 PlayListItem* PlayListItemFSEQ::Copy(const bool isClone) const {
@@ -206,13 +209,19 @@ PlayListItem* PlayListItemFSEQ::Copy(const bool isClone) const {
     res->_channels = _channels;
     res->_startChannel = _startChannel;
     res->_fastStartAudio = _fastStartAudio;
-    res->SetAudioFile(_audioFile); // this will trigger file loading
+    res->_audioFile = _audioFile;
 
     if (_fastStartAudio) {
-        res->LoadFiles();
+        res->PreloadAudio();
     }
 
     return res;
+}
+
+void PlayListItemFSEQ::PreloadAudio() {
+    if (_audioManager == nullptr && !(IsInSlaveMode() && IsSuppressAudioOnSlaves())) {
+        _preload.Start(GetAudioFilename(), _audioDevice);
+    }
 }
 
 wxXmlNode* PlayListItemFSEQ::Save() {
@@ -370,6 +379,7 @@ bool PlayListItemFSEQ::Advance(int seconds) {
     _currentFrame += adjustFrames;
     if (_currentFrame < 0)
         _currentFrame = 0;
+    ResetClock();
     if ((size_t)_currentFrame > _stepLengthMS / GetFrameMS())
         _currentFrame = _stepLengthMS / GetFrameMS();
 
@@ -417,16 +427,22 @@ void PlayListItemFSEQ::Frame(uint8_t* buffer, size_t size, size_t ms, size_t fra
                 int frame = ms / framems;
                 FSEQFile::FrameData* data = _fseqFile->getFrame(frame);
                 if (data != nullptr) {
-                    std::vector<uint8_t> buf(_fseqFile->getMaxChannel() + 1);
-                    data->readFrame(&buf[0], buf.size());
-                    size_t channelsPerFrame = (size_t)_fseqFile->getMaxChannel() + 1;
-                    if (_channels > 0)
-                        channelsPerFrame = std::min(_channels, (size_t)_fseqFile->getMaxChannel() + 1);
-                    if (_channels > 0) {
-                        long offset = GetStartChannelAsNumber() - 1;
-                        Blend(buffer, size, &buf[offset], channelsPerFrame, _applyMethod, offset);
-                    } else {
-                        Blend(buffer, size, &buf[0], channelsPerFrame, _applyMethod, 0);
+                    // getMaxChannel() is a channel count, not the last channel
+                    const size_t fseqChannels = _fseqFile->getMaxChannel();
+                    // one buffer kept for the item, rather than a full-size one allocated every frame
+                    std::vector<uint8_t>& buf = _frameBuffer;
+                    buf.assign(fseqChannels, 0);
+                    if (!buf.empty()) {
+                        data->readFrame(&buf[0], buf.size());
+                        if (_channels > 0) {
+                            // never read past the end of the sequence's data
+                            const size_t offset = (size_t)(GetStartChannelAsNumber() - 1);
+                            if (offset < fseqChannels) {
+                                Blend(buffer, size, &buf[offset], std::min(_channels, fseqChannels - offset), _applyMethod, offset);
+                            }
+                        } else {
+                            Blend(buffer, size, &buf[0], fseqChannels, _applyMethod, 0);
+                        }
                     }
                     delete data;
                 } else {
@@ -434,8 +450,22 @@ void PlayListItemFSEQ::Frame(uint8_t* buffer, size_t size, size_t ms, size_t fra
                 }
             }
         }
-        _currentFrame++;
-        // logger_base.debug("Current Frame %d", _currentFrame);
+        if (ControlsTiming() && _audioManager != nullptr) {
+            _currentFrame++;
+        } else {
+            wxLongLong now = wxGetUTCTimeMillis();
+            long elapsed = _lastTick == 0 ? _msPerFrame : (now - _lastTick).ToLong();
+            // a long gap is the PC sleeping or a debugger, not the show running behind
+            if (elapsed < 0 || elapsed > 2000) elapsed = _msPerFrame;
+            if (_msPerFrame > 0) {
+                elapsed += _clockRemainder;
+                _currentFrame += elapsed / _msPerFrame;
+                _clockRemainder = elapsed % _msPerFrame;
+            } else {
+                _currentFrame++;
+            }
+            _lastTick = now;
+        }
     }
 }
 
@@ -449,6 +479,7 @@ void PlayListItemFSEQ::Restart() {
         }
     }
     _currentFrame = 0;
+    ResetClock();
 }
 
 void PlayListItemFSEQ::Start(long stepLengthMS) {
@@ -459,7 +490,7 @@ void PlayListItemFSEQ::Start(long stepLengthMS) {
     LoadFiles();
 
     if (_fseqFile != nullptr) {
-        _fseqFile->prepareRead({ { 0, _fseqFile->getMaxChannel() + 1 } });
+        _fseqFile->prepareRead({ { 0, _fseqFile->getMaxChannel() } });
     }
 
     if (ControlsTiming() && _audioManager != nullptr) {
@@ -477,6 +508,7 @@ void PlayListItemFSEQ::Start(long stepLengthMS) {
     }
 
     _currentFrame = 0;
+    ResetClock();
 }
 
 void PlayListItemFSEQ::Suspend(bool suspend) {
@@ -484,6 +516,7 @@ void PlayListItemFSEQ::Suspend(bool suspend) {
 }
 
 void PlayListItemFSEQ::Pause(bool pause) {
+    ResetClock();
     if (ControlsTiming() && _audioManager != nullptr) {
         if (pause) {
             _audioManager->Pause();
@@ -499,6 +532,7 @@ void PlayListItemFSEQ::Stop() {
     }
     CloseFiles();
     _currentFrame = 0;
+    ResetClock();
 }
 
 void PlayListItemFSEQ::CloseFiles() {
@@ -543,6 +577,7 @@ bool PlayListItemFSEQ::SetPosition(size_t frame, size_t ms) {
     // wxASSERT(abs((long)frame * _msPerFrame - (long)ms) < _msPerFrame);
 
     _currentFrame = frame;
+    ResetClock();
     if (_audioManager != nullptr) {
         _audioManager->Seek(frame * _msPerFrame);
         return true;

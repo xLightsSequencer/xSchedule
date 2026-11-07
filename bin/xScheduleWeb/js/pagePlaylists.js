@@ -4,73 +4,67 @@ $(document).ready(function() {
   } else {
     playlistsLoadPlaylistsSteps(getQueryVariable("args"));
   }
-  populateSideBar();
-
 });
 
 function playlistsLoadPlaylists() {
   $.ajax({
-    url: '/xScheduleQuery?Query=GetPlayLists&Parameters=',
+    url: '/xScheduleQuery?Query=GetPlayLists',
     dataType: "json",
     success: function(response) {
-
-      $('#currentPlaylist').html("Available Playlists");
-
-      $("#playlistStatus tr").remove();
-      for (var i = 0; i < response.playlists.length; i++) {
-        var activeclass = "";
-        var notPlaying =
-          `<tr>
-            <td>` + response.playlists[i].name +
-          `</td>
-            <td class="col-md-2">` + response.playlists[i].length.split(
-            ".")[0] +
-          `</td>
-            <td class="col-md-2">
-              <button type="button" onclick="runCommand('Play specified playlist', 'id:` + response.playlists[i].id + `')" class="btn btn-info btn-xs" name="button">Play</button>
-              <button type="button" onclick="updatePage('page', 'playlists','` + response.playlists[i].name + `')" class="btn btn-default btn-xs" name="button">View</button>
-            </td>
-          </tr>`;
-
-        $("#playlist").append(notPlaying);
-      }
+      var playlists = response.playlists || [];
+      $('#currentPlaylist').text("Playlists");
+      $('#playlistsSub').text(playlists.length + ' playlists');
+      $('#playlist').html(playlists.map(xsPlaylistItem).join('') || '<li class="xs-empty">There are no playlists. Create them in xSchedule on the PC.</li>');
     }
   });
 }
 
-function playlistsLoadPlaylistsSteps(playlist, currentStep) {
+function playlistsLoadPlaylistsSteps(playlist) {
+  $('#playlistsBack').removeAttr('hidden');
+  $('#currentPlaylist').text(playlist);
   $.ajax({
-    url: '/xScheduleQuery?Query=GetPlayListSteps&Parameters=' + playlist,
+    url: '/xScheduleQuery?Query=GetPlayLists',
     dataType: "json",
-    success: function(response) {
-      var controls = `
-      <span style="float:right;">
-      <button type="button" onclick="updatePage('page','playlists')" class="btn btn-info btn-xs" name="button" title="Back to All Playlists">Back</button>
-      </span>`;
-
-      $('#currentPlaylist').html("Playlist: " + playlist + controls);
-
-      $("#playlistStatus tr").remove();
-      for (var i = 0; i < response.steps.length; i++) {
-        var activeclass = "";
-        var notPlaying =
-          `<tr>
-            <td>` + response.steps[i].name +
-          `</td>
-            <td class="col-md-2">` + response.steps[i].length.split(
-            ".")[0] +
-          `</td>
-            <td class="col-md-2">
-              <button type="button" onclick="runCommand('Play playlist starting at step', '` + playlist + `,id:` + response.steps[i].id + `'); updatePage('page', 'home');" class="btn btn-info btn-xs" name="button" title="Play playlist starting at this step">Play</button>
-              <!--<button type="button" onclick="runCommand('Enqueue playlist step', '` + playlist + `,'id:` + response.steps[i].id + `')" class="btn btn-default btn-xs glyphicon glyphicon-plus" name="button" title="Queue song"></button>-->
-            </td>
-          </tr>`;
-
-        $("#playlist").append(notPlaying);
-      }
-      $('#playlist').dataTable({
-        "ordering": false,
-        "searching": false,
+    success: function(lists) {
+      var id = '';
+      (lists.playlists || []).forEach(function(p) {
+        if (p.name == playlist) id = p.id;
+      });
+      $.ajax({
+        url: '/xScheduleQuery?Query=GetPlayListSteps&Parameters=' + encodeURIComponent(playlist),
+        dataType: "json",
+        success: function(response) {
+          if (response.result == 'failed') {
+            $('#playlist').html('<li class="xs-empty">' + xsEscape(response.message) + '</li>');
+            return;
+          }
+          var steps = response.steps || [];
+          var playingHere = playingStatus.status != undefined && playingStatus.status != 'idle' && playingStatus.playlistid == id;
+          $('#playlistsSub').text(steps.length + ' steps');
+          $('#playlist').html(steps.map(function(step, i) {
+            var cur = playingHere && playingStatus.stepid == step.id;
+            return '<li class="xs-item' + (cur ? ' cur' : '') + '">' +
+              '<span class="n">' + (i + 1) + '</span>' +
+              '<span class="name">' + xsEscape(step.name) + '</span>' +
+              '<span class="tag">' + (cur ? '<span class="xs-pill p-acc">Playing</span>' : '') + '</span>' +
+              '<span class="len">' + xsEscape(xsDuration(step.length)) + '</span>' +
+              '<span class="acts"><button type="button" class="xs-btn xs-btn-sm xs-hover-btn" data-start-step="' + xsEscape(step.id) + '" title="Play the playlist starting at this step">' + xsIcon('play', 12) + '<span class="txt">Play from here</span></button></span>' +
+              '</li>';
+          }).join(''));
+          // the steps may load before the first status arrives
+          onStatus('playlists', function(st) {
+            var here = st.status != 'idle' && st.playlistid == id;
+            $('#playlist .xs-item').each(function() {
+              var cur = here && $(this).find('[data-start-step]').attr('data-start-step') == st.stepid;
+              if (cur == $(this).hasClass('cur')) return;
+              $(this).toggleClass('cur', cur).find('.tag').html(cur ? '<span class="xs-pill p-acc">Playing</span>' : '');
+            });
+          });
+          $('#playlist').on('click', '[data-start-step]', function() {
+            runCommand('Play playlist starting at step', 'id:' + id + ',id:' + $(this).attr('data-start-step'));
+            updatePage('page', 'home');
+          });
+        }
       });
     }
   });

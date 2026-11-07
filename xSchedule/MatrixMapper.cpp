@@ -10,10 +10,10 @@
 
 #include "MatrixMapper.h"
 #include "RGBEffects.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include <log.h>
 #include <wx/string.h>
 #include <wx/wx.h>
@@ -135,11 +135,7 @@ std::vector<std::vector<std::vector<int>>> MatrixMapper::ParseCustomModel(const 
                     value = value.substr(1);
                 }
                 if (!value.empty()) {
-                    try {
-                        locations[layer][row][col] = std::stoi(value);
-                    } catch (...) {
-                        // not a number, treat as 0
-                    }
+                    locations[layer][row][col] = (int)std::strtol(value.c_str(), nullptr, 10);
                 }
                 col++;
             }
@@ -181,10 +177,16 @@ std::vector<std::vector<std::vector<int>>> MatrixMapper::ParseCompressed(const s
     for (const auto& n : nodeStrings) {
         std::vector<std::string> nodeData;
         Split(n, ',', nodeData);
-        if (nodeData.size() == 3) {
-            nodes.emplace_back(std::make_tuple(std::stoi(nodeData[0]), std::stoi(nodeData[1]), std::stoi(nodeData[2]), 0));
-        } else if (nodeData.size() == 4) {
-            nodes.emplace_back(std::make_tuple(std::stoi(nodeData[0]), std::stoi(nodeData[1]), std::stoi(nodeData[2]), std::stoi(nodeData[3])));
+        if (nodeData.size() == 3 || nodeData.size() == 4) {
+            auto num = [](const std::string& v) { return (int)std::strtol(v.c_str(), nullptr, 10); };
+            int node = num(nodeData[0]);
+            int row = num(nodeData[1]);
+            int col = num(nodeData[2]);
+            int layer = nodeData.size() == 4 ? num(nodeData[3]) : 0;
+            // damaged data would index outside the grid
+            if (row >= 0 && col >= 0 && layer >= 0) {
+                nodes.emplace_back(std::make_tuple(node, row, col, layer));
+            }
         }
     }
 
@@ -253,16 +255,10 @@ bool MatrixMapper::LoadModel() {
         }
         _startChannel = node->GetAttribute("StartChannel", "1");
     } else {
-        _strings = wxAtoi(node->GetAttribute("parm1", "0"));
-        _strandsPerString = wxAtoi(node->GetAttribute("parm3", "1"));
-        _stringLength = wxAtoi(node->GetAttribute("parm2", "0"));
-        // Legacy: orientation encoded in DisplayAs. New format: Vertical="true/false" attribute.
-        if (_displayAs == "Horiz Matrix" ||
-            (_displayAs == "Matrix" && node->GetAttribute("Vertical", "false") != "true")) {
-            _orientation = MMORIENTATION::HORIZONTAL;
-        } else {
-            _orientation = MMORIENTATION::VERTICAL;
-        }
+        _strings = RGBEffects::GetStrings(node);
+        _strandsPerString = RGBEffects::GetStrandsPerString(node);
+        _stringLength = RGBEffects::GetNodesPerString(node);
+        _orientation = RGBEffects::IsVertical(node) ? MMORIENTATION::VERTICAL : MMORIENTATION::HORIZONTAL;
         std::string startSide = node->GetAttribute("StartSide", "B");
         std::string dir = node->GetAttribute("Dir", "L");
         if (startSide == "B" && dir == "L") {

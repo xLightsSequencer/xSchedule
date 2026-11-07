@@ -12,7 +12,7 @@
 #include "PlayListItemSetColour.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(PlayListItemSetColourPanel)
 #include <wx/intl.h>
@@ -72,7 +72,7 @@ PlayListItemSetColourPanel::PlayListItemSetColourPanel(wxWindow* parent, OutputM
 	CheckBox_LimitNodes = new wxCheckBox(this, ID_CHECKBOX1, _("Limit Nodes"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
 	CheckBox_LimitNodes->SetValue(false);
 	FlexGridSizer1->Add(CheckBox_LimitNodes, 1, wxALL|wxEXPAND, 5);
-	StaticText6 = new wxStaticText(this, ID_STATICTEXT6, _("Start Channel"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
+	StaticText6 = new wxStaticText(this, ID_STATICTEXT6, _("Start Channel:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
 	FlexGridSizer1->Add(StaticText6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
 	FlexGridSizer2 = new wxFlexGridSizer(0, 2, 0, 0);
 	FlexGridSizer2->AddGrowableCol(0);
@@ -81,7 +81,7 @@ PlayListItemSetColourPanel::PlayListItemSetColourPanel(wxWindow* parent, OutputM
 	StaticText_StartChannel = new wxStaticText(this, ID_STATICTEXT8, _("1"), wxDefaultPosition, wxSize(60,-1), 0, _T("ID_STATICTEXT8"));
 	FlexGridSizer2->Add(StaticText_StartChannel, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
 	FlexGridSizer1->Add(FlexGridSizer2, 1, wxALL|wxEXPAND, 5);
-	StaticText7 = new wxStaticText(this, ID_STATICTEXT7, _("Nodes"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
+	StaticText7 = new wxStaticText(this, ID_STATICTEXT7, _("Nodes:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
 	FlexGridSizer1->Add(StaticText7, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
 	SpinCtrl_Nodes = new wxSpinCtrl(this, ID_SPINCTRL4, _T("1"), wxDefaultPosition, wxDefaultSize, 0, 0, 100, 1, _T("ID_SPINCTRL4"));
 	SpinCtrl_Nodes->SetValue(_T("1"));

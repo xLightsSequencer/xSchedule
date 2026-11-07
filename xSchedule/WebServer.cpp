@@ -19,11 +19,12 @@
 #include "ScheduleManager.h"
 #include "xScheduleApp.h"
 #include "ScheduleOptions.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "md5.h"
 
 #include <log.h>
+#include "Diagnostics.h"
 #include <nlohmann/json.hpp>
 
 #undef WXUSINGDLL
@@ -190,6 +191,7 @@ wxString ProcessCommand(HttpConnection& connection, const wxString& command, con
     wxString result;
     size_t rate = 0;
     wxString msg = "";
+    Diagnostics::CommandSource source("the web interface or API");
     if (xScheduleFrame::GetScheduleManager()->Action(command, parameters, data, nullptr, nullptr, nullptr, rate, msg)) {
         wxCommandEvent event(EVT_FRAMEMS);
         event.SetInt(rate);
@@ -246,7 +248,7 @@ wxString ProcessQuery(HttpConnection& connection, const wxString& query, const w
 #ifndef DETAILED_LOGGING
     if (query != "GetPlayingStatus")
 #endif
-        spdlog::info("xScheduleQuery received query = '{}' parameters = '{}'", query.ToStdString(), parameters.ToStdString());
+        spdlog::debug("xScheduleQuery received query = '{}' parameters = '{}'", query.ToStdString(), parameters.ToStdString());
 
     wxString result = "";
     wxString msg;
@@ -254,7 +256,7 @@ wxString ProcessQuery(HttpConnection& connection, const wxString& query, const w
 #ifndef DETAILED_LOGGING
         if (query != "GetPlayingStatus")
 #endif
-            spdlog::info("    data = '{}'. Time = {}.", result.ToStdString(), sw.Time());
+            spdlog::debug("    data = '{}'. Time = {}.", result.ToStdString(), sw.Time());
     }
     else {
         result = "{\"result\":\"failed\",\"query\":\"" +
@@ -339,11 +341,11 @@ wxString ProcessStash(HttpConnection& connection, const wxString& command, const
             connection.Address().IPAddress() + "\"}";
     }
 
-    spdlog::info("xScheduleStash received command = '{}' key = '{}'", command.ToStdString(), key.ToStdString());
+    spdlog::debug("xScheduleStash received command = '{}' key = '{}'", command.ToStdString(), key.ToStdString());
 
     wxString result;
     if (wxString(command).Lower() == "store") {
-        spdlog::info("    data = '{}'", data.ToStdString());
+        spdlog::debug("    data = '{}'", data.ToStdString());
 
         if (key == "GetModels") {
             result = "{\"result\":\"failed\",\"stash\":\"" +
@@ -372,7 +374,7 @@ wxString ProcessStash(HttpConnection& connection, const wxString& command, const
     else if (wxString(command).Lower() == "retrieve") {
         wxString msg = "";
         if (xScheduleFrame::GetScheduleManager()->RetrieveData(key, data, msg)) {
-            spdlog::info("    data = '{}'. Time = {}.", data.ToStdString(), sw.Time());
+            spdlog::debug("    data = '{}'. Time = {}.", data.ToStdString(), sw.Time());
             result = "";
         }
         else {
@@ -386,7 +388,7 @@ wxString ProcessStash(HttpConnection& connection, const wxString& command, const
     else if (wxString(command).Lower() == "retrievejson") {
         wxString msg = "";
         if (xScheduleFrame::GetScheduleManager()->RetrieveData(key, data, msg)) {
-            spdlog::info("    data = '{}'. Time = {}.", data.ToStdString(), sw.Time());
+            spdlog::debug("    data = '{}'. Time = {}.", data.ToStdString(), sw.Time());
             result = "{\"reference\":\"" + reference +
                 "\",\"key\":\"" + key + "\",\"value\":[" + data + "]}";
         }
@@ -426,6 +428,7 @@ bool MyRequestHandler(HttpConnection& connection, HttpRequest& request)
     std::string plugin;
 
     spdlog::debug("Web request {}.", request.URI().ToStdString());
+    Diagnostics::Activity activity("answering a web request", request.URI().ToStdString());
 
     xScheduleFrame::GetScheduleManager()->WebRequestReceived();
 
@@ -565,7 +568,12 @@ bool MyRequestHandler(HttpConnection& connection, HttpRequest& request)
         else if (wwwroot != "") {
             wxString uri = wxURI(request.URI()).BuildUnescapedURI();
 
-            if (!__apiOnly && request.URI().StartsWith("/" + wwwroot)) {
+            if (!__apiOnly && request.URI().StartsWith("/" + wwwroot) && uri.Contains("..")) {
+                HttpResponse response(connection, request, HttpStatus::NotFound);
+                connection.SendResponse(response);
+                res = true;
+            }
+            else if (!__apiOnly && request.URI().StartsWith("/" + wwwroot)) {
 #ifdef __WXMSW__
                 wxString d = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
 #elif __LINUX__
@@ -585,7 +593,7 @@ bool MyRequestHandler(HttpConnection& connection, HttpRequest& request)
                     file += uri;
                 }
 
-                spdlog::info("File request received = '{}' : '{}'", file.ToStdString(), uri.ToStdString());
+                spdlog::debug("File request received = '{}' : '{}'", file.ToStdString(), uri.ToStdString());
 
                 if (!wxFile::Exists(file)) {
                     spdlog::error("    404: file not found.");
@@ -641,6 +649,7 @@ bool MyRequestHandler(HttpConnection& connection, HttpRequest& request)
 void MyMessageHandler(HttpConnection& connection, WebSocketMessage& message)
 {
     wxLogNull logNo; //kludge: avoid "error 0" message from wxWidgets after new file is written
+    Diagnostics::Activity activity("answering a web socket message");
 
     xScheduleFrame::GetScheduleManager()->WebRequestReceived();
 
@@ -649,7 +658,7 @@ void MyMessageHandler(HttpConnection& connection, WebSocketMessage& message)
         wxString text((char*)message.Content().GetData(), message.Content().GetDataLen());
 
         if (!text.empty()) {
-            spdlog::info("Received {}", text.ToStdString());
+            spdlog::debug("Received {}", text.ToStdString());
 
             try {
                 nlohmann::json root = nlohmann::json::parse(text.ToStdString());
@@ -735,7 +744,7 @@ void MyMessageHandler(HttpConnection& connection, WebSocketMessage& message)
         connection.SendMessage(wsm);
     }
     else if (message.Type() == WebSocketMessage::Binary) {
-        spdlog::info("Received <binary>");
+        spdlog::debug("Received <binary>");
         WebSocketMessage wsm("{\"result\":\"failed\",\"message\":\"Binary web sockets not supported.\"}");
         connection.SendMessage(wsm);
     }

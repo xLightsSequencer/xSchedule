@@ -25,6 +25,10 @@ protected:
     std::string _protocol;
     unsigned char _buffer[2048];
     int _valid; // how many chars in buffer are valid
+    // the port went away (a USB adapter unplugged); it is reopened when it comes back
+    bool _portLost = false;
+    wxLongLong _lastReopen = 0;
+    void ReopenPort();
 
 public:
     ListenerSerial(ListenerManager* _listenerManager, const std::string& commPort, const std::string& serialConfig, int baudRate, const std::string& protocol);

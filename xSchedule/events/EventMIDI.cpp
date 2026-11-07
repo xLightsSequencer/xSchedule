@@ -14,6 +14,7 @@
 #include <log.h>
 #include "../ScheduleManager.h"
 #include "../wxMIDI/src/wxMidi.h"
+#include "../Diagnostics.h"
 
 void EventMIDI::DoSetStatus(std::string status)
 {
@@ -223,6 +224,7 @@ void EventMIDI::ProcessMIDICommand(uint8_t data1, uint8_t data2, ScheduleManager
 
     size_t rate = 0;
     wxString msg;
+    Diagnostics::CommandSource source("event " + GetType() + ":" + GetName());
     scheduleManager->Action(_command, parameters, "", nullptr, nullptr, nullptr, rate, msg);
     spdlog::debug("    Event processed.");
 }

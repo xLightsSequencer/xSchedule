@@ -11,7 +11,7 @@
 #include "EventData.h"
 #include <wx/xml/xml.h>
 #include "../ScheduleManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 
 EventData::EventData() : EventBase()
 {

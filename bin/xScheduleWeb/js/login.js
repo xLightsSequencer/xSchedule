@@ -1,8 +1,7 @@
 var ipAddress = "";
 window.onload = function() {
-  window.setInterval(function() {
-    checkLogInStatus();
-  }, 1000);
+  checkLogInStatus();
+  window.setInterval(checkLogInStatus, 5000);
 }
 
 function checkLogInStatus() {

@@ -34,7 +34,7 @@
 #include <wx/timer.h>
 //*)
 
-#include "../../xlights/xLights/ui/shared/utils/xLightsTimer.h"
+#include "../../xlights/src-ui-wx/shared/utils/xLightsTimer.h"
 #include "SMSDaemonOptions.h"
 #include "xSMSDaemonApp.h"
 

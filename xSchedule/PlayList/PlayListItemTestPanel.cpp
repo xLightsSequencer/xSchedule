@@ -13,7 +13,7 @@
 #include "PlayListDialog.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(PlayListItemTestPanel)
 #include <wx/intl.h>

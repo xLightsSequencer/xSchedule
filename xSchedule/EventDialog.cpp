@@ -237,8 +237,42 @@ EventDialog::EventDialog(wxWindow* parent, OutputManager* outputManager, EventBa
         TextCtrl_Name->SetValue(_eventBase->GetName());
     }
 
-    SetMinSize(wxSize(800, 600));
-    SetSize(800, 600);
+    // trigger on the left, name and action on the right, OK/Cancel for the whole dialog at the bottom right
+    auto heading = [](wxWindow* parent, const wxString& text) {
+        auto t = new wxStaticText(parent, wxID_ANY, text);
+        t->SetFont(t->GetFont().Bold());
+        return t;
+    };
+    FlexGridSizer3->Insert(0, heading(Panel3, "Trigger"), 0, wxLEFT | wxRIGHT | wxTOP, FromDIP(5));
+    FlexGridSizer3->RemoveGrowableRow(0);
+    FlexGridSizer3->AddGrowableRow(1);
+
+    FlexGridSizer3->Detach(FlexGridSizer4);
+    Button_Ok->Reparent(this);
+    Button_Cancel->Reparent(this);
+    FlexGridSizer1->Add(FlexGridSizer4, 0, wxALL | wxALIGN_RIGHT, FromDIP(5));
+
+    auto action = new wxFlexGridSizer(0, 2, 0, 0);
+    action->AddGrowableCol(1);
+    for (wxWindow* w : std::initializer_list<wxWindow*>{ StaticText1, Choice_Command, StaticText4, TextCtrl_P1, StaticText3, TextCtrl_P2, StaticText2, TextCtrl_P3 }) {
+        auto flags = FlexGridSizer2->GetItem(w)->GetFlag();
+        FlexGridSizer2->Detach(w);
+        action->Add(w, 1, flags, FromDIP(5));
+    }
+    auto right = new wxBoxSizer(wxVERTICAL);
+    right->Add(FlexGridSizer2, 0, wxEXPAND);
+    right->Add(heading(Panel2, "Action"), 0, wxLEFT | wxRIGHT | wxTOP, FromDIP(5));
+    right->Add(action, 0, wxEXPAND);
+    Panel2->SetSizer(right, false);
+
+    StaticText5->SetLabel("Name:");
+    StaticText1->SetLabel("Command:");
+    StaticText4->SetLabel("Parameter 1:");
+    StaticText3->SetLabel("Parameter 2:");
+    StaticText2->SetLabel("Parameter 3:");
+    Choice_Command->SetMinSize(wxSize(FromDIP(260), -1));
+
+    SetSize(FromDIP(wxSize(760, 460)));
 
 	wxToolTip::SetAutoPop(10000);
 

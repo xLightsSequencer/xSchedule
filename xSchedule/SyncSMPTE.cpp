@@ -13,8 +13,8 @@
 #include "events/ListenerManager.h"
 
 #include <log.h>
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 SyncSMPTE::SyncSMPTE(SYNCMODE sm, REMOTEMODE rm, const ScheduleOptions& options, ScheduleManager* schm, ListenerManager* listenerManager) : SyncBase(sm, rm, options, schm)
 {

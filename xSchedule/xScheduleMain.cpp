@@ -15,12 +15,14 @@
 // #define WEBOVERLOAD
 
 //(*InternalHeaders(xScheduleFrame)
+#include <chrono>
 #include <wx/intl.h>
 #include <wx/string.h>
 //*)
 
 #include <wx/msgdlg.h>
 #include <wx/config.h>
+#include <wx/display.h>
 #include <wx/file.h>
 #include <wx/dir.h>
 #include <wx/filename.h>
@@ -34,14 +36,15 @@
 #include "PlayList/PlayList.h"
 #include "MyTreeItemData.h"
 #include "ScheduleManager.h"
+#include "ScheduleConfig.h"
 #include "Schedule.h"
 #include "ScheduleOptions.h"
 #include "OptionsDialog.h"
 #include "WebServer.h"
 #include "PlayList/PlayListStep.h"
-#include "../xlights/xLights/xLightsVersion.h"
+#include "../xlights/src-core/xLightsVersion.h"
 #include "xScheduleVersion.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "RunningSchedule.h"
 #include "UserButton.h"
 #include "OutputProcessingDialog.h"
@@ -54,50 +57,32 @@
 #include "ConfigureTest.h"
 #include "Pinger.h"
 #include "EventsDialog.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
 #include "PlayList/PlayListItemOSC.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/utils/ip_utils.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/utils/ip_utils.h"
 #include "ConfigureMIDITimecodeDialog.h"
 #include "City.h"
 #include "events/ListenerManager.h"
 #include "ExtraIPsDialog.h"
 #include "SyncFPP.h"
-#include "../xlights/xLights/render/VideoReader.h"
-#include "../xlights/xLights/utils/SpecialOptions.h"
-#include "../xlights/xLights/outputs/Output.h"
-#include "../xlights/xLights/utils/AudioManager.h"
-#include "../xlights/xLights/outputs/ControllerEthernet.h"
-#include "../xlights/xLights/outputs/ControllerSerial.h"
+#include "../xlights/src-core/media/VideoReader.h"
+#include "../xlights/src-core/utils/SpecialOptions.h"
+#include "../xlights/src-core/outputs/Output.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/outputs/ControllerEthernet.h"
+#include "../xlights/src-core/outputs/ControllerSerial.h"
 #include "RemoteModeConfigDialog.h"
 #include "utils/ExternalHooks.h"
 #include "utils/CurlManager.h"
 #include <nlohmann/json.hpp>
+#include <wx/notebook.h>
+#include <wx/srchctrl.h>
+#include <algorithm>
+#include "ModernUI.h"
+#include "CalendarPanel.h"
 
-#include "../xlights/include/xs_save.xpm"
-#include "../xlights/include/xs_otlon.xpm"
-#include "../xlights/include/xs_otloff.xpm"
-#include "../xlights/include/xs_otlautoon.xpm"
-#include "../xlights/include/xs_otlautooff.xpm"
-#include "../xlights/include/xs_scheduled.xpm"
-#include "../xlights/include/xs_queued.xpm"
-#include "../xlights/include/xs_notscheduled.xpm"
-#include "../xlights/include/xs_inactive.xpm"
-#include "../xlights/include/xs_pllooped.xpm"
-#include "../xlights/include/xs_plnotlooped.xpm"
-#include "../xlights/include/xs_plsteplooped.xpm"
-#include "../xlights/include/xs_plstepnotlooped.xpm"
-#include "../xlights/include/xs_playing.xpm"
-#include "../xlights/include/xs_idle.xpm"
-#include "../xlights/include/xs_paused.xpm"
-#include "../xlights/include/xs_random.xpm"
-#include "../xlights/include/xs_notrandom.xpm"
-#include "../xlights/include/xs_volume_down.xpm"
-#include "../xlights/include/xs_volume_up.xpm"
-#include "../xlights/include/xs_brightness_down.xpm"
-#include "../xlights/include/xs_brightness_up.xpm"
-#include "../xlights/include/xs_falcon.xpm"
 
 #include "../xlights/include/xLights.xpm"
 #include "../xlights/include/xLights-16.xpm"
@@ -110,6 +95,11 @@
 #include "../xlights/include/no_web_icon.xpm"
 
 #include <log.h>
+#include "Diagnostics.h"
+#include "xScheduleApp.h"
+#include "RestoreBackupDialog.h"
+#include "ShowBackups.h"
+#include "../xlights/src-ui-wx/settings/XLightsConfigAdapter.h"
 
 ScheduleManager* xScheduleFrame::__schedule = nullptr;
 
@@ -271,24 +261,7 @@ protected:
     void OnPaint(wxPaintEvent& event)
     {
         wxPaintDC dc(this);
-        int grey = (_value * 255) / 100;
-        wxColor c(grey, grey, grey, 255);
-        dc.SetBrush(wxBrush(c));
-        int w, h;
-        GetSize(&w, &h);
-        dc.DrawRectangle(0, 0, w, h);
-        if (_value < 60)         {
-            dc.SetTextForeground(*wxWHITE);
-        }
-        else         {
-            dc.SetTextForeground(*wxBLACK);
-        }
-        wxString text = wxString::Format("%i%%", _value);
-        int tw, th;
-        dc.GetTextExtent(text, &tw, &th);
-        dc.DrawText(text, (32 - tw) / 2, (32 - th) / 2);
-        dc.SetBrush(wxNullBrush);
-        dc.SetPen(wxNullPen);
+        ModernUI::DrawLevel(dc, this, "Brightness", _value);
     }
 
 private:
@@ -327,19 +300,7 @@ protected:
     void OnPaint(wxPaintEvent& event)
     {
         wxPaintDC dc(this);
-        dc.SetBrush(wxBrush(*wxLIGHT_GREY));
-        int w, h;
-        GetSize(&w, &h);
-        dc.DrawRectangle(0, 0, w, h);
-        dc.SetBrush(wxBrush(*wxYELLOW));
-        dc.DrawRectangle(0, h - ((h * _value) / 100), w, h);
-        dc.SetTextForeground(*wxBLACK);
-        wxString text = wxString::Format("%i%%", _value);
-        int tw, th;
-        dc.GetTextExtent(text, &tw, &th);
-        dc.DrawText(text, (32 - tw) / 2, (32 - th) / 2);
-        dc.SetBrush(wxNullBrush);
-        dc.SetPen(wxNullPen);
+        ModernUI::DrawLevel(dc, this, "Volume", _value);
     }
 
 private:
@@ -396,7 +357,6 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     _webicon = wxBitmap(web_icon_24);
     _slowicon = wxBitmap(slow_32);
 
-    _timer.SetLog((spdlog::get_level() == spdlog::level::debug));
 
     //(*Initialize(xScheduleFrame)
     wxBoxSizer* BoxSizer1;
@@ -416,7 +376,7 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     FlexGridSizer1 = new wxFlexGridSizer(0, 1, 0, 0);
     FlexGridSizer1->AddGrowableCol(0);
     FlexGridSizer1->AddGrowableRow(1);
-    Panel2 = new wxPanel(this, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxBORDER_RAISED|wxTAB_TRAVERSAL, _T("ID_PANEL2"));
+    Panel2 = new wxPanel(this, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
     FlexGridSizer5 = new wxFlexGridSizer(0, 13, 0, 0);
     BitmapButton_OutputToLights = new wxBitmapButton(Panel2, ID_BITMAPBUTTON1, wxNullBitmap, wxDefaultPosition, wxDLG_UNIT(Panel2,wxSize(16,16)), wxBU_AUTODRAW|wxBORDER_NONE, wxDefaultValidator, _T("ID_BITMAPBUTTON1"));
     FlexGridSizer5->Add(BitmapButton_OutputToLights, 1, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -434,13 +394,13 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     FlexGridSizer5->Add(BitmapButton_Unsaved, 1, wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BitmapButton_BrightnessDown = new wxBitmapButton(Panel2, ID_BITMAPBUTTON10, wxNullBitmap, wxDefaultPosition, wxDLG_UNIT(Panel2,wxSize(16,16)), wxBU_AUTODRAW|wxBORDER_NONE, wxDefaultValidator, _T("ID_BITMAPBUTTON10"));
     FlexGridSizer5->Add(BitmapButton_BrightnessDown, 1, wxTOP|wxBOTTOM|wxLEFT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Brightness = new BrightnessControl(Panel2,ID_CUSTOM1,wxDefaultPosition,wxDLG_UNIT(Panel2,wxSize(16,16)),ZERO,wxDefaultValidator,_T("ID_CUSTOM1"));
+    Brightness = new BrightnessControl(Panel2,ID_CUSTOM1,wxDefaultPosition,wxDLG_UNIT(Panel2,wxSize(16,16)),wxBORDER_NONE,wxDefaultValidator,_T("ID_CUSTOM1"));
     FlexGridSizer5->Add(Brightness, 1, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BitmapButton_BrightnessUp = new wxBitmapButton(Panel2, ID_BITMAPBUTTON11, wxNullBitmap, wxDefaultPosition, wxDLG_UNIT(Panel2,wxSize(16,16)), wxBU_AUTODRAW|wxBORDER_NONE, wxDefaultValidator, _T("ID_BITMAPBUTTON11"));
     FlexGridSizer5->Add(BitmapButton_BrightnessUp, 1, wxTOP|wxBOTTOM|wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BitmapButton_VolumeDown = new wxBitmapButton(Panel2, ID_BITMAPBUTTON8, wxNullBitmap, wxDefaultPosition, wxDLG_UNIT(Panel2,wxSize(16,16)), wxBU_AUTODRAW|wxBORDER_NONE, wxDefaultValidator, _T("ID_BITMAPBUTTON8"));
     FlexGridSizer5->Add(BitmapButton_VolumeDown, 1, wxTOP|wxBOTTOM|wxLEFT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Custom_Volume = new VolumeDisplay(Panel2,ID_CUSTOM2,wxDefaultPosition,wxDLG_UNIT(Panel2,wxSize(16,16)),ZERO,wxDefaultValidator,_T("ID_CUSTOM2"));
+    Custom_Volume = new VolumeDisplay(Panel2,ID_CUSTOM2,wxDefaultPosition,wxDLG_UNIT(Panel2,wxSize(16,16)),wxBORDER_NONE,wxDefaultValidator,_T("ID_CUSTOM2"));
     FlexGridSizer5->Add(Custom_Volume, 1, wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     BitmapButton_VolumeUp = new wxBitmapButton(Panel2, ID_BITMAPBUTTON9, wxNullBitmap, wxDefaultPosition, wxDLG_UNIT(Panel2,wxSize(16,16)), wxBU_AUTODRAW|wxBORDER_NONE, wxDefaultValidator, _T("ID_BITMAPBUTTON9"));
     FlexGridSizer5->Add(BitmapButton_VolumeUp, 1, wxTOP|wxBOTTOM|wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -500,10 +460,10 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     FlexGridSizer4 = new wxFlexGridSizer(0, 0, 0, 0);
     Panel1->SetSizer(FlexGridSizer4);
     FlexGridSizer1->Add(Panel1, 1, wxALL|wxEXPAND, 0);
-    Panel4 = new wxPanel(this, ID_PANEL4, wxDefaultPosition, wxDefaultSize, wxBORDER_RAISED|wxTAB_TRAVERSAL, _T("ID_PANEL4"));
+    Panel4 = new wxPanel(this, ID_PANEL4, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL4"));
     FlexGridSizer6 = new wxFlexGridSizer(0, 8, 0, 0);
     FlexGridSizer6->AddGrowableCol(1);
-    StaticText_ShowDir = new wxStaticText(Panel4, ID_STATICTEXT1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+    StaticText_ShowDir = new wxStaticText(Panel4, ID_STATICTEXT1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE|wxST_ELLIPSIZE_MIDDLE, _T("ID_STATICTEXT1"));
     FlexGridSizer6->Add(StaticText_ShowDir, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticText_IP = new wxStaticText(Panel4, ID_STATICTEXT3, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
     FlexGridSizer6->Add(StaticText_IP, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -578,7 +538,7 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     MenuItem3->Append(MenuItem_ModeFPPMulticastMaster);
     MenuItem_ModeFPPUnicastMaster = new wxMenuItem(MenuItem3, ID_MNU_FPP_UNICASTMASTER, _("FPP Unicast"), wxEmptyString, wxITEM_CHECK);
     MenuItem3->Append(MenuItem_ModeFPPUnicastMaster);
-    MenuItem_ModeFPPUnicastCSVMaster = new wxMenuItem(MenuItem3, ID_MNU_FPP_UNICASTCSVMASTER, _("FPP Unicast CSV"), wxEmptyString, wxITEM_CHECK);
+    MenuItem_ModeFPPUnicastCSVMaster = new wxMenuItem(MenuItem3, ID_MNU_FPP_UNICASTCSVMASTER, _("FPP Unicast CSV (Falcon v2 and xSchedule remotes)"), wxEmptyString, wxITEM_CHECK);
     MenuItem3->Append(MenuItem_ModeFPPUnicastCSVMaster);
     MenuItem_ModeArtNetMaster = new wxMenuItem(MenuItem3, IDM_MNU_ARTNETMASTER, _("ARTNet Timecode"), wxEmptyString, wxITEM_CHECK);
     MenuItem3->Append(MenuItem_ModeArtNetMaster);
@@ -592,7 +552,7 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     Menu6->Append(MenuItem_ModeRemoteDisabled);
     MenuItem_ModeFPPRemote = new wxMenuItem(Menu6, ID_MNU_FPPREMOTE, _("FPP"), wxEmptyString, wxITEM_RADIO);
     Menu6->Append(MenuItem_ModeFPPRemote);
-    MenuItem_ModeFPPCSVRemote = new wxMenuItem(Menu6, ID_MNU_FPPCSVREMOTE, _("FPP CSV"), wxEmptyString, wxITEM_RADIO);
+    MenuItem_ModeFPPCSVRemote = new wxMenuItem(Menu6, ID_MNU_FPPCSVREMOTE, _("FPP CSV (from an xSchedule or FPP 3 master)"), wxEmptyString, wxITEM_RADIO);
     Menu6->Append(MenuItem_ModeFPPCSVRemote);
     MenuItem_ModeArtNetSlave = new wxMenuItem(Menu6, ID_MNU_ARTNETTIMECODESLAVE, _("ARTNet Timecode"), wxEmptyString, wxITEM_RADIO);
     Menu6->Append(MenuItem_ModeArtNetSlave);
@@ -712,6 +672,14 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     Connect(wxEVT_SIZE, (wxObjectEventFunction)&xScheduleFrame::OnResize);
     //*)
 
+    // added here rather than in wxSmith, so it sits after Save
+    size_t savePos = 0;
+    if (Menu1->FindChildItem(ID_MNU_SAVE, &savePos) != nullptr) {
+        const wxWindowID restoreId = wxNewId();
+        Menu1->Insert(savePos + 1, restoreId, "Restore from &Backup...", "Put the show back as it was before an earlier save");
+        Bind(wxEVT_MENU, [this](wxCommandEvent&) { RestoreFromBackup(); }, restoreId);
+    }
+
     Brightness->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&xScheduleFrame::OnCustom_BrightnessLeftDown, 0, this);
     Connect(ID_LISTVIEW1, wxEVT_COMMAND_LIST_ITEM_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnListView_RunningItemSelected);
 
@@ -732,15 +700,9 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
 
     ListView_Ping->Connect(wxEVT_MOTION, (wxObjectEventFunction)&xScheduleFrame::OnListView_PingMouseMove, nullptr, this);
 
-    wxString userEmail;
-    wxConfig* xlconfig = new wxConfig(_("xLights"));
-    if (xlconfig != nullptr)     {
-        xlconfig->Read("xLightsUserEmail", &userEmail, "");
-        if (userEmail != "noone@nowhere.xlights.org" && userEmail != "")
-            spdlog::debug("User email address: <email>{}</email>", userEmail.ToStdString());
-        delete xlconfig;
-        xlconfig = nullptr;
-    }
+    std::string userEmail = ScheduleConfig::GetXLightsSetting("xLightsUserEmail");
+    if (userEmail != "noone@nowhere.xlights.org" && userEmail != "")
+        spdlog::debug("User email address: <email>{}</email>", userEmail);
 
     _timer.SetName("xSchedule frame timer");
     _timerSchedule.SetName("xSchedule schedule timer");
@@ -765,11 +727,11 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     SetIcons(icons);
 
     int x, y, w, h;
-    wxConfigBase* config = wxConfigBase::Get();
-    x = config->ReadLong(_("xsWindowPosX"), 50);
-    y = config->ReadLong(_("xsWindowPosY"), 50);
-    w = config->ReadLong(_("xsWindowPosW"), 800);
-    h = config->ReadLong(_("xsWindowPosH"), 600);
+    auto* config = GetXLightsConfig();
+    x = config->ReadLong("xsWindowPosX", 50);
+    y = config->ReadLong("xsWindowPosY", 50);
+    w = config->ReadLong("xsWindowPosW", 800);
+    h = config->ReadLong("xsWindowPosH", 600);
 
     // limit weirdness
     if (x < -100) x = 0;
@@ -797,41 +759,43 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     if (ListView_Ping->GetColumnWidth(1) > 80)
         ListView_Ping->SetColumnWidth(1, 80);
 
-    _otlon = wxBitmap(xs_otlon);
-    _otloff = wxBitmap(xs_otloff);
-    _otlautooff = wxBitmap(xs_otlautooff);
-    _otlautoon = wxBitmap(xs_otlautoon);
-    _save = wxBitmap(xs_save);
-    _scheduled = wxBitmap(xs_scheduled);
-    _queued = wxBitmap(xs_queued);
-    _notscheduled = wxBitmap(xs_notscheduled);
-    _inactive = wxBitmap(xs_inactive);
-    _pllooped = wxBitmap(xs_pllooped);
-    _plnotlooped = wxBitmap(xs_plnotlooped);
-    _plsteplooped = wxBitmap(xs_plsteplooped);
-    _plstepnotlooped = wxBitmap(xs_plstepnotlooped);
-    _playing = wxBitmap(xs_playing);
-    _idle = wxBitmap(xs_idle);
-    _paused = wxBitmap(xs_paused);
-    _random = wxBitmap(xs_random);
-    _notrandom = wxBitmap(xs_notrandom);
-    _volumeup = wxBitmap(xs_volume_up);
-    _volumedown = wxBitmap(xs_volume_down);
-    _brightnessup = wxBitmap(xs_brightness_up);
-    _brightnessdown = wxBitmap(xs_brightness_down);
-    _falconremote = wxBitmap(xs_falcon);
-
     BitmapButton_BrightnessUp->SetToolTip("Increase Brightness");
     BitmapButton_BrightnessDown->SetToolTip("Decrease Brightness");
-    Brightness->SetToolTip("Brightness");
-    BitmapButton_BrightnessDown->SetBitmap(_brightnessdown);
-    BitmapButton_BrightnessUp->SetBitmap(_brightnessup);
+    Brightness->SetToolTip("Brightness. Click to switch the lights off, click again to restore");
 
     BitmapButton_VolumeUp->SetToolTip("Increase Volume");
     BitmapButton_VolumeDown->SetToolTip("Decrease Volume");
-    Custom_Volume->SetToolTip("Volume");
-    BitmapButton_VolumeDown->SetBitmap(_volumedown);
-    BitmapButton_VolumeUp->SetBitmap(_volumeup);
+    Custom_Volume->SetToolTip("Volume. Click to mute, click again to unmute");
+
+    CreateModernBitmaps();
+    ApplyModernLayout();
+
+    // the window can't be narrower than the toolbar
+    {
+        const int display = wxDisplay::GetFromWindow(this);
+        const wxRect area = wxDisplay(display == wxNOT_FOUND ? 0 : display).GetClientArea();
+        const int minWidth = std::min(ClientToWindowSize(wxSize(Panel2->GetBestSize().x, 0)).x, area.width);
+        SetMinSize(wxSize(minWidth, std::min(FromDIP(480), area.height)));
+        if (GetSize().x < minWidth) SetSize(minWidth, GetSize().y);
+    }
+
+    // a sash position saved at another display scale must not squeeze the playlist buttons
+    SplitterWindow1->SetMinimumPaneSize(Button_Add->GetContainingSizer()->CalcMin().x + FromDIP(24));
+    SplitterWindow1->SetSashPosition(std::max((int)GetXLightsConfig()->ReadLong("xsSashPositionV", 500), SplitterWindow1->GetMinimumPaneSize()));
+
+    ModernUI::FitListHeaders(this);
+    CallAfter([this]() { ModernUI::LogClippedControls(this); });
+
+    // set once the window has its final size: the splitter splits later size changes between its panes, so a
+    // position set earlier moves a little on every start
+    CallAfter([this]() {
+        long pane = GetXLightsConfig()->ReadLong("xsControllerPaneHeight", -1);
+        if (pane > 0) {
+            SplitterWindow2->SetSashPosition(SplitterWindow2->GetSize().y - pane);
+        } else {
+            SplitterWindow2->SetSashPosition(GetXLightsConfig()->ReadLong("xsSashPositionH", 150));
+        }
+    });
 
     spdlog::debug("Loading show folder.");
     if (showdir == "")     {
@@ -924,9 +888,26 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
 #endif
 }
 
+// the level from Options, unless special.options sets one
+void xScheduleFrame::ApplyLogLevel()
+{
+    std::string level = "info";
+    if (__schedule != nullptr) {
+        std::string setting = __schedule->GetOptions()->GetLogLevel();
+        if (setting == "Errors") level = "warn";
+        else if (setting == "Off") level = "off";
+    }
+    spdlog::default_logger()->set_level(spdlog::level::from_str(SpecialOptions::GetOption("xschedule_logger", level)));
+    for (const std::string name : { "curl", "frame" }) {
+        auto logger = spdlog::get(name);
+        if (logger) logger->set_level(spdlog::level::from_str(SpecialOptions::GetOption(name + "_logger", level)));
+    }
+}
+
 void xScheduleFrame::LoadSchedule()
 {
     wxASSERT(wxThread::IsMain());
+    Diagnostics::Activity activity("loading the show folder");
 
     // reset our special options
     SpecialOptions::StashShowDir(_showDir);
@@ -953,11 +934,7 @@ void xScheduleFrame::LoadSchedule()
 	}
 
     // Re-apply spdlog levels from special.options now that show dir is known
-    spdlog::default_logger()->set_level(spdlog::level::from_str(SpecialOptions::GetOption("xschedule_logger", "info")));
-    auto curl_log = spdlog::get("curl");
-    if (curl_log) curl_log->set_level(spdlog::level::from_str(SpecialOptions::GetOption("curl_logger", "info")));
-    auto frame_log = spdlog::get("frame");
-    if (frame_log) frame_log->set_level(spdlog::level::from_str(SpecialOptions::GetOption("frame_logger", "info")));
+    ApplyLogLevel();
 
     spdlog::debug("Loading schedule.");
 
@@ -977,6 +954,8 @@ void xScheduleFrame::LoadSchedule()
     if (__schedule != nullptr)
     {
         spdlog::debug("LoadSchedule: deleting existing ScheduleManager.");
+        if (_calendar != nullptr) _calendar->Forget(); // it holds pointers to the schedules about to go
+        _serialPings.clear(); // waits for checks still running on its controllers
         delete __schedule;
         __schedule = nullptr;
         spdlog::debug("LoadSchedule: existing ScheduleManager deleted.");
@@ -985,6 +964,7 @@ void xScheduleFrame::LoadSchedule()
     spdlog::debug("LoadSchedule: constructing new ScheduleManager for '{}'.", _showDir);
     __schedule = new ScheduleManager(this, _showDir);
     spdlog::debug("LoadSchedule: new ScheduleManager constructed.");
+    ApplyLogLevel();
 
     _pinger = new Pinger(__schedule->GetListenerManager(), __schedule->GetOutputManager());
     __schedule->SetPinger(_pinger);
@@ -1003,32 +983,26 @@ void xScheduleFrame::LoadSchedule()
     if (wxFile::Exists(_showDir + "/xlights_networks.xml"))
     {
         StaticText_ShowDir->SetLabel(_showDir);
+        StaticText_ShowDir->SetToolTip(StaticText_ShowDir->GetLabel());
         if (__schedule->ShowDirectoriesMatch())
         {
-            if (IsDarkMode()) {
-                StaticText_ShowDir->SetForegroundColour(*wxWHITE);
-            }
-            else {
-                StaticText_ShowDir->SetForegroundColour(*wxBLACK);
-            }
-            StaticText_ShowDir->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
-                wxFONTWEIGHT_NORMAL, false, wxEmptyString, wxFONTENCODING_DEFAULT));
+            StaticText_ShowDir->SetForegroundColour(ModernUI::GetTheme().text);
+            StaticText_ShowDir->SetFont(Panel4->GetFont());
             MenuItem_UsexLightsFolder->Enable(false);
         }
         else
         {
-            StaticText_ShowDir->SetForegroundColour(wxColour(255,128,0));
-            StaticText_ShowDir->SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
-                wxFONTWEIGHT_BOLD, false, wxEmptyString, wxFONTENCODING_DEFAULT));
+            StaticText_ShowDir->SetForegroundColour(ModernUI::GetTheme().waitText);
+            StaticText_ShowDir->SetFont(Panel4->GetFont().Bold());
             MenuItem_UsexLightsFolder->Enable(true);
         }
     }
     else
     {
         StaticText_ShowDir->SetLabel(_showDir + " : Missing xlights_networks.xml");
-        StaticText_ShowDir->SetForegroundColour(*wxRED);
-        StaticText_ShowDir->SetFont(wxFont(14, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
-            wxFONTWEIGHT_BOLD, false, wxEmptyString, wxFONTENCODING_DEFAULT));
+        StaticText_ShowDir->SetToolTip(StaticText_ShowDir->GetLabel());
+        StaticText_ShowDir->SetForegroundColour(ModernUI::GetTheme().badText);
+        StaticText_ShowDir->SetFont(Panel4->GetFont().Bold());
         MenuItem_UsexLightsFolder->Enable(true);
     }
 
@@ -1046,7 +1020,7 @@ void xScheduleFrame::LoadSchedule()
 
 void xScheduleFrame::RebuildPluginsMenu()
 {
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
 
     // remove any menu items (and their event bindings) left over from a previous show folder
     auto oldItems = Menu_Plugins->GetMenuItems();
@@ -1059,11 +1033,15 @@ void xScheduleFrame::RebuildPluginsMenu()
         wxMenuItem* mi = Menu_Plugins->Append(_pluginManager.GetId(it), _pluginManager.GetMenuLabel(it), nullptr);
         mi->SetCheckable(true);
         Connect(_pluginManager.GetId(it), wxEVT_COMMAND_MENU_SELECTED, (wxObjectEventFunction)&xScheduleFrame::OnPluginMenu);
-        if (config->ReadBool(_("Plugin") + it, false)) {
+        if (config->ReadBool("Plugin" + it, false)) {
             if (_pluginManager.StartPlugin(it, _showDir, __schedule->GetOptions()->GetOurURL())) {
                 mi->Check(true);
             }
         }
+    }
+
+    if (Menu_Plugins->GetMenuItemCount() == 0) {
+        Menu_Plugins->Append(wxID_ANY, "No plugins found")->Enable(false);
     }
 }
 
@@ -1109,6 +1087,7 @@ xScheduleFrame::~xScheduleFrame()
     // stop the timers immediately
     _timer.Stop();
     _timerSchedule.Stop();
+    Diagnostics::FramesPaused();
 
     // give them plenty of time to stop
     wxMilliSleep(100);
@@ -1128,15 +1107,16 @@ xScheduleFrame::~xScheduleFrame()
     int w, h;
     GetSize(&w, &h);
 
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
     if (config != nullptr)
     {
-        config->Write(_("xsWindowPosX"), x);
-        config->Write(_("xsWindowPosY"), y);
-        config->Write(_("xsWindowPosW"), w);
-        config->Write(_("xsWindowPosH"), h);
+        config->Write("xsWindowPosX", x);
+        config->Write("xsWindowPosY", y);
+        config->Write("xsWindowPosW", w);
+        config->Write("xsWindowPosH", h);
         config->Write("xsSashPositionV", SplitterWindow1->GetSashPosition());
         config->Write("xsSashPositionH", SplitterWindow2->GetSashPosition());
+        config->Write("xsControllerPaneHeight", SplitterWindow2->GetSize().y - SplitterWindow2->GetSashPosition());
         config->Flush();
     }
 
@@ -1153,6 +1133,7 @@ xScheduleFrame::~xScheduleFrame()
 
     if (__schedule != nullptr)
     {
+        _serialPings.clear();
         delete __schedule;
         __schedule = nullptr;
     }
@@ -1173,7 +1154,12 @@ void xScheduleFrame::OnQuit(wxCommandEvent& event)
     {
         if (wxMessageBox("Unsaved changes to the schedule. Save now?", "Unsaved changes", wxYES_NO) == wxYES)
         {
-            __schedule->Save();
+            if (!SaveSchedule() &&
+                wxMessageBox("The schedule was not saved. Quit anyway and lose the changes?", "Save failed", wxYES_NO | wxICON_WARNING) != wxYES)
+            {
+                return;
+            }
+            __schedule->ClearDirty();
         }
         else
         {
@@ -1247,7 +1233,7 @@ bool xScheduleFrame::CheckForUpdate(bool showMessageBoxes)
     }
 
     wxString skipver;
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
     if (!showMessageBoxes && config != nullptr) {
         config->Read("xsSkipVersion", &skipver);
     }
@@ -1426,7 +1412,7 @@ void xScheduleFrame::OnTreeCtrlMenu(wxCommandEvent &event)
 
         PlayList* newpl = new PlayList(*playlist, true);
 
-        wxTreeItemId  newitem = TreeCtrl_PlayListsSchedules->AppendItem(TreeCtrl_PlayListsSchedules->GetRootItem(), playlist->GetName(), -1, -1, new MyTreeItemData(newpl));
+        wxTreeItemId  newitem = TreeCtrl_PlayListsSchedules->AppendItem(TreeCtrl_PlayListsSchedules->GetRootItem(), GetPlayListLabel(playlist), 0, 0, new MyTreeItemData(newpl));
         TreeCtrl_PlayListsSchedules->Expand(newitem);
         TreeCtrl_PlayListsSchedules->EnsureVisible(newitem);
         __schedule->AddPlayList(newpl);
@@ -1558,9 +1544,17 @@ void xScheduleFrame::OnTreeCtrl_PlayListsSchedulesKeyDown(wxTreeEvent& event)
 {
 }
 
+bool xScheduleFrame::SaveSchedule()
+{
+    if (__schedule->Save()) return true;
+    wxMessageBox("The schedule could not be saved to " + _showDir + ".\n\nCheck the folder is writable and has free space. "
+                 "Your changes are still open in xSchedule. See the log for details.", "Save failed", wxOK | wxICON_ERROR, this);
+    return false;
+}
+
 void xScheduleFrame::OnMenuItem_SaveSelected(wxCommandEvent& event)
 {
-    __schedule->Save();
+    SaveSchedule();
     UpdateUI();
 }
 
@@ -1581,46 +1575,72 @@ void xScheduleFrame::OnMenuItem_ShowFolderSelected(wxCommandEvent& event)
     spdlog::debug("ShowFolderSelected: menu item invoked.");
     if (SelectShowFolder())
     {
-        spdlog::debug("ShowFolderSelected: new show folder '{}' selected. Stopping plugins.", _showDir);
-        _pluginManager.StopPlugins();
-        spdlog::debug("ShowFolderSelected: plugins stopped. Uninitialising plugins.");
-        _pluginManager.Uninitialise();
-        spdlog::debug("ShowFolderSelected: plugins uninitialised. Stopping timers.");
-        _timerSchedule.Stop();
-        _timer.Stop();
-        spdlog::debug("ShowFolderSelected: timers stopped. Loading schedule.");
-        LoadSchedule();
-        spdlog::debug("ShowFolderSelected: schedule loaded. Restarting timers.");
-        wxASSERT(__schedule != nullptr);
-        _useHalfFrames = true;
-        _timer.Start(50 / 2, false);
-        _timerSchedule.Start(500, false);
-        spdlog::debug("ShowFolderSelected: timers restarted. Initialising plugins.");
-        _pluginManager.Initialise(_showDir);
-        RebuildPluginsMenu();
-        spdlog::debug("ShowFolderSelected: plugins initialised.");
+        spdlog::debug("ShowFolderSelected: new show folder '{}' selected.", _showDir);
+        ReloadShow();
     }
     ValidateWindow();
     spdlog::debug("ShowFolderSelected: complete.");
 }
 
+void xScheduleFrame::ReloadShow()
+{
+    spdlog::debug("ReloadShow: stopping plugins.");
+    _pluginManager.StopPlugins();
+    spdlog::debug("ReloadShow: plugins stopped. Uninitialising plugins.");
+    _pluginManager.Uninitialise();
+    spdlog::debug("ReloadShow: plugins uninitialised. Stopping timers.");
+    _timerSchedule.Stop();
+    _timer.Stop();
+    spdlog::debug("ReloadShow: timers stopped. Loading schedule.");
+    LoadSchedule();
+    spdlog::debug("ReloadShow: schedule loaded. Restarting timers.");
+    wxASSERT(__schedule != nullptr);
+    _useHalfFrames = true;
+    _timer.Start(50 / 2, false);
+    _timerSchedule.Start(500, false);
+    spdlog::debug("ReloadShow: timers restarted. Initialising plugins.");
+    _pluginManager.Initialise(_showDir);
+    RebuildPluginsMenu();
+    spdlog::debug("ReloadShow: plugins initialised.");
+}
+
+void xScheduleFrame::RestoreFromBackup()
+{
+    if (__schedule == nullptr) return;
+    RestoreBackupDialog dlg(this, _showDir, ScheduleManager::GetScheduleFile());
+    if (dlg.ShowModal() != wxID_OK) return;
+
+    wxString question = "Put the show back as it was on " + dlg.GetChosenWhen() + "?\n\nThe show as it is now is backed up first.";
+    if (__schedule->IsDirty()) question += " Changes you haven't saved will be lost.";
+    question += " Anything playing stops while the show reloads.";
+    if (wxMessageBox(question, "Restore from Backup", wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION, this) != wxYES) return;
+
+    std::string error;
+    if (!ShowBackups::Restore(_showDir, ScheduleManager::GetScheduleFile(), dlg.GetChosen(), ShowBackups::Now(), error)) {
+        spdlog::error("Restoring the show from {} failed: {}", dlg.GetChosen().string(), error);
+        wxMessageBox("The backup was not restored.\n\n" + error, "Restore from Backup", wxOK | wxICON_ERROR, this);
+        return;
+    }
+    spdlog::info("Restored the show from {}.", dlg.GetChosen().string());
+    // the restored show replaces it, so the question about saving changes on unloading doesn't apply
+    __schedule->ClearDirty();
+    ReloadShow();
+    ValidateWindow();
+}
+
 void xScheduleFrame::SaveShowDir() const
 {
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
     auto sd = wxString(_showDir);
     spdlog::debug("Saving show folder location {}.", sd.ToStdString());
-    if (!config->Write(_("SchedulerLastDir"), sd))
-    {
-        spdlog::error("Error saving 'SchedulerLastDir'.");
-    }
+    config->Write("SchedulerLastDir", sd);
     config->Flush();
 }
 
 void xScheduleFrame::LoadShowDir()
 {    
-    wxConfigBase* config = wxConfigBase::Get();
-    spdlog::debug("Config: AppName '{}' Path '{}' Entries {} Groups {} Style {} Vendor '{}'.", 
-        config->GetAppName().ToStdString(), config->GetPath().ToStdString(), (int)config->GetNumberOfEntries(), (int)config->GetNumberOfGroups(), config->GetStyle(), config->GetVendorName().ToStdString());
+    auto* config = GetXLightsConfig();
+    spdlog::debug("Settings: {} entries in {}.", config->GetNumberOfEntries(), ScheduleConfig::SettingsFile().string());
 
     // get the show directory
     wxString showDir = ScheduleManager::xScheduleShowDir();
@@ -1658,8 +1678,41 @@ void xScheduleFrame::LoadShowDir()
     }
 }
 
+void xScheduleFrame::RefreshCalendar(bool force) const
+{
+    if (_calendar == nullptr || __schedule == nullptr) return;
+    if (force || _rightBook->GetCurrentPage() == _calendar) _calendar->RefreshFrom(__schedule, force);
+}
+
+void xScheduleFrame::EditSchedule(Schedule* schedule)
+{
+    if (schedule->Configure(this) != nullptr) {
+        auto rs = __schedule->GetRunningSchedule(schedule);
+        if (rs != nullptr) rs->Reset();
+        UpdateTree();
+        UpdateUI(true);
+    }
+}
+
+void xScheduleFrame::AddScheduleOn(PlayList* playlist, const wxDateTime& night)
+{
+    Schedule* schedule = new Schedule();
+    schedule->SetStartDate(night.GetDateOnly());
+    schedule->SetEndDate(night.GetDateOnly());
+    if (schedule->Configure(this) == nullptr) {
+        delete schedule;
+        return;
+    }
+    playlist->AddSchedule(schedule);
+    UpdateTree();
+    UpdateSchedule();
+    UpdateUI(true);
+}
+
 void xScheduleFrame::UpdateTree() const
 {
+    // the calendar holds pointers to schedules, and a tree rebuild follows any added or deleted one
+    RefreshCalendar(true);
     TreeCtrl_PlayListsSchedules->Freeze();
 
     TreeCtrl_PlayListsSchedules->DeleteAllItems();
@@ -1668,14 +1721,27 @@ void xScheduleFrame::UpdateTree() const
 
     auto pls = __schedule->GetPlayLists();
 
+    // the filter matches playlist or schedule names; a matching playlist shows all its schedules
+    const wxString filter = _treeFilter != nullptr ? _treeFilter->GetValue().Trim().Trim(false).Lower() : wxString();
+    auto matches = [&filter](const std::string& name) {
+        return filter.empty() || wxString(name).Lower().Contains(filter);
+    };
+
     for (const auto& it : pls)
     {
-        auto pl = TreeCtrl_PlayListsSchedules->AppendItem(root, it->GetName(), -1, -1, new MyTreeItemData(it));
-
+        const bool playlistMatches = matches(it->GetNameNoTime());
         auto schedules = it->GetSchedules();
+        if (!playlistMatches && std::none_of(schedules.begin(), schedules.end(), [&](Schedule* s) { return matches(s->GetName()); })) {
+            continue;
+        }
+
+        auto pl = TreeCtrl_PlayListsSchedules->AppendItem(root, GetPlayListLabel(it), 0, 0, new MyTreeItemData(it));
+
         for (const auto& it2 : schedules)
         {
-            TreeCtrl_PlayListsSchedules->AppendItem(pl, GetScheduleName(it2, __schedule->GetRunningSchedules()), -1, -1, new MyTreeItemData(it2));
+            if (playlistMatches || matches(it2->GetName())) {
+                TreeCtrl_PlayListsSchedules->AppendItem(pl, GetScheduleName(it2, __schedule->GetRunningSchedules()), 1, 1, new MyTreeItemData(it2));
+            }
         }
         TreeCtrl_PlayListsSchedules->Expand(pl);
     }
@@ -1724,10 +1790,16 @@ void xScheduleFrame::On_timerTrigger(wxTimerEvent& event)
     static uint32_t shortFramesSkipped = 0;
     static uint32_t longFrames = 0;
 
-    if (__schedule == nullptr) return;
+    if (__schedule == nullptr) {
+        Diagnostics::FramesPaused();
+        return;
+    }
+    Diagnostics::Activity activity("running a frame");
 
-    static long long lastms = wxGetLocalTimeMillis().GetValue() - 25;
-    long long now = wxGetLocalTimeMillis().GetValue();
+    // a steady clock: local time jumps back an hour when daylight saving ends, and every tick would look premature
+    auto steadyMS = []() { return (long long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); };
+    static long long lastms = steadyMS() - 25;
+    long long now = steadyMS();
     long long elapsed = (now - lastms);
 
     auto logger_frame = spdlog::get("frame");
@@ -1787,6 +1859,9 @@ void xScheduleFrame::On_timerTrigger(wxTimerEvent& event)
     wxDateTime frameEnd = wxDateTime::UNow();
     long ms = (frameEnd - frameStart).GetMilliseconds().ToLong();
 
+    Diagnostics::FrameDone(ms);
+    LogHealth();
+
     if (ms > _timer.GetInterval())
     {
         // we took too long so next frame has to be an output frame
@@ -1808,22 +1883,27 @@ void xScheduleFrame::On_timerTrigger(wxTimerEvent& event)
     logger_frame->trace("Timer: End Frame: Time {}", ms);
 }
 
-void xScheduleFrame::UpdateSchedule()
+void xScheduleFrame::LogHealth()
 {
-    if (__schedule == nullptr) return;
+    static auto start = std::chrono::steady_clock::now();
+    static auto next = start + std::chrono::minutes(1);
+    auto now = std::chrono::steady_clock::now();
+    if (now < next) return;
+    next = now + std::chrono::minutes(10);
 
-    wxASSERT(wxThread::IsMain());
-    auto logger_frame = spdlog::get("frame");
+    auto mins = std::chrono::duration_cast<std::chrono::minutes>(now - start).count();
+    std::string playing = "nothing";
+    if (PlayList* p = __schedule->GetRunningPlayList(); p != nullptr) {
+        playing = p->GetNameNoTime() + (p->GetRunningStep() != nullptr ? " / " + p->GetRunningStep()->GetNameNoTime() : std::string());
+    }
+    spdlog::info("Health: up {}d {}h {}m; {}; {}; output to lights {}; playing {}; web connections {}; listeners {}.",
+                 mins / 1440, (mins / 60) % 24, mins % 60, Diagnostics::ProcessStats(), Diagnostics::TakeFrameStats(),
+                 __schedule->IsOutputToLights() ? "on" : "off", playing,
+                 _webServer != nullptr ? _webServer->GetConnectionCount() : 0, __schedule->GetListenerManager()->Describe());
+}
 
-    wxStopWatch sw;
-    logger_frame->debug("Updating the schedule.");
-
-    TreeCtrl_PlayListsSchedules->Freeze();
-
-    int rate = __schedule->CheckSchedule();
-
-    logger_frame->debug("Schedule checked {}ms", sw.Time());
-
+void xScheduleFrame::RefreshTreeStates()
+{
     PlayList* nextpl = nullptr;
     Schedule* nextsch = nullptr;
     __schedule->GetNextScheduledPlayList(&nextpl, &nextsch);
@@ -1839,44 +1919,69 @@ void xScheduleFrame::UpdateSchedule()
 
                 TreeCtrl_PlayListsSchedules->SetItemText(it2, GetScheduleName(schedule, __schedule->GetRunningSchedules()));
 
+                const auto& theme = ModernUI::GetTheme();
+                wxColour bg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX);
+                wxColour fg = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT);
+                bool bold = false;
                 if (__schedule->IsScheduleActive(schedule)) {
                     RunningSchedule* rs = __schedule->GetRunningSchedule();
                     if (rs != nullptr && rs->GetPlayList()->IsRunning() && rs->GetSchedule()->GetId() == schedule->GetId()) {
-                        TreeCtrl_PlayListsSchedules->SetItemBackgroundColour(it2, wxColor(146, 244, 155));
+                        bg = theme.okBg;
+                        fg = theme.okText;
+                        bold = true;
                     }
                     else {
                         RunningSchedule* r = __schedule->GetRunningSchedule(schedule);
                         wxASSERT(r != nullptr);
                         if (r == nullptr || r->IsStopped()) {
                             // stopped
-                            TreeCtrl_PlayListsSchedules->SetItemBackgroundColour(it2, wxColor(0xe7, 0x74, 0x71));
+                            bg = theme.badBg;
+                            fg = theme.badText;
                         }
                         else {
                             // waiting
-                            TreeCtrl_PlayListsSchedules->SetItemBackgroundColour(it2, wxColor(244, 241, 146));
+                            bg = theme.waitBg;
+                            fg = theme.waitText;
                         }
                     }
                 }
-                else {
-                    TreeCtrl_PlayListsSchedules->SetItemBackgroundColour(it2, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX));
+                else if (nextsch != nullptr && schedule->GetId() == nextsch->GetId()) {
+                    fg = theme.accentText;
+                    bold = true;
                 }
-
-                if (nextsch != nullptr) {
-                    if (schedule->GetId() == nextsch->GetId()) {
-                        TreeCtrl_PlayListsSchedules->SetItemTextColour(it2, *wxBLUE);
-                    }
-                    else {
-                        TreeCtrl_PlayListsSchedules->SetItemTextColour(it2, wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT));
-                    }
+                else if (!schedule->GetEnabled()) {
+                    fg = theme.muted;
                 }
-                else {
-                    TreeCtrl_PlayListsSchedules->SetItemTextColour(it2, wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT));
-                }
+                TreeCtrl_PlayListsSchedules->SetItemBackgroundColour(it2, bg);
+                TreeCtrl_PlayListsSchedules->SetItemTextColour(it2, fg);
+                TreeCtrl_PlayListsSchedules->SetItemBold(it2, bold);
             }
         }
     }
+}
+
+void xScheduleFrame::UpdateSchedule()
+{
+    if (__schedule == nullptr) return;
+    Diagnostics::Activity activity("checking the schedules");
+
+    wxASSERT(wxThread::IsMain());
+    auto logger_frame = spdlog::get("frame");
+
+    wxStopWatch sw;
+    logger_frame->debug("Updating the schedule.");
+
+    TreeCtrl_PlayListsSchedules->Freeze();
+
+    int rate = __schedule->CheckSchedule();
+
+    logger_frame->debug("Schedule checked {}ms", sw.Time());
+
+    RefreshTreeStates();
 
     logger_frame->debug("    Tree updated {}ms", sw.Time());
+
+    UpdateUpcoming();
 
     CorrectTimer(rate);
 
@@ -1905,6 +2010,7 @@ void xScheduleFrame::UpdateSchedule()
 void xScheduleFrame::On_timerScheduleTrigger(wxTimerEvent& event)
 {
     if (__schedule == nullptr) return;
+    Diagnostics::Activity activity("checking the schedules");
 
     if (__schedule->IsFPPRemoteOrMaster()) {
         SyncFPP::Ping(__schedule->IsSlave(), __schedule->GetForceLocalIP());
@@ -1976,7 +2082,8 @@ void xScheduleFrame::OnMenuItem_OptionsSelected(wxCommandEvent& event)
 
         __schedule->GetSyncManager()->ReloadOptions();
 
-        Schedule::SetCity(__schedule->GetOptions()->GetCity());
+        __schedule->GetOptions()->ApplyLocation();
+        ApplyLogLevel();
         __schedule->GetOutputManager()->SetParallelTransmission(__schedule->GetOptions()->IsParallelTransmission());
         OutputManager::SetRetryOpen(__schedule->GetOptions()->IsRetryOpen());
         __schedule->GetOutputManager()->SetSyncEnabled(__schedule->GetOptions()->IsSync());
@@ -1998,10 +2105,12 @@ void xScheduleFrame::OnMenuItem_OptionsSelected(wxCommandEvent& event)
 void xScheduleFrame::CreateButton(const std::string& label, const wxColor& c)
 {
     wxButton* b = new wxButton(Panel1, ID_BUTTON_USER, label);
-    //if (c != *wxBLACK)
-    //{
-    //    b->SetBackgroundColour(c);
-    //}
+    // the color chosen for the button shows as an accent swatch; black means "default" (no swatch)
+    if (c.IsOk() && c != *wxBLACK) {
+        b->SetBitmap(ModernUI::MakeSwatch(b, c));
+        b->SetBitmapMargins(FromDIP(4), 0);
+    }
+    b->SetMinSize(wxSize(-1, FromDIP(30)));
     FlexGridSizer4->Add(b, 1, wxALL | wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL, 5);
     Connect(ID_BUTTON_USER, wxEVT_COMMAND_BUTTON_CLICKED, (wxObjectEventFunction)&xScheduleFrame::OnButton_UserClick);
 }
@@ -2089,10 +2198,21 @@ void xScheduleFrame::ChangeShowFolder(wxCommandEvent& event)
     ValidateWindow();
 }
 
-void xScheduleFrame::OnButton_UserClick(wxCommandEvent& event)
+void xScheduleFrame::OnTreeFilter(wxCommandEvent& event)
 {
-    PlayList* playlist = nullptr;
-    Schedule* schedule = nullptr;
+    // only rebuild and recolor the tree; typing must not re-run the scheduler
+    TreeCtrl_PlayListsSchedules->Freeze();
+    UpdateTree();
+    RefreshTreeStates();
+    TreeCtrl_PlayListsSchedules->Thaw();
+    UpdateUI(true);
+}
+
+void xScheduleFrame::GetActionSelection(PlayList*& playlist, PlayListStep*& step, Schedule*& schedule)
+{
+    playlist = nullptr;
+    step = nullptr;
+    schedule = nullptr;
 
     wxTreeItemId treeitem = TreeCtrl_PlayListsSchedules->GetSelection();
     if (IsPlayList(treeitem)) {
@@ -2104,23 +2224,425 @@ void xScheduleFrame::OnButton_UserClick(wxCommandEvent& event)
     }
     if (playlist == nullptr && __schedule->GetRunningPlayList() != nullptr) playlist = __schedule->GetPlayList(__schedule->GetRunningPlayList()->GetId());
 
-    PlayListStep* step = nullptr;
     if (playlist != nullptr) {
         int selected = ListView_Running->GetFirstSelected();
-        int stepid = (int)ListView_Running->GetItemData(selected);
-        if (selected >= 0 && stepid >= 0) {
-            step = playlist->GetStep(stepid);
+        if (selected >= 0) {
+            int stepid = (int)ListView_Running->GetItemData(selected);
+            if (stepid >= 0) {
+                step = playlist->GetStep(stepid);
+            }
         }
     }
+}
+
+void xScheduleFrame::OnButton_UserClick(wxCommandEvent& event)
+{
+    PlayList* playlist = nullptr;
+    PlayListStep* step = nullptr;
+    Schedule* schedule = nullptr;
+    GetActionSelection(playlist, step, schedule);
 
     size_t rate = _timer.GetInterval();
     wxString msg = "";
+    Diagnostics::CommandSource source("button " + ((wxButton*)event.GetEventObject())->GetLabel().ToStdString());
     __schedule->Action(((wxButton*)event.GetEventObject())->GetLabel(), playlist, step, schedule, rate, msg);
 
     CorrectTimer(rate);
 
     UpdateSchedule();
     UpdateUI();
+}
+
+void xScheduleFrame::RunUICommand(const std::string& command)
+{
+    PlayList* playlist = nullptr;
+    PlayListStep* step = nullptr;
+    Schedule* schedule = nullptr;
+    GetActionSelection(playlist, step, schedule);
+
+    size_t rate = _timer.GetInterval();
+    wxString msg = "";
+    Diagnostics::CommandSource source("the main window");
+    __schedule->Action(command, "", "", playlist, step, schedule, rate, msg);
+    if (msg != "") SetTempMessage(msg.ToStdString());
+
+    CorrectTimer(rate);
+
+    UpdateSchedule();
+    UpdateUI();
+}
+
+void xScheduleFrame::OnTransportClick(wxCommandEvent& event)
+{
+    auto button = event.GetEventObject();
+    if (button == _buttonPrior) {
+        RunUICommand("Prior step in current playlist");
+    }
+    else if (button == _buttonNext) {
+        RunUICommand("Next step in current playlist");
+    }
+    else if (button == _buttonStop) {
+        RunUICommand("Stop");
+    }
+    else if (button == _buttonPlayPause) {
+        RunUICommand(__schedule->GetRunningPlayList() != nullptr ? "Pause" : "Play selected playlist");
+    }
+}
+
+std::string xScheduleFrame::GetPlayListLabel(PlayList* playlist) const
+{
+    std::string label = playlist->GetNameNoTime();
+    if (playlist->GetLengthMS() != 0) {
+        label += " [" + ModernUI::FormatDuration(playlist->GetLengthMS()) + "]";
+    }
+    return label;
+}
+
+void xScheduleFrame::CreateModernBitmaps()
+{
+    using ModernUI::PillStyle;
+
+    auto widest = [this](std::initializer_list<const char*> labels) {
+        int w = 0;
+        for (auto l : labels) {
+            w = std::max(w, ModernUI::PillWidth(Panel2, l));
+        }
+        return w;
+    };
+
+    int w = widest({ "Output to lights", "Output to lights (auto)", "Lights off", "Lights off (auto)" });
+    _otlon = ModernUI::MakePill(Panel2, "Output to lights", PillStyle::Ok, w);
+    _otlautoon = ModernUI::MakePill(Panel2, "Output to lights (auto)", PillStyle::Ok, w);
+    _otloff = ModernUI::MakePill(Panel2, "Lights off", PillStyle::Off, w);
+    _otlautooff = ModernUI::MakePill(Panel2, "Lights off (auto)", PillStyle::Neutral, w);
+
+    w = widest({ "Playing", "Paused", "Idle" });
+    _playing = ModernUI::MakePill(Panel2, "Playing", PillStyle::Ok, w);
+    _paused = ModernUI::MakePill(Panel2, "Paused", PillStyle::Warn, w);
+    _idle = ModernUI::MakePill(Panel2, "Idle", PillStyle::Neutral, w);
+
+    w = widest({ "Scheduled", "Queued", "Manual", "Remote" });
+    _scheduled = ModernUI::MakePill(Panel2, "Scheduled", PillStyle::On, w);
+    _queued = ModernUI::MakePill(Panel2, "Queued", PillStyle::On, w);
+    _notscheduled = ModernUI::MakePill(Panel2, "Manual", PillStyle::Neutral, w);
+    _falconremote = ModernUI::MakePill(Panel2, "Remote", PillStyle::On, w);
+    _inactiveScheduled = ModernUI::MakePill(Panel2, "Scheduled", PillStyle::Off, w);
+
+    _random = ModernUI::MakePill(Panel2, "Random", PillStyle::On);
+    _notrandom = ModernUI::MakePill(Panel2, "Random", PillStyle::Off);
+    _inactiveRandom = _notrandom;
+
+    _pllooped = ModernUI::MakePill(Panel2, "Loop playlist", PillStyle::On);
+    _plnotlooped = ModernUI::MakePill(Panel2, "Loop playlist", PillStyle::Off);
+    _inactivePLLoop = _plnotlooped;
+
+    _plsteplooped = ModernUI::MakePill(Panel2, "Loop step", PillStyle::On);
+    _plstepnotlooped = ModernUI::MakePill(Panel2, "Loop step", PillStyle::Off);
+    _inactiveStepLoop = _plstepnotlooped;
+
+    w = widest({ "Unsaved", "Saved" });
+    _save = ModernUI::MakePill(Panel2, "Unsaved", PillStyle::Warn, w);
+    _saved = ModernUI::MakePill(Panel2, "Saved", PillStyle::Neutral, w);
+    _inactive = _inactiveScheduled;
+
+    _brightnessdown = ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Minus, false, 28);
+    _brightnessup = ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Plus, false, 28);
+    _volumedown = ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Minus, false, 28);
+    _volumeup = ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Plus, false, 28);
+
+    _transportPlay = ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Play, true);
+    _transportPause = ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Pause, true);
+}
+
+void xScheduleFrame::ApplyModernLayout()
+{
+    const auto& theme = ModernUI::GetTheme();
+
+    Panel2->SetBackgroundColour(theme.toolbar);
+    auto toolbar = dynamic_cast<wxFlexGridSizer*>(Panel2->GetSizer());
+
+    auto makeButton = [this](const wxBitmap& bmp, const wxString& tip) {
+        auto b = new wxBitmapButton(Panel2, wxID_ANY, bmp, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW | wxBORDER_NONE);
+        b->SetToolTip(tip);
+        b->Bind(wxEVT_BUTTON, &xScheduleFrame::OnTransportClick, this);
+        return b;
+    };
+    _buttonPrior = makeButton(ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Prior, false), "Prior step");
+    _buttonPlayPause = makeButton(_transportPlay, "Play");
+    _buttonStop = makeButton(ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Stop, false), "Stop");
+    _buttonNext = makeButton(ModernUI::MakeIconButton(Panel2, ModernUI::Glyph::Next, false), "Next step");
+
+    size_t index = 0;
+    for (auto b : { _buttonPrior, _buttonPlayPause, _buttonStop, _buttonNext }) {
+        toolbar->Insert(index++, b, 0, wxALIGN_CENTER_VERTICAL);
+    }
+    toolbar->Insert(index, FromDIP(10), 1);
+
+    BitmapButton_OutputToLights->SetBitmap(_otlautooff);
+    BitmapButton_Playing->SetBitmap(_idle);
+    BitmapButton_IsScheduled->SetBitmap(_inactiveScheduled);
+    BitmapButton_Random->SetBitmap(_inactiveRandom);
+    BitmapButton_PLLoop->SetBitmap(_inactivePLLoop);
+    BitmapButton_StepLoop->SetBitmap(_inactiveStepLoop);
+    BitmapButton_Unsaved->SetBitmap(_saved);
+    BitmapButton_BrightnessDown->SetBitmap(_brightnessdown);
+    BitmapButton_BrightnessUp->SetBitmap(_brightnessup);
+    BitmapButton_VolumeDown->SetBitmap(_volumedown);
+    BitmapButton_VolumeUp->SetBitmap(_volumeup);
+    for (auto b : { BitmapButton_OutputToLights, BitmapButton_Playing, BitmapButton_IsScheduled, BitmapButton_Random, BitmapButton_PLLoop,
+                    BitmapButton_StepLoop, BitmapButton_Unsaved, BitmapButton_BrightnessDown, BitmapButton_BrightnessUp, BitmapButton_VolumeDown, BitmapButton_VolumeUp }) {
+        b->SetMinSize(b->GetBitmap().GetSize());
+        b->SetSize(b->GetBitmap().GetSize());
+    }
+    Brightness->SetMinSize(FromDIP(wxSize(112, 28)));
+    Custom_Volume->SetMinSize(FromDIP(wxSize(100, 28)));
+
+    int brightnessIndex = -1;
+    int volumeIndex = -1;
+    int i = 0;
+    for (auto item : toolbar->GetChildren()) {
+        if (item->GetWindow() == BitmapButton_BrightnessDown) brightnessIndex = i;
+        if (item->GetWindow() == BitmapButton_VolumeDown) volumeIndex = i;
+        ++i;
+    }
+    if (volumeIndex >= 0) toolbar->Insert(volumeIndex, FromDIP(8), 1);
+    if (brightnessIndex >= 0) toolbar->Insert(brightnessIndex, 0, 0);
+
+    for (auto item : toolbar->GetChildren()) {
+        if (item->IsWindow()) {
+            item->SetFlag(wxALL | wxALIGN_CENTER_VERTICAL);
+            item->SetBorder(FromDIP(2));
+        }
+    }
+    toolbar->SetCols((int)toolbar->GetItemCount());
+    if (brightnessIndex >= 0) toolbar->AddGrowableCol(brightnessIndex);
+    Panel2->Layout();
+
+    _nowPlaying = new ModernUI::NowPlayingBar(this);
+    FlexGridSizer1->Insert(1, _nowPlaying, 0, wxEXPAND);
+    FlexGridSizer1->RemoveGrowableRow(1);
+    FlexGridSizer1->AddGrowableRow(2);
+
+    wxSizer* rightSizer = Panel5->GetSizer();
+    _rightBook = new wxNotebook(Panel5, wxID_ANY);
+    rightSizer->Detach(ListView_Running);
+    ListView_Running->Reparent(_rightBook);
+    _rightBook->AddPage(ListView_Running, "Running playlist", true);
+    _listUpcoming = new wxListView(_rightBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_NO_SORT_HEADER);
+    _listUpcoming->AppendColumn("When");
+    _listUpcoming->AppendColumn("Schedule");
+    _listUpcoming->AppendColumn("Playlist");
+    _listUpcoming->AppendColumn("Status");
+    _rightBook->AddPage(_listUpcoming, "Upcoming");
+    _calendar = new CalendarPanel(_rightBook, [this](Schedule* s) { EditSchedule(s); }, [this](PlayList* p, const wxDateTime& night) { AddScheduleOn(p, night); });
+    _rightBook->AddPage(_calendar, "Calendar");
+    _rightBook->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent& e) {
+        RefreshCalendar();
+        e.Skip();
+    });
+    rightSizer->Add(_rightBook, 1, wxALL | wxEXPAND, 5);
+
+    if (auto treeSizer = dynamic_cast<wxFlexGridSizer*>(Panel6->GetSizer()); treeSizer != nullptr) {
+        _treeFilter = new wxSearchCtrl(Panel6, wxID_ANY);
+        _treeFilter->SetDescriptiveText("Filter playlists and schedules");
+        _treeFilter->ShowCancelButton(true);
+        _treeFilter->Bind(wxEVT_TEXT, &xScheduleFrame::OnTreeFilter, this);
+        _treeFilter->Bind(wxEVT_SEARCHCTRL_CANCEL_BTN, [this](wxCommandEvent&) {
+            _treeFilter->Clear(); // fires wxEVT_TEXT, which refreshes the tree
+        });
+        treeSizer->Insert(0, _treeFilter, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 5);
+        treeSizer->RemoveGrowableRow(0);
+        treeSizer->AddGrowableRow(1);
+    }
+
+    wxVector<wxBitmapBundle> images;
+    images.push_back(ModernUI::MakeTreeIcon(TreeCtrl_PlayListsSchedules, ModernUI::Glyph::Playlist));
+    images.push_back(ModernUI::MakeTreeIcon(TreeCtrl_PlayListsSchedules, ModernUI::Glyph::Schedule));
+    TreeCtrl_PlayListsSchedules->SetImages(images);
+
+    // fixed width time readouts so the status row does not reflow every second
+    Panel4->SetBackgroundColour(theme.toolbar);
+    if (auto status = dynamic_cast<wxFlexGridSizer*>(Panel4->GetSizer()); status != nullptr) {
+        status->SetCols((int)status->GetItemCount());
+        // the show folder takes the spare width and shortens with an ellipsis rather than pushing the clock off screen
+        status->RemoveGrowableCol(1);
+        status->AddGrowableCol(0);
+        if (auto item = status->GetItem(StaticText_ShowDir); item != nullptr) {
+            item->SetFlag(wxALL | wxEXPAND);
+        }
+    }
+    StaticText_ShowDir->SetMinSize(wxSize(FromDIP(120), -1));
+    wxSize timeSize = StaticText_SequenceTime->GetTextExtent("00:00:00.000");
+    timeSize.IncTo(StaticText_SequenceTime->GetTextExtent("NOT PLAYING"));
+    timeSize += FromDIP(wxSize(8, 0));
+    for (auto t : { StaticText_SequenceTime, StaticText_SyncTime, StaticText3 }) {
+        t->SetMinSize(wxSize(timeSize.x, -1));
+    }
+
+    Layout();
+}
+
+void xScheduleFrame::UpdateNowPlaying()
+{
+    if (_nowPlaying == nullptr || __schedule == nullptr) return;
+
+    PlayList* running = __schedule->GetRunningPlayList();
+    if (running != nullptr && running->IsRunning()) {
+        PlayListStep* step = running->GetRunningStep();
+        std::string detail;
+        if (__schedule->IsSlave()) {
+            detail = "Remote";
+        }
+        else if (__schedule->IsCurrentPlayListScheduled()) {
+            RunningSchedule* rs = __schedule->GetRunningSchedule();
+            if (rs != nullptr) {
+                detail = "Schedule: " + rs->GetSchedule()->GetName() + " until " + ModernUI::FormatEndTime(rs->GetSchedule()->GetNextEndTime());
+            }
+        }
+        else if (__schedule->IsQueuedPlaylistRunning()) {
+            detail = "Queued";
+        }
+        else {
+            detail = "Started manually";
+        }
+        _nowPlaying->SetStatus(running->IsPaused() ? ModernUI::NowPlayingBar::State::Paused : ModernUI::NowPlayingBar::State::Playing,
+                               running->GetNameNoTime(),
+                               step != nullptr ? step->GetNameNoTime() : "",
+                               step != nullptr ? step->GetPosition() : 0,
+                               step != nullptr ? step->GetLengthMS() : 0,
+                               detail);
+    }
+    else {
+        PlayList* nextpl = nullptr;
+        Schedule* nextsch = nullptr;
+        __schedule->GetNextScheduledPlayList(&nextpl, &nextsch);
+        std::string detail;
+        if (nextpl != nullptr && nextsch != nullptr) {
+            detail = "Next: " + nextpl->GetNameNoTime() + " (" + nextsch->GetName() + ") " + ModernUI::FormatWhen(nextsch->GetNextTriggerDateTime());
+        }
+        _nowPlaying->SetStatus(ModernUI::NowPlayingBar::State::Idle, "", "", 0, 0, detail);
+    }
+}
+
+void xScheduleFrame::UpdateUpcoming()
+{
+    if (_listUpcoming == nullptr || __schedule == nullptr) return;
+
+    enum Kind {
+        Playing,
+        Waiting,
+        Stopped,
+        Later,
+        Disabled
+    };
+    struct Row {
+        Kind kind = Later;
+        wxDateTime when;
+        bool next = false;
+        std::string whenText;
+        std::string schedule;
+        std::string playlist;
+        std::string status;
+    };
+
+    PlayList* nextpl = nullptr;
+    Schedule* nextsch = nullptr;
+    __schedule->GetNextScheduledPlayList(&nextpl, &nextsch);
+    RunningSchedule* current = __schedule->GetRunningSchedule();
+
+    std::vector<Row> rows;
+    for (const auto& pl : __schedule->GetPlayLists()) {
+        for (const auto& s : pl->GetSchedules()) {
+            Row r;
+            r.schedule = s->GetName();
+            r.playlist = pl->GetNameNoTime();
+            if (!s->GetEnabled()) {
+                r.kind = Disabled;
+                r.whenText = "-";
+                r.status = "Disabled";
+            }
+            else if (__schedule->IsScheduleActive(s)) {
+                r.whenText = "Now until " + ModernUI::FormatEndTime(s->GetNextEndTime());
+                RunningSchedule* rs = __schedule->GetRunningSchedule(s);
+                if (current != nullptr && current->GetSchedule()->GetId() == s->GetId() && current->GetPlayList()->IsRunning()) {
+                    r.kind = Playing;
+                    r.status = "Playing";
+                }
+                else if (rs == nullptr || rs->IsStopped()) {
+                    r.kind = Stopped;
+                    r.status = "Stopped";
+                }
+                else {
+                    r.kind = Waiting;
+                    r.status = "Waiting - lower priority";
+                }
+            }
+            else {
+                r.when = s->GetNextTriggerDateTime();
+                if (r.when.IsValid() && r.when != wxDateTime((time_t)0)) { // the epoch means "no upcoming run"
+                    r.kind = Later;
+                    r.whenText = ModernUI::FormatWhen(r.when);
+                    r.next = nextsch != nullptr && nextsch->GetId() == s->GetId();
+                    r.status = r.next ? "Next" : "";
+                }
+                else {
+                    r.kind = Disabled;
+                    r.whenText = "Never";
+                }
+            }
+            rows.push_back(r);
+        }
+    }
+
+    std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) {
+        if (a.kind != b.kind) return a.kind < b.kind;
+        if (a.kind == Later) return a.when < b.when;
+        return false;
+    });
+
+    std::string signature;
+    for (const auto& r : rows) {
+        signature += r.whenText + "|" + r.schedule + "|" + r.playlist + "|" + r.status + "\n";
+    }
+    if (signature == _upcomingSignature) return;
+    _upcomingSignature = signature;
+
+    const auto& theme = ModernUI::GetTheme();
+    _listUpcoming->Freeze();
+    _listUpcoming->DeleteAllItems();
+    long i = 0;
+    for (const auto& r : rows) {
+        _listUpcoming->InsertItem(i, r.whenText);
+        _listUpcoming->SetItem(i, 1, r.schedule);
+        _listUpcoming->SetItem(i, 2, r.playlist);
+        _listUpcoming->SetItem(i, 3, r.status);
+        switch (r.kind) {
+        case Playing:
+            _listUpcoming->SetItemBackgroundColour(i, theme.okBg);
+            _listUpcoming->SetItemTextColour(i, theme.okText);
+            break;
+        case Waiting:
+            _listUpcoming->SetItemBackgroundColour(i, theme.waitBg);
+            _listUpcoming->SetItemTextColour(i, theme.waitText);
+            break;
+        case Stopped:
+            _listUpcoming->SetItemBackgroundColour(i, theme.badBg);
+            _listUpcoming->SetItemTextColour(i, theme.badText);
+            break;
+        case Later:
+            if (r.next) _listUpcoming->SetItemTextColour(i, theme.accentText);
+            break;
+        case Disabled:
+            _listUpcoming->SetItemTextColour(i, theme.muted);
+            break;
+        }
+        ++i;
+    }
+    for (int c = 0; c < 4; ++c) {
+        _listUpcoming->SetColumnWidth(c, wxLIST_AUTOSIZE_USEHEADER);
+        _listUpcoming->SetColumnWidth(c, std::max(_listUpcoming->GetColumnWidth(c), FromDIP(c == 3 ? 160 : 120)));
+    }
+    _listUpcoming->Thaw();
 }
 
 void xScheduleFrame::SetTempMessage(const std::string& msg)
@@ -2145,11 +2667,22 @@ void xScheduleFrame::ManipulateBuffer(uint8_t* buffer, size_t bufferSize)
     _pluginManager.ManipulateBuffer(buffer, bufferSize);
 }
 
+void xScheduleFrame::StopPluginAndRemember(const std::string& label)
+{
+    std::string plugin = _pluginManager.GetPluginFromLabel(label);
+    if (plugin == "") return;
+    _pluginManager.StopPlugin(plugin);
+    GetXLightsConfig()->Write("Plugin" + plugin, false);
+    GetXLightsConfig()->Flush();
+    PluginStateChanged();
+}
+
 void xScheduleFrame::PluginStateChanged()
 {
     auto menuItems = Menu_Plugins->GetMenuItems();
 
     for (const auto& it : menuItems) {
+        if (!it->IsCheckable()) continue;
         auto label = it->GetItemLabelText();
         auto plugin = _pluginManager.GetPluginFromLabel(label);
 
@@ -2306,6 +2839,7 @@ void xScheduleFrame::OnListView_RunningItemActivated(wxListEvent& event)
     {
         size_t rate = 0;
         wxString msg;
+        Diagnostics::CommandSource source("the main window");
         __schedule->Action("Jump to specified step in current playlist", PlayListStep::GetStepNameWithId((int)ListView_Running->GetItemData(selected)), "", p, nullptr, nullptr, rate, msg);
     }
 }
@@ -2313,6 +2847,7 @@ void xScheduleFrame::OnListView_RunningItemActivated(wxListEvent& event)
 void xScheduleFrame::UpdateStatus(bool force)
 {
     wxASSERT(wxThread::IsMain());
+    Diagnostics::Activity activity("updating the window");
 
     wxStopWatch sw;
     auto logger_frame = spdlog::get("frame");
@@ -2341,6 +2876,12 @@ void xScheduleFrame::UpdateStatus(bool force)
 
     logger_frame->debug("            Got selected playlist {}ms", sw.Time());
 
+    // the rows are colored and the columns sized again only when the list or the current or next step changes;
+    // doing it every second measured every row of a long playlist
+    static wxUIntPtr lastStep = 0;
+    static wxUIntPtr lastNext = 0;
+    bool rebuilt = false;
+
     if (p == nullptr) {
         ListView_Running->DeleteAllItems();
         lastcc = -1;
@@ -2358,6 +2899,7 @@ void xScheduleFrame::UpdateStatus(bool force)
             lastid = p->GetId();
             lastrunning = (int)p->IsRunning();
             laststeps = p->GetSteps().size();
+            rebuilt = true;
 
             ListView_Running->DeleteAllItems();
 
@@ -2379,35 +2921,53 @@ void xScheduleFrame::UpdateStatus(bool force)
         PlayListStep* next = nullptr;
 
         if (!p->IsRandom()) {
-            bool didloop;
-            next = p->GetNextStep(didloop);
+            next = p->PeekNextStep();
         }
 
         bool currenthighlighted = false;
         bool nexthighlighted = false;
+        const auto& theme = ModernUI::GetTheme();
 
-        if (step != nullptr) {
+        wxUIntPtr stepId = step != nullptr ? step->GetId() + 1 : 0;
+        wxUIntPtr nextId = next != nullptr ? next->GetId() + 1 : 0;
+        bool recolour = rebuilt || stepId != lastStep || nextId != lastNext;
+        lastStep = stepId;
+        lastNext = nextId;
+
+        if (step != nullptr && !recolour) {
+            long row = ListView_Running->FindItem(-1, (wxUIntPtr)step->GetId());
+            if (row >= 0) {
+                currenthighlighted = true;
+                std::string status = step->GetStatus();
+                if (ListView_Running->GetItemText(row, 4) != status) ListView_Running->SetItem(row, 4, status);
+            }
+        }
+        else if (step != nullptr) {
             for (int i = 0; i < ListView_Running->GetItemCount(); ++i) {
                 if (!currenthighlighted && ListView_Running->GetItemData(i) == step->GetId()) {
                     currenthighlighted = true;
                     ListView_Running->SetItem(i, 4, step->GetStatus());
-                    if (step->GetAudioManager() != nullptr && AudioManager::GetSDLManager()->IsNoAudio()) {
-                        ListView_Running->SetItemBackgroundColour(i, wxColor(244, 146, 155));
+                    if (step->GetAudioManager() != nullptr && AudioManager::GetAudioManager()->IsNoAudio()) {
+                        ListView_Running->SetItemBackgroundColour(i, theme.badBg);
+                        ListView_Running->SetItemTextColour(i, theme.badText);
                         const std::string noaudio = "Audio not playing due to no audio device found.";
                         if (ListView_Running->GetToolTipText() != noaudio) ListView_Running->SetToolTip(noaudio);
                     }
                     else {
-                        ListView_Running->SetItemBackgroundColour(i, wxColor(146, 244, 155));
+                        ListView_Running->SetItemBackgroundColour(i, theme.okBg);
+                        ListView_Running->SetItemTextColour(i, theme.okText);
                         if (ListView_Running->GetToolTipText() != "") ListView_Running->UnsetToolTip();
                     }
                 }
                 else {
                     if (next != nullptr && !nexthighlighted && next->GetId() == ListView_Running->GetItemData(i)) {
                         nexthighlighted = true;
-                        ListView_Running->SetItemBackgroundColour(i, wxColor(244, 241, 146));
+                        ListView_Running->SetItemBackgroundColour(i, theme.waitBg);
+                        ListView_Running->SetItemTextColour(i, theme.waitText);
                     }
                     else {
                         ListView_Running->SetItemBackgroundColour(i, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX));
+                        ListView_Running->SetItemTextColour(i, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT));
                     }
                     ListView_Running->SetItem(i, 4, "");
                 }
@@ -2418,25 +2978,17 @@ void xScheduleFrame::UpdateStatus(bool force)
             if (ListView_Running->GetToolTipText() != "") ListView_Running->UnsetToolTip();
         }
 
-        ListView_Running->SetColumnWidth(0, wxLIST_AUTOSIZE);
-        if (ListView_Running->GetColumnWidth(0) < 50)
-            ListView_Running->SetColumnWidth(0, 50);
-        ListView_Running->SetColumnWidth(1, wxLIST_AUTOSIZE);
-        if (ListView_Running->GetColumnWidth(1) < 80)
-            ListView_Running->SetColumnWidth(1, 80);
-        ListView_Running->SetColumnWidth(2, wxLIST_AUTOSIZE);
-        if (ListView_Running->GetColumnWidth(2) < 80)
-            ListView_Running->SetColumnWidth(2, 80);
-        ListView_Running->SetColumnWidth(3, wxLIST_AUTOSIZE);
-        if (ListView_Running->GetColumnWidth(3) < 80)
-            ListView_Running->SetColumnWidth(3, 80);
-        ListView_Running->SetColumnWidth(4, wxLIST_AUTOSIZE);
-        if (ListView_Running->GetColumnWidth(4) < 250)
-            ListView_Running->SetColumnWidth(4, 250);
+        if (rebuilt) {
+            const int minWidths[] = { 50, 80, 80, 80, 250 };
+            for (int c = 0; c < 5; ++c) {
+                ListView_Running->SetColumnWidth(c, wxLIST_AUTOSIZE);
+                if (ListView_Running->GetColumnWidth(c) < FromDIP(minWidths[c])) ListView_Running->SetColumnWidth(c, FromDIP(minWidths[c]));
+            }
+            ModernUI::FitListHeaders(ListView_Running);
+        }
     }
 
     ListView_Running->Thaw();
-    ListView_Running->Refresh();
 
     logger_frame->debug("            Updated running listview {}ms", sw.Time());
 
@@ -2486,13 +3038,15 @@ void xScheduleFrame::UpdateStatus(bool force)
     }
     else {
         if (saved != 0)
-            BitmapButton_Unsaved->SetBitmap(_inactive);
+            BitmapButton_Unsaved->SetBitmap(_saved);
+        if (BitmapButton_Unsaved->GetToolTipText() != "All changes saved.")
+            BitmapButton_Unsaved->SetToolTip("All changes saved.");
         saved = 0;
     }
 
     if (p == nullptr || !p->IsRunning()) {
         if (scheduled != 0)
-            BitmapButton_IsScheduled->SetBitmap(_inactive);
+            BitmapButton_IsScheduled->SetBitmap(_inactiveScheduled);
         BitmapButton_IsScheduled->SetToolTip("");
         scheduled = 0;
 
@@ -2503,17 +3057,17 @@ void xScheduleFrame::UpdateStatus(bool force)
         playing = 0;
 
         if (plloop != 2)
-            BitmapButton_PLLoop->SetBitmap(_inactive);
+            BitmapButton_PLLoop->SetBitmap(_inactivePLLoop);
         plloop = 2;
         BitmapButton_PLLoop->SetToolTip("");
 
         if (steploop != 2)
-            BitmapButton_StepLoop->SetBitmap(_inactive);
+            BitmapButton_StepLoop->SetBitmap(_inactiveStepLoop);
         steploop = 2;
         BitmapButton_StepLoop->SetToolTip("");
 
         if (random != 2)
-            BitmapButton_Random->SetBitmap(_inactive);
+            BitmapButton_Random->SetBitmap(_inactiveRandom);
         BitmapButton_Random->SetToolTip("");
         random = 2;
     }
@@ -2605,6 +3159,16 @@ void xScheduleFrame::UpdateStatus(bool force)
             random = 0;
         }
     }
+
+    static int transport = -1;
+    const int transportState = (p != nullptr && p->IsRunning() && !p->IsPaused()) ? 1 : 0;
+    if (_buttonPlayPause != nullptr && transport != transportState) {
+        _buttonPlayPause->SetBitmap(transportState == 1 ? _transportPause : _transportPlay);
+        _buttonPlayPause->SetToolTip(transportState == 1 ? "Pause" : "Play");
+        transport = transportState;
+    }
+
+    UpdateNowPlaying();
 
     logger_frame->debug("            Updated toolbar {}ms", sw.Time());
 
@@ -2710,13 +3274,19 @@ void xScheduleFrame::OnBitmapButton_IsScheduledClick(wxCommandEvent& event)
 
 void xScheduleFrame::OnBitmapButton_UnsavedClick(wxCommandEvent& event)
 {
-    __schedule->Save();
+    SaveSchedule();
     UpdateUI();
 }
 
 void xScheduleFrame::CreateDebugReport(xlCrashHandler* crashHandler)
 {
     spdlog::critical("Crash handler called.");
+    spdlog::default_logger()->flush();
+    // the core attaches xLights' log, not this one
+    std::string log = GetXScheduleLogPath();
+    if (!log.empty() && FileExists(log)) {
+        crashHandler->GetDebugReport().AddFile(log, wxFileName(log).GetFullName());
+    }
     if (xScheduleFrame::GetScheduleManager() != nullptr) {
         crashHandler->GetDebugReport().SetCompressedFileDirectory(xScheduleFrame::GetScheduleManager()->GetShowDir());
     }
@@ -2833,6 +3403,7 @@ bool xScheduleFrame::HandleHotkeys(wxKeyEvent& event)
 
             size_t rate = _timer.GetInterval();
             wxString msg = "";
+            Diagnostics::CommandSource source("hotkey for button " + (*it)->GetLabel());
             __schedule->Action((*it)->GetLabel(), playlist, step, schedule, rate, msg);
 
             CorrectTimer(rate);
@@ -2866,24 +3437,25 @@ void xScheduleFrame::CorrectTimer(int rate)
 void xScheduleFrame::OnPluginMenu(wxCommandEvent& event)
 {
     std::string plugin = _pluginManager.GetPluginFromId(event.GetId());
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
 
     if (((wxMenu*)event.GetEventObject())->IsChecked(event.GetId()))
     {
         if (!_pluginManager.StartPlugin(plugin, _showDir, __schedule->GetOptions()->GetOurURL()))
         {
             ((wxMenu*)event.GetEventObject())->Check(event.GetId(), false);
-            config->Write(_("Plugin") + plugin, false);
+            config->Write("Plugin" + plugin, false);
         }
         else
         {
-            config->Write(_("Plugin") + plugin, true);
+            config->Write("Plugin" + plugin, true);
         }
     }
     else {
         _pluginManager.StopPlugin(plugin);
-        config->Write(_("Plugin") + plugin, false);
+        config->Write("Plugin" + plugin, false);
     }
+    config->Flush();
 }
 
 void xScheduleFrame::OnBitmapButton_VolumeDownClick(wxCommandEvent& event)
@@ -3277,7 +3849,7 @@ void xScheduleFrame::AddPlayList(bool forceadvanced)
     }
     else
     {
-        wxTreeItemId  newitem = TreeCtrl_PlayListsSchedules->AppendItem(TreeCtrl_PlayListsSchedules->GetRootItem(), playlist->GetName(), -1, -1, new MyTreeItemData(playlist));
+        wxTreeItemId  newitem = TreeCtrl_PlayListsSchedules->AppendItem(TreeCtrl_PlayListsSchedules->GetRootItem(), GetPlayListLabel(playlist), 0, 0, new MyTreeItemData(playlist));
         TreeCtrl_PlayListsSchedules->Expand(newitem);
         TreeCtrl_PlayListsSchedules->EnsureVisible(newitem);
         __schedule->AddPlayList(playlist);
@@ -3311,7 +3883,7 @@ void xScheduleFrame::EditSelectedItem(bool forceadvanced)
         PlayList* playlist = (PlayList*)((MyTreeItemData*)TreeCtrl_PlayListsSchedules->GetItemData(treeitem))->GetData();
         if (playlist->Configure(this, __schedule->GetOutputManager(), __schedule->GetOptions(), forceadvanced || __schedule->GetOptions()->IsAdvancedMode()) != nullptr)
         {
-            TreeCtrl_PlayListsSchedules->SetItemText(treeitem, playlist->GetName());
+            TreeCtrl_PlayListsSchedules->SetItemText(treeitem, GetPlayListLabel(playlist));
         }
     }
     else if (IsSchedule(treeitem))
@@ -3348,22 +3920,29 @@ void xScheduleFrame::ScheduleChange(wxCommandEvent& event)
 
 void xScheduleFrame::SlowFrameProcessing(wxCommandEvent& event)
 {
+    Diagnostics::Activity activity("updating the window");
+    // this runs on every frame tick, so labels are only touched when their text changes, and the panel only laid out
+    // again when a label's length changes, the one case where it could run into its neighbor
+    bool relayout = false;
+    auto set = [&relayout](wxStaticText* label, const wxString& text) {
+        if (label->GetLabel() != text) {
+            relayout = relayout || label->GetLabel().length() != text.length();
+            label->SetLabel(text);
+        }
+    };
+
     PlayList* p = __schedule->GetRunningPlayList();
     if (p == nullptr) {
-        StaticText_SequenceTime->SetLabel("NOT PLAYING");
+        set(StaticText_SequenceTime, "NOT PLAYING");
     } else {
         size_t seqtime = p->GetPosition();
-        StaticText_SequenceTime->SetLabel(FormatTime(seqtime, true));
+        set(StaticText_SequenceTime, FormatTime(seqtime, true));
 
         ListenerBase* sync = __schedule->GetListenerManager()->GetSyncListener();
-        if (sync != nullptr)
-        {
-            StaticText3->SetLabel(sync->FormatTime(seqtime));
-        }
-        else
-        {
-            StaticText3->SetLabel("");
-        }
+        set(StaticText3, sync != nullptr ? wxString(sync->FormatTime(seqtime)) : wxString());
+    }
+    if (relayout) {
+        Panel4->Layout();
     }
 }
 
@@ -3407,7 +3986,7 @@ void xScheduleFrame::DoStop(wxCommandEvent& event)
         PlayList* p = __schedule->GetRunningPlayList(event.GetInt());
         if (p != nullptr)
         {
-            __schedule->StopPlayList(p, end, sustain);
+            __schedule->StopPlayList(p, end, sustain, true);
         }
     }
     UpdateSchedule();
@@ -3417,6 +3996,7 @@ void xScheduleFrame::DoStop(wxCommandEvent& event)
 void xScheduleFrame::DoAction(wxCommandEvent& event)
 {
     ActionMessageData* amd = (ActionMessageData*)event.GetClientData();
+    Diagnostics::CommandSource source(amd->_source);
 
     spdlog::debug("    Thread switched command = {}", amd->_command);
 
@@ -3463,6 +4043,7 @@ void xScheduleFrame::UpdateUI(bool force)
     bool minimiseUIUpdates = __schedule->GetOptions()->IsMinimiseUIUpdates();
 
     UpdateStatus(force);
+    RefreshCalendar();
 
     logger_frame->debug("        Status updated {}ms", sw.Time());
 
@@ -3581,46 +4162,28 @@ void xScheduleFrame::UpdateUI(bool force)
                     ListView_Ping->SetItem(item, 1, wxString::Format("%d", it->GetFailCount()));
                 }
 
+                const auto& theme = ModernUI::GetTheme();
+                const wxColour listBg = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX);
+                const wxColour listText = wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT);
                 switch (it->GetPingResult()) {
                 case Output::PINGSTATE::PING_OK:
                 case Output::PINGSTATE::PING_OPEN:
                 case Output::PINGSTATE::PING_OPENED:
                 case Output::PINGSTATE::PING_WEBOK:
-                    if (it->IsInactive()) {
-                        ListView_Ping->SetItemBackgroundColour(item, wxColour(180,255,180));
-                    }
-                    else {
-                        ListView_Ping->SetItemBackgroundColour(item, *wxGREEN);
-                    }
-                    ListView_Ping->SetItemTextColour(item, *wxBLACK);
+                    ListView_Ping->SetItemBackgroundColour(item, it->IsInactive() ? listBg : theme.okBg);
+                    ListView_Ping->SetItemTextColour(item, theme.okText);
                     break;
                 case Output::PINGSTATE::PING_ALLFAILED:
-                    if (it->IsInactive()) {
-                        ListView_Ping->SetItemBackgroundColour(item, wxColour(255, 180, 180));
-                        ListView_Ping->SetItemTextColour(item, *wxBLACK);
-                    }
-                    else {
-                        ListView_Ping->SetItemBackgroundColour(item, *wxRED);
-                        ListView_Ping->SetItemTextColour(item, *wxWHITE);
-                    }
+                    ListView_Ping->SetItemBackgroundColour(item, it->IsInactive() ? listBg : theme.badBg);
+                    ListView_Ping->SetItemTextColour(item, theme.badText);
                     break;
                 case Output::PINGSTATE::PING_UNAVAILABLE:
-                    if (it->IsInactive()) {
-                        ListView_Ping->SetItemTextColour(item, *wxLIGHT_GREY);
-                    }
-                    else {
-                        ListView_Ping->SetItemTextColour(item, *wxBLACK);
-                    }
-                    ListView_Ping->SetItemBackgroundColour(item, *wxWHITE);
+                    ListView_Ping->SetItemBackgroundColour(item, listBg);
+                    ListView_Ping->SetItemTextColour(item, it->IsInactive() ? theme.muted : listText);
                     break;
                 case Output::PINGSTATE::PING_UNKNOWN:
-                    if (it->IsInactive()) {
-                        ListView_Ping->SetItemBackgroundColour(item, wxColour(255, 180, 128));
-                    }
-                    else {
-                        ListView_Ping->SetItemBackgroundColour(item, wxColour(255, 128, 0));
-                    }
-                    ListView_Ping->SetItemTextColour(item, *wxBLACK);
+                    ListView_Ping->SetItemBackgroundColour(item, it->IsInactive() ? listBg : theme.waitBg);
+                    ListView_Ping->SetItemTextColour(item, theme.waitText);
                     break;
                 }
             }
@@ -3647,32 +4210,30 @@ void xScheduleFrame::UpdateUI(bool force)
 
                 // update the colour
                 if (item >= 0) {
+                    const auto& theme = ModernUI::GetTheme();
                     if (serial->GetPort() == "NotConnected") {
-                        ListView_Ping->SetItemTextColour(item, *wxBLACK);
-                        ListView_Ping->SetItemBackgroundColour(item, *wxWHITE);
+                        ListView_Ping->SetItemTextColour(item, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT));
+                        ListView_Ping->SetItemBackgroundColour(item, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOX));
                     }
                     else {
-                        auto pr = serial->Ping();
-                        if (__schedule->IsOutputToLights()) {
-                            if (pr == Output::PINGSTATE::PING_OPEN) {
-                                ListView_Ping->SetItemBackgroundColour(item, *wxGREEN);
-                                ListView_Ping->SetItemTextColour(item, *wxBLACK);
-                            }
-                            else {
-                                ListView_Ping->SetItemBackgroundColour(item, *wxRED);
-                                ListView_Ping->SetItemTextColour(item, *wxWHITE);
-                            }
+                        auto& check = _serialPings[serial->GetName()];
+                        if (check.pending.valid() && check.pending.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                            check.state = check.pending.get();
                         }
-                        else {
-                            if (pr == Output::PINGSTATE::PING_OPENED) {
-                                ListView_Ping->SetItemBackgroundColour(item, *wxGREEN);
-                                ListView_Ping->SetItemTextColour(item, *wxBLACK);
-                            }
-                            else {
-                                ListView_Ping->SetItemBackgroundColour(item, *wxRED);
-                                ListView_Ping->SetItemTextColour(item, *wxWHITE);
-                            }
+                        // while output is on this only asks whether the port is open; otherwise it opens the port
+                        wxLongLong now = wxGetUTCTimeMillis();
+                        if (!check.pending.valid() && (check.checked == 0 || now - check.checked > (__schedule->IsOutputToLights() ? 1000 : 30000))) {
+                            check.checked = now;
+                            check.pending = std::async(std::launch::async, [serial]() {
+                                Diagnostics::ThreadName name("serial check");
+                                return serial->Ping();
+                            });
                         }
+                        auto pr = check.state;
+                        bool ok = pr == Output::PINGSTATE::PING_OK || pr == Output::PINGSTATE::PING_WEBOK ||
+                                  (__schedule->IsOutputToLights() ? pr == Output::PINGSTATE::PING_OPEN : pr == Output::PINGSTATE::PING_OPENED);
+                        ListView_Ping->SetItemBackgroundColour(item, ok ? theme.okBg : theme.badBg);
+                        ListView_Ping->SetItemTextColour(item, ok ? theme.okText : theme.badText);
                     }
                 }
             }
@@ -3754,7 +4315,7 @@ void xScheduleFrame::AddSchedule()
         }
         else
         {
-            wxTreeItemId  newitem = TreeCtrl_PlayListsSchedules->AppendItem(treeitem, GetScheduleName(schedule, __schedule->GetRunningSchedules()), -1, -1, new MyTreeItemData(schedule));
+            wxTreeItemId  newitem = TreeCtrl_PlayListsSchedules->AppendItem(treeitem, GetScheduleName(schedule, __schedule->GetRunningSchedules()), 1, 1, new MyTreeItemData(schedule));
             PlayList* playlist = (PlayList*)((MyTreeItemData*)TreeCtrl_PlayListsSchedules->GetItemData(treeitem))->GetData();
             TreeCtrl_PlayListsSchedules->Expand(treeitem);
             TreeCtrl_PlayListsSchedules->EnsureVisible(newitem);
@@ -3894,7 +4455,10 @@ void xScheduleFrame::OnMenuItem_EditEventsSelected(wxCommandEvent& event)
 {
     EventsDialog dlg(this, __schedule->GetOutputManager(), __schedule->GetOptions());
 
+    // the listeners walk the event list on their own threads; hold them off while it is edited
+    __schedule->GetListenerManager()->Pause(true);
     dlg.ShowModal();
+    __schedule->GetListenerManager()->Pause(false);
 
     __schedule->StartListeners();
 }
@@ -3908,7 +4472,12 @@ void xScheduleFrame::OnMenuItem_CrashSelected(wxCommandEvent& event)
 
 void xScheduleFrame::OnMenuItem_UsexLightsFolderSelected(wxCommandEvent& event)
 {
-    _showDir = ScheduleManager::xLightsShowDir();
+    std::string xlightsDir = ScheduleManager::xLightsShowDir();
+    if (xlightsDir.empty() || !wxDir::Exists(xlightsDir)) {
+        wxMessageBox("xLights' show folder could not be found.", "Use xLights folder", wxOK | wxICON_WARNING, this);
+        return;
+    }
+    _showDir = xlightsDir;
     SaveShowDir();
     _timerSchedule.Stop();
     _timer.Stop();
@@ -3936,7 +4505,7 @@ void xScheduleFrame::OnButton_CloneClick(wxCommandEvent& event)
         if (IsPlayList(treeitem)) {
             PlayList* playlist = (PlayList*)((MyTreeItemData*)TreeCtrl_PlayListsSchedules->GetItemData(treeitem))->GetData();
             PlayList* newpl = new PlayList(*playlist, true);
-            wxTreeItemId newitem = TreeCtrl_PlayListsSchedules->AppendItem(TreeCtrl_PlayListsSchedules->GetRootItem(), newpl->GetName(), -1, -1, new MyTreeItemData(newpl));
+            wxTreeItemId newitem = TreeCtrl_PlayListsSchedules->AppendItem(TreeCtrl_PlayListsSchedules->GetRootItem(), GetPlayListLabel(newpl), 0, 0, new MyTreeItemData(newpl));
             TreeCtrl_PlayListsSchedules->Expand(newitem);
             TreeCtrl_PlayListsSchedules->EnsureVisible(newitem);
             __schedule->AddPlayList(newpl);
@@ -3946,7 +4515,7 @@ void xScheduleFrame::OnButton_CloneClick(wxCommandEvent& event)
             if (plid.IsOk()) {
                 PlayList* playlist = (PlayList*)((MyTreeItemData*)TreeCtrl_PlayListsSchedules->GetItemData(plid))->GetData();
                 Schedule* newSchedule = new Schedule(*schedule, true);
-                wxTreeItemId newitem = TreeCtrl_PlayListsSchedules->AppendItem(plid, GetScheduleName(newSchedule, __schedule->GetRunningSchedules()), -1, -1, new MyTreeItemData(newSchedule));
+                wxTreeItemId newitem = TreeCtrl_PlayListsSchedules->AppendItem(plid, GetScheduleName(newSchedule, __schedule->GetRunningSchedules()), 1, 1, new MyTreeItemData(newSchedule));
                 TreeCtrl_PlayListsSchedules->Expand(plid);
                 TreeCtrl_PlayListsSchedules->EnsureVisible(newitem);
                 playlist->AddSchedule(newSchedule);
@@ -3980,16 +4549,18 @@ void xScheduleFrame::OnMenuItem_SMPTESelected(wxCommandEvent& event)
 
 void xScheduleFrame::OnMenuItem_ResetWindowLocationsSelected(wxCommandEvent& event)
 {
-    wxConfigBase* config = wxConfigBase::Get();
-    config->DeleteEntry(_("xsPLWindowPosX"));
-    config->DeleteEntry(_("xsPLWindowPosY"));
-    config->DeleteEntry(_("xsPLWindowPosW"));
-    config->DeleteEntry(_("xsPLWindowPosH"));
-    config->DeleteEntry(_("xsWindowPosX"));
-    config->DeleteEntry(_("xsWindowPosY"));
-    config->DeleteEntry(_("xsWindowPosW"));
-    config->DeleteEntry(_("xsWindowPosH"));
+    auto* config = GetXLightsConfig();
+    config->DeleteEntry("xsPLWindowPosX");
+    config->DeleteEntry("xsPLWindowPosY");
+    config->DeleteEntry("xsPLWindowPosW");
+    config->DeleteEntry("xsPLWindowPosH");
+    config->DeleteEntry("xsWindowPosX");
+    config->DeleteEntry("xsWindowPosY");
+    config->DeleteEntry("xsWindowPosW");
+    config->DeleteEntry("xsWindowPosH");
     config->DeleteEntry("xsSashPositionH");
+    config->DeleteEntry("xsControllerPaneHeight");
     config->DeleteEntry("xsSashPositionV");
+    config->Flush();
 }
 

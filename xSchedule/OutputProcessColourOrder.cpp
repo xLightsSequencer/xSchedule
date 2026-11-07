@@ -52,9 +52,11 @@ void OutputProcessColourOrder::Frame(uint8_t* buffer, size_t size, std::list<Out
     if (!_enabled) return;
     if (_colourOrder == 123) return;
 
-    size_t sc = GetStartChannelAsNumber();
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
+    size_t sc = off + 1;
 
-    size_t nodes = std::min(_nodes, (size - (sc - 1)) / 3);
+    size_t nodes = std::min(_nodes, (size - off) / 3);
 
     for (int i = 0; i < (int)nodes; i++)
     {

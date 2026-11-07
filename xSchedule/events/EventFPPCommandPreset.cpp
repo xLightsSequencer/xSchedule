@@ -12,6 +12,7 @@
 #include <wx/xml/xml.h>
 #include <log.h>
 #include "../ScheduleManager.h"
+#include "../Diagnostics.h"
 
 EventFPPCommandPreset::EventFPPCommandPreset() :
     EventBase()
@@ -53,6 +54,7 @@ void EventFPPCommandPreset::Process(const std::string& presetName, ScheduleManag
 
     size_t rate = 0;
     wxString msg;
+    Diagnostics::CommandSource source("event " + GetType() + ":" + GetName());
     scheduleManager->Action(_command, parameters, "", nullptr, nullptr, nullptr, rate, msg);
     spdlog::debug("    Event processed.");
 }

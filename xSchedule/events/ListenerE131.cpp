@@ -11,10 +11,10 @@
 #include "ListenerE131.h"
 #include <log.h>
 #include <wx/socket.h>
-#include "../../xLights/outputs/E131Output.h"
+#include "../../xlights/src-core/outputs/E131Output.h"
 #include "ListenerManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 #include <sys/types.h>
 #ifdef __WXMSW__

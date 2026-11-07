@@ -16,12 +16,12 @@
 #include "PlayListItemFSEQVideoPanel.h"
 #include "PlayerFrame.h"
 #include "PlayerWindow.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/render/FSEQFile.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/render/VideoReader.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
+#include "../../xlights/src-core/render/FSEQFile.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/media/VideoReader.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 #include "../ScheduleManager.h"
 #include "../ScheduleOptions.h"
 #include "../VideoCache.h"
@@ -144,7 +144,7 @@ void PlayListItemFSEQVideo::LoadAudio() {
     if (IsInSlaveMode() && IsSuppressAudioOnSlaves()) {
     } else if (wxFile::Exists(af)) {
         spdlog::debug("FSEQ Video: Loading audio file '{}'.", (const char*)af.c_str());
-        _audioManager = new AudioManager(af, -1, _audioDevice);
+        _audioManager = _preload.TakeOrCreate(af, _audioDevice);
 
         if (!_audioManager->IsOk()) {
             spdlog::error("FSEQ Video: Audio file '{}' has a problem opening.", (const char*)af.c_str());
@@ -269,15 +269,21 @@ PlayListItem* PlayListItemFSEQVideo::Copy(const bool isClone) const {
     res->_size = _size;
     res->_videoFile = _videoFile;
     res->_audioDevice = _audioDevice;
-    res->SetAudioFile(_audioFile); // this will trigger file loading
+    res->_audioFile = _audioFile;
     res->_useMediaPlayer = _useMediaPlayer;
     res->_videoLength = _videoLength;
 
     if (_fastStartAudio) {
-        res->LoadAudio();
+        res->PreloadAudio();
     }
 
     return res;
+}
+
+void PlayListItemFSEQVideo::PreloadAudio() {
+    if (_audioManager == nullptr && !(IsInSlaveMode() && IsSuppressAudioOnSlaves())) {
+        _preload.Start(GetAudioFilename(), _audioDevice);
+    }
 }
 
 wxXmlNode* PlayListItemFSEQVideo::Save() {
@@ -503,7 +509,6 @@ size_t PlayListItemFSEQVideo::GetPositionMS() const {
 #define MAXMEDIAJITTER (3 * framems)
 
 void PlayListItemFSEQVideo::Frame(uint8_t* buffer, size_t size, size_t ms, size_t framems, bool outputframe) {
-    static 
     size_t adjustedMS = ms - _delay;
 
     wxStopWatch sw;
@@ -519,16 +524,22 @@ void PlayListItemFSEQVideo::Frame(uint8_t* buffer, size_t size, size_t ms, size_
                 int frame = adjustedMS / framems;
                 FSEQFile::FrameData* data = _fseqFile->getFrame(frame);
                 if (data != nullptr) {
-                    std::vector<uint8_t> buf(_fseqFile->getMaxChannel() + 1);
-                    data->readFrame(&buf[0], buf.size());
-                    size_t channelsPerFrame = (size_t)_fseqFile->getMaxChannel() + 1;
-                    if (_channels > 0)
-                        channelsPerFrame = std::min(_channels, (size_t)_fseqFile->getMaxChannel() + 1);
-                    if (_channels > 0) {
-                        long offset = GetStartChannelAsNumber() - 1;
-                        Blend(buffer, size, &buf[offset], channelsPerFrame, _applyMethod, offset);
-                    } else {
-                        Blend(buffer, size, &buf[0], channelsPerFrame, _applyMethod, 0);
+                    // getMaxChannel() is a channel count, not the last channel
+                    const size_t fseqChannels = _fseqFile->getMaxChannel();
+                    // one buffer kept for the item, rather than a full-size one allocated every frame
+                    std::vector<uint8_t>& buf = _frameBuffer;
+                    buf.assign(fseqChannels, 0);
+                    if (!buf.empty()) {
+                        data->readFrame(&buf[0], buf.size());
+                        if (_channels > 0) {
+                            // never read past the end of the sequence's data
+                            const size_t offset = (size_t)(GetStartChannelAsNumber() - 1);
+                            if (offset < fseqChannels) {
+                                Blend(buffer, size, &buf[offset], std::min(_channels, fseqChannels - offset), _applyMethod, offset);
+                            }
+                        } else {
+                            Blend(buffer, size, &buf[0], fseqChannels, _applyMethod, 0);
+                        }
                     }
                     delete data;
                 } else {
@@ -595,7 +606,7 @@ void PlayListItemFSEQVideo::Frame(uint8_t* buffer, size_t size, size_t ms, size_
                         adjustedMS -= videoLength;
                     }
 
-                    AVFrame* img = _videoReader->GetNextFrame(adjustedMS, framems);
+                    VideoFrame* img = _videoReader->GetNextFrame(adjustedMS, framems);
                     _window->SetImage(CachedVideoReader::FadeImage(CachedVideoReader::CreateImageFromFrame(img, _size), brightness));
                 }
             }
@@ -603,7 +614,8 @@ void PlayListItemFSEQVideo::Frame(uint8_t* buffer, size_t size, size_t ms, size_
     }
 
     if ((size_t)sw.Time() > framems / 2) {
-        spdlog::warn("   Getting frame {} from FSEQvideo {} took more than half a frame: {}.", (long)adjustedMS, (const char*)GetNameNoTime().c_str(), (long)sw.Time());
+        static uint32_t slowFrames = 0;
+        spdlog::log(++slowFrames % 200 == 1 ? spdlog::level::warn : spdlog::level::debug, "   Getting frame {} from FSEQvideo {} took more than half a frame: {}. {} slow frames so far.", (long)adjustedMS, (const char*)GetNameNoTime().c_str(), (long)sw.Time(), slowFrames);
     }
 }
 
@@ -631,7 +643,7 @@ void PlayListItemFSEQVideo::Start(long stepLengthMS) {
     LoadFiles(true);
 
     if (_fseqFile != nullptr) {
-        _fseqFile->prepareRead({ { 0, _fseqFile->getMaxChannel() + 1 } });
+        _fseqFile->prepareRead({ { 0, _fseqFile->getMaxChannel() } });
     }
 
     _currentFrame = 0;

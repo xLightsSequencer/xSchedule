@@ -48,12 +48,20 @@ class PlayListDialog: public wxDialog
     wxTreeItemId FindStepTreeItem(PlayListStep* step);
     void AddItem(PlayList* playlist, PlayListStep* step, PlayListItem* newitem);
     void Clone();
+    void ShowItemMenu(wxTreeItemId treeitem);
+    void StyleTreeItems();
+    void BalanceSplitter();
+    std::string GetPlayListLabel(PlayList* playlist) const;
+    std::string GetStepLabel(PlayListStep* step) const;
+    std::string GetItemLabel(PlayListItem* item) const;
+    wxButton* _buttonAddItem = nullptr;
 
     public:
 
 		PlayListDialog(wxWindow* parent, OutputManager* outputManager, PlayList* playlist, ScheduleOptions* options, wxWindowID id=wxID_ANY,const wxPoint& pos=wxDefaultPosition,const wxSize& size=wxDefaultSize);
 		virtual ~PlayListDialog();
         void UpdateTree();
+        PlayList* GetEditedPlayList() const { return _playlist; }
         void OnTreeDragEnd(wxMouseEvent& event);
         void OnTreeDragQuit(wxMouseEvent& event);
         void OnTreeMouseMove(wxMouseEvent& event);
@@ -123,6 +131,7 @@ class PlayListDialog: public wxDialog
         static const long ID_MNU_ADDIMAGE;
         static const long ID_MNU_ADDJUKEBOX;
         static const long ID_MNU_ADDDELAY;
+        static const long ID_MNU_ADDBRANCH;
         static const long ID_MNU_ADDDIM;
         static const long ID_MNU_DELETE;
         static const long ID_MNU_REMOVEEMPTYSTEPS;

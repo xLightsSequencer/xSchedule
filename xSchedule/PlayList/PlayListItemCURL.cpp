@@ -19,6 +19,7 @@
 #include "utils/CurlManager.h"
 
 #include <log.h>
+#include "../Diagnostics.h"
 
 class CurlThread : public wxThread
 {
@@ -33,6 +34,7 @@ public:
 
     virtual void* Entry() override
     {
+        Diagnostics::ThreadName name("CURL item");
         spdlog::debug("PlayListCurl in thread.");
 
         spdlog::info("Calling URL {}.", (const char*)_url.c_str());

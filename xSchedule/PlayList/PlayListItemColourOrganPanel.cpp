@@ -11,8 +11,8 @@
 #include "PlayListItemColourOrganPanel.h"
 #include "PlayListDialog.h"
 #include "PlayListItemColourOrgan.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 #include "../ScheduleManager.h"
 #include "../xScheduleMain.h"
 
@@ -122,7 +122,7 @@ PlayListItemColourOrganPanel::PlayListItemColourOrganPanel(wxWindow* parent, Out
     SpinCtrl_Priority = new wxSpinCtrl(this, ID_SPINCTRL5, _T("5"), wxDefaultPosition, wxDefaultSize, 0, 1, 10, 5, _T("ID_SPINCTRL5"));
     SpinCtrl_Priority->SetValue(_T("5"));
     FlexGridSizer1->Add(SpinCtrl_Priority, 1, wxALL | wxEXPAND, 5);
-    StaticText12 = new wxStaticText(this, ID_STATICTEXT13, _("Threshold"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
+    StaticText12 = new wxStaticText(this, ID_STATICTEXT13, _("Threshold:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
     FlexGridSizer1->Add(StaticText12, 1, wxALL | wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL, 5);
     SpinCtrl_Threshold = new wxSpinCtrl(this, ID_SPINCTRL6, _T("128"), wxDefaultPosition, wxDefaultSize, 0, 0, 255, 128, _T("ID_SPINCTRL6"));
     SpinCtrl_Threshold->SetValue(_T("128"));

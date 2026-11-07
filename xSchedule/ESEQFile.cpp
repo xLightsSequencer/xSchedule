@@ -12,8 +12,8 @@
 #include <wx/file.h>
 #include <wx/filename.h>
 
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 #include <log.h>
 

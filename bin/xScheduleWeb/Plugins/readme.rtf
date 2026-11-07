@@ -1,1 +1,14 @@
 Add your plugins here!
+
+Each web plugin is a folder here holding a page with the same name as the folder: Plugins/My Plugin/My Plugin.html.
+It shows up in the web UI's Plugins menu and is loaded into the page, so it can use:
+
+- jQuery, Bootstrap 3, bootstrap-notify, bootstrap-colorpicker and DataTables, which the web UI loads
+- socket (the web socket to xSchedule), playingStatus (the latest status), uiSettings
+- runCommand(name, parameters, reference), notification(message, color, level), registerStatusFunction(fn)
+  (fn is called with each status update), getQueryVariable(name), updatePage(type, name, args),
+  storeKey(key, value) and retrieveKey(key, callback)
+- a #help modal of its own, which the web UI's help button opens
+
+Open it as index.html?plugin=My%20Plugin. Adding &args=noheader hides the web UI's top bar and footer by hiding
+#nav, #header and #footer. Script files are loaded relative to the page (see the Buttons plugin).

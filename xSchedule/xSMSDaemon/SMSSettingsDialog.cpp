@@ -7,8 +7,8 @@
 //*)
 
 #include "SMSDaemonOptions.h"
-#include "../../xlights/xLights/utils/UtilFunctions.h"
-#include "../../xlights/xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 //(*IdInit(SMSSettingsDialog)
 const long SMSSettingsDialog::ID_STATICTEXT7 = wxNewId();
@@ -85,41 +85,41 @@ SMSSettingsDialog::SMSSettingsDialog(wxWindow* parent, SMSDaemonOptions* options
 	FlexGridSizer1->AddGrowableRow(0);
 	FlexGridSizer3 = new wxFlexGridSizer(0, 2, 0, 0);
 	FlexGridSizer3->AddGrowableCol(0);
-	StaticText7 = new wxStaticText(this, ID_STATICTEXT7, _("Target text item(s)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
+	StaticText7 = new wxStaticText(this, ID_STATICTEXT7, _("Target text item(s):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
 	FlexGridSizer3->Add(StaticText7, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_TargetMatrix = new wxTextCtrl(this, ID_TEXTCTRL4, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL4"));
 	FlexGridSizer3->Add(TextCtrl_TargetMatrix, 1, wxALL|wxEXPAND, 2);
-	StaticText15 = new wxStaticText(this, ID_STATICTEXT15, _("SMS Service"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
+	StaticText15 = new wxStaticText(this, ID_STATICTEXT15, _("SMS Service:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
 	FlexGridSizer3->Add(StaticText15, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	Choice_SMSService = new wxChoice(this, ID_CHOICE1, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
 	FlexGridSizer3->Add(Choice_SMSService, 1, wxALL|wxEXPAND, 2);
-	StaticText2 = new wxStaticText(this, ID_STATICTEXT2, _("Message Retrieve Interval (secs)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
+	StaticText2 = new wxStaticText(this, ID_STATICTEXT2, _("Message Retrieve Interval (secs):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
 	FlexGridSizer3->Add(StaticText2, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	SpinCtrl_RetrieveInterval = new wxSpinCtrl(this, ID_SPINCTRL1, _T("10"), wxDefaultPosition, wxDefaultSize, 0, 1, 600, 10, _T("ID_SPINCTRL1"));
 	SpinCtrl_RetrieveInterval->SetValue(_T("10"));
 	FlexGridSizer3->Add(SpinCtrl_RetrieveInterval, 1, wxALL|wxEXPAND, 2);
-	StaticText3 = new wxStaticText(this, ID_STATICTEXT3, _("Display Durations (secs)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+	StaticText3 = new wxStaticText(this, ID_STATICTEXT3, _("Display Durations (secs):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
 	FlexGridSizer3->Add(StaticText3, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	SpinCtrl_DisplayDuration = new wxSpinCtrl(this, ID_SPINCTRL2, _T("30"), wxDefaultPosition, wxDefaultSize, 0, 1, 600, 30, _T("ID_SPINCTRL2"));
 	SpinCtrl_DisplayDuration->SetValue(_T("30"));
 	FlexGridSizer3->Add(SpinCtrl_DisplayDuration, 1, wxALL|wxEXPAND, 2);
-	StaticText_User = new wxStaticText(this, ID_STATICTEXT12, _("User"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
+	StaticText_User = new wxStaticText(this, ID_STATICTEXT12, _("User:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
 	FlexGridSizer3->Add(StaticText_User, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_User = new wxTextCtrl(this, ID_TEXTCTRL7, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD, wxDefaultValidator, _T("ID_TEXTCTRL7"));
 	FlexGridSizer3->Add(TextCtrl_User, 1, wxALL|wxEXPAND, 2);
-	StaticText_SID = new wxStaticText(this, ID_STATICTEXT4, _("SID"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
+	StaticText_SID = new wxStaticText(this, ID_STATICTEXT4, _("SID:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
 	FlexGridSizer3->Add(StaticText_SID, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_SID = new wxTextCtrl(this, ID_TEXTCTRL2, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD, wxDefaultValidator, _T("ID_TEXTCTRL2"));
 	FlexGridSizer3->Add(TextCtrl_SID, 1, wxALL|wxEXPAND, 2);
-	StaticText_Token = new wxStaticText(this, ID_STATICTEXT5, _("Token"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+	StaticText_Token = new wxStaticText(this, ID_STATICTEXT5, _("Token:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
 	FlexGridSizer3->Add(StaticText_Token, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_Token = new wxTextCtrl(this, ID_TEXTCTRL3, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD, wxDefaultValidator, _T("ID_TEXTCTRL3"));
 	FlexGridSizer3->Add(TextCtrl_Token, 1, wxALL|wxEXPAND, 2);
-	StaticText10 = new wxStaticText(this, ID_STATICTEXT10, _("Phone"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
+	StaticText10 = new wxStaticText(this, ID_STATICTEXT10, _("Phone:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
 	FlexGridSizer3->Add(StaticText10, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_Phone = new wxTextCtrl(this, ID_TEXTCTRL5, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL5"));
 	FlexGridSizer3->Add(TextCtrl_Phone, 1, wxALL|wxEXPAND, 2);
-	StaticText5 = new wxStaticText(this, ID_STATICTEXT17, _("Timezone Adjust (mins)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT17"));
+	StaticText5 = new wxStaticText(this, ID_STATICTEXT17, _("Timezone Adjust (mins):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT17"));
 	FlexGridSizer3->Add(StaticText5, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
 	SpinCtrl_TimezoneAdjust = new wxSpinCtrl(this, ID_SPINCTRL8, _T("0"), wxDefaultPosition, wxDefaultSize, 0, -780, 780, 0, _T("ID_SPINCTRL8"));
 	SpinCtrl_TimezoneAdjust->SetValue(_T("0"));
@@ -150,12 +150,12 @@ SMSSettingsDialog::SMSSettingsDialog(wxWindow* parent, SMSDaemonOptions* options
 	FlexGridSizer3->Add(StaticLine3, 1, wxALL|wxEXPAND, 0);
 	StaticLine4 = new wxStaticLine(this, ID_STATICLINE4, wxDefaultPosition, wxSize(10,-1), wxLI_HORIZONTAL, _T("ID_STATICLINE4"));
 	FlexGridSizer3->Add(StaticLine4, 1, wxALL|wxEXPAND, 0);
-	StaticText1 = new wxStaticText(this, ID_STATICTEXT1, _("Maximum Messages Per Phone Number"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+	StaticText1 = new wxStaticText(this, ID_STATICTEXT1, _("Maximum Messages Per Phone Number:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
 	FlexGridSizer3->Add(StaticText1, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	SpinCtrl_MaximumMessages = new wxSpinCtrl(this, ID_SPINCTRL4, _T("0"), wxDefaultPosition, wxDefaultSize, 0, 0, 100, 0, _T("ID_SPINCTRL4"));
 	SpinCtrl_MaximumMessages->SetValue(_T("0"));
 	FlexGridSizer3->Add(SpinCtrl_MaximumMessages, 1, wxALL|wxEXPAND, 2);
-	StaticText6 = new wxStaticText(this, ID_STATICTEXT6, _("Maximum Message Length"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
+	StaticText6 = new wxStaticText(this, ID_STATICTEXT6, _("Maximum Message Length:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
 	FlexGridSizer3->Add(StaticText6, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	SpinCtrl_MaximumMessageLength = new wxSpinCtrl(this, ID_SPINCTRL3, _T("100"), wxDefaultPosition, wxDefaultSize, 0, 10, 1000, 100, _T("ID_SPINCTRL3"));
 	SpinCtrl_MaximumMessageLength->SetValue(_T("100"));
@@ -172,30 +172,30 @@ SMSSettingsDialog::SMSSettingsDialog(wxWindow* parent, SMSDaemonOptions* options
 	CheckBox_UpperCase = new wxCheckBox(this, ID_CHECKBOX6, _("Display in upper case"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX6"));
 	CheckBox_UpperCase->SetValue(false);
 	FlexGridSizer3->Add(CheckBox_UpperCase, 1, wxALL|wxEXPAND, 2);
-	StaticText8 = new wxStaticText(this, ID_STATICTEXT8, _("Maximum Message Age (mins)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
+	StaticText8 = new wxStaticText(this, ID_STATICTEXT8, _("Maximum Message Age (mins):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
 	FlexGridSizer3->Add(StaticText8, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	SpinCtrl_MaxMessageAge = new wxSpinCtrl(this, ID_SPINCTRL5, _T("10"), wxDefaultPosition, wxDefaultSize, 0, 0, 3600, 10, _T("ID_SPINCTRL5"));
 	SpinCtrl_MaxMessageAge->SetValue(_T("10"));
 	FlexGridSizer3->Add(SpinCtrl_MaxMessageAge, 1, wxALL|wxEXPAND, 2);
-	StaticText4 = new wxStaticText(this, ID_STATICTEXT16, _("Maximum Message Age For Response (mins)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT16"));
+	StaticText4 = new wxStaticText(this, ID_STATICTEXT16, _("Maximum Message Age For Response (mins):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT16"));
 	FlexGridSizer3->Add(StaticText4, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	SpinCtrl_MaxMsgAgeMinsForResponse = new wxSpinCtrl(this, ID_SPINCTRL7, _T("10"), wxDefaultPosition, wxDefaultSize, 0, 0, 1440, 10, _T("ID_SPINCTRL7"));
 	SpinCtrl_MaxMsgAgeMinsForResponse->SetValue(_T("10"));
 	FlexGridSizer3->Add(SpinCtrl_MaxMsgAgeMinsForResponse, 1, wxALL|wxEXPAND, 2);
-	StaticText9 = new wxStaticText(this, ID_STATICTEXT9, _("Times To Display"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
+	StaticText9 = new wxStaticText(this, ID_STATICTEXT9, _("Times To Display:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
 	FlexGridSizer3->Add(StaticText9, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	SpinCtrl_TimesToDisplay = new wxSpinCtrl(this, ID_SPINCTRL6, _T("0"), wxDefaultPosition, wxDefaultSize, 0, 0, 30, 0, _T("ID_SPINCTRL6"));
 	SpinCtrl_TimesToDisplay->SetValue(_T("0"));
 	FlexGridSizer3->Add(SpinCtrl_TimesToDisplay, 1, wxALL|wxEXPAND, 2);
-	StaticText11 = new wxStaticText(this, ID_STATICTEXT11, _("Default Message"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
+	StaticText11 = new wxStaticText(this, ID_STATICTEXT11, _("Default Message:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
 	FlexGridSizer3->Add(StaticText11, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_DefaultMessage = new wxTextCtrl(this, ID_TEXTCTRL6, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL6"));
 	FlexGridSizer3->Add(TextCtrl_DefaultMessage, 1, wxALL|wxEXPAND, 2);
-	StaticText13 = new wxStaticText(this, ID_STATICTEXT13, _("Success Response"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
+	StaticText13 = new wxStaticText(this, ID_STATICTEXT13, _("Success Response:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
 	FlexGridSizer3->Add(StaticText13, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_SuccessMessage = new wxTextCtrl(this, ID_TEXTCTRL8, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL8"));
 	FlexGridSizer3->Add(TextCtrl_SuccessMessage, 1, wxALL|wxEXPAND, 2);
-	StaticText14 = new wxStaticText(this, ID_STATICTEXT14, _("Reject Response"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
+	StaticText14 = new wxStaticText(this, ID_STATICTEXT14, _("Reject Response:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
 	FlexGridSizer3->Add(StaticText14, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 2);
 	TextCtrl_RejectMessage = new wxTextCtrl(this, ID_TEXTCTRL9, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL9"));
 	FlexGridSizer3->Add(TextCtrl_RejectMessage, 1, wxALL|wxEXPAND, 2);

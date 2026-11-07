@@ -14,12 +14,28 @@
 #include "PlayListItemImagePanel.h"
 #include "PlayerWindow.h"
 #include "../xScheduleApp.h"
-#include "../../xLights/utils/AnimatedImage.h"
+#include "../../xlights/src-core/utils/AnimatedImage.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "../ScheduleOptions.h"
+#include "../../xlights/src-core/utils/xlImage.h"
+
+#include <fstream>
+#include <iterator>
+#include <log.h>
+
+static AnimatedImageData LoadGIFAnimationData(const std::string& filename)
+{
+    std::ifstream f(filename, std::ios::binary);
+    if (!f) {
+        spdlog::warn("Unable to open animated image {}.", filename);
+        return AnimatedImageData();
+    }
+    std::vector<uint8_t> buffer((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    return LoadAnimatedGIFFromMemory(buffer.data(), buffer.size());
+}
 
 PlayListItemImage::PlayListItemImage(wxXmlNode* node) : PlayListItem(node)
 {
@@ -178,7 +194,7 @@ void PlayListItemImage::Start(long stepLengthMS)
         }
         if (_gifImage == nullptr)
         {
-            auto data = LoadGIFAnimationDataWx(_ImageFile);
+            auto data = LoadGIFAnimationData(_ImageFile);
             if (!data.frames.empty())
             {
                 _gifImage = new AnimatedImage(_ImageFile, data);

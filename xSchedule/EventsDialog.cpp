@@ -12,6 +12,7 @@
 #include "ScheduleOptions.h"
 #include "events/EventBase.h"
 #include "EventDialog.h"
+#include "ModernUI.h"
 
 //(*InternalHeaders(EventsDialog)
 #include <wx/intl.h>
@@ -40,7 +41,7 @@ EventsDialog::EventsDialog(wxWindow* parent, OutputManager* outputManager, Sched
 	wxFlexGridSizer* FlexGridSizer2;
 	wxFlexGridSizer* FlexGridSizer1;
 
-	Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxCAPTION|wxRESIZE_BORDER|wxCLOSE_BOX|wxMAXIMIZE_BOX, _T("id"));
+	Create(parent, id, _("Events"), wxDefaultPosition, wxDefaultSize, wxCAPTION|wxRESIZE_BORDER|wxCLOSE_BOX|wxMAXIMIZE_BOX, _T("id"));
 	SetClientSize(wxDefaultSize);
 	Move(wxDefaultPosition);
 	FlexGridSizer1 = new wxFlexGridSizer(0, 2, 0, 0);
@@ -71,6 +72,8 @@ EventsDialog::EventsDialog(wxWindow* parent, OutputManager* outputManager, Sched
 	Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&EventsDialog::OnButton_CloseClick);
 	//*)
 
+    ListView_Events->SetMinSize(FromDIP(wxSize(560, 300)));
+    ListView_Events->SetToolTip("Double-click an event to edit it");
     LoadList();
 
     ValidateWindow();
@@ -81,13 +84,26 @@ void EventsDialog::LoadList()
     ListView_Events->ClearAll();
     ListView_Events->AppendColumn("Type");
     ListView_Events->AppendColumn("Name");
+    ListView_Events->AppendColumn("Action");
 
     for (auto it = _scheduleOptions->GetEvents()->begin(); it != _scheduleOptions->GetEvents()->end(); ++it)
     {
-        ListView_Events->InsertItem(ListView_Events->GetItemCount(), (*it)->GetType());
-        ListView_Events->SetItem(ListView_Events->GetItemCount() - 1, 1, (*it)->GetName());
-        ListView_Events->SetItemData(ListView_Events->GetItemCount() - 1, (*it)->GetId());
+        std::string action = (*it)->GetCommand();
+        std::string parms;
+        for (const auto& p : { (*it)->GetP1(), (*it)->GetP2(), (*it)->GetP3() }) {
+            if (!p.empty()) parms += (parms.empty() ? "" : ", ") + p;
+        }
+        if (!parms.empty()) action += ": " + parms;
+
+        long row = ListView_Events->InsertItem(ListView_Events->GetItemCount(), (*it)->GetType());
+        ListView_Events->SetItem(row, 1, (*it)->GetName());
+        ListView_Events->SetItem(row, 2, action);
+        ListView_Events->SetItemData(row, (*it)->GetId());
     }
+    for (int c = 0; c < ListView_Events->GetColumnCount(); ++c) {
+        ListView_Events->SetColumnWidth(c, ListView_Events->GetItemCount() > 0 ? wxLIST_AUTOSIZE : wxLIST_AUTOSIZE_USEHEADER);
+    }
+    ModernUI::FitListHeaders(ListView_Events);
 }
 
 EventsDialog::~EventsDialog()

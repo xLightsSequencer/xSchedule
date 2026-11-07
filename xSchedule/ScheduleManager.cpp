@@ -28,18 +28,22 @@
 #include "UserButton.h"
 #include "Xyzzy.h"
 #include "xScheduleApp.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "xScheduleMain.h"
-#include "../xlights/xLights/utils/AudioManager.h"
-#include "../xlights/xLights/utils/Parallel.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/render/VideoReader.h"
-#include "../xlights/xLights/outputs/Controller.h"
-#include "../xlights/xLights/outputs/ControllerEthernet.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
-#include "../xlights/xLights/outputs/Output.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/utils/Parallel.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "ScheduleConfig.h"
+#include "../xlights/src-core/utils/FileUtils.h"
+#include "../xlights/src-core/utils/ip_utils.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/media/VideoReader.h"
+#include "../xlights/src-core/outputs/Controller.h"
+#include "../xlights/src-core/outputs/ControllerEthernet.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/Output.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
+#include <atomic>
 #include "xScheduleVersion.h"
 #include "PlayList/PlayList.h"
 #include "PlayList/PlayListItemAudio.h"
@@ -56,12 +60,18 @@
 #include <nlohmann/json.hpp>
 
 #include <log.h>
+#include "Diagnostics.h"
+#include "ScheduleCalendar.h"
+#include "ShowBackups.h"
+#include "../xlights/src-ui-wx/settings/XLightsConfigAdapter.h"
 
 ScheduleManager::ScheduleManager(xScheduleFrame* frame, const std::string& showDir) {
     spdlog::info("Loading schedule from {}.", showDir);
 
     // prime fix file with our show directory for any filename fixups
     SetFixFileShowDir(showDir);
+    // and the media folders set up in xLights, for audio a moved show no longer finds at its saved path
+    FileUtils::SetFixFileDirectories(ScheduleConfig::GetXLightsMediaDirs());
 
     _syncManager = std::make_unique<SyncManager>(this);
     _testMode = false;
@@ -92,10 +102,10 @@ ScheduleManager::ScheduleManager(xScheduleFrame* frame, const std::string& showD
 
     _mode = (int)SYNCMODE::STANDALONE;
     _remoteMode = REMOTEMODE::DISABLED;
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
     if (config != nullptr) {
-        _mode = config->ReadLong(_("SyncMode"), (int)SYNCMODE::STANDALONE);
-        _remoteMode = (REMOTEMODE)config->ReadLong(_("RemoteMode"), (int)REMOTEMODE::DISABLED);
+        _mode = config->ReadLong("SyncMode", (int)SYNCMODE::STANDALONE);
+        _remoteMode = (REMOTEMODE)config->ReadLong("RemoteMode", (int)REMOTEMODE::DISABLED);
     }
 
     wxLogNull logNo; // kludge: avoid "error 0" message from wxWidgets after new file is written
@@ -115,7 +125,7 @@ ScheduleManager::ScheduleManager(xScheduleFrame* frame, const std::string& showD
                 _outputManager->SetParallelTransmission(_scheduleOptions->IsParallelTransmission());
                 OutputManager::SetRetryOpen(_scheduleOptions->IsRetryOpen());
                 _outputManager->SetSyncEnabled(_scheduleOptions->IsSync());
-                Schedule::SetCity(_scheduleOptions->GetCity());
+                _scheduleOptions->ApplyLocation();
             } else if (n->GetName() == "OutputProcesses") {
                 for (wxXmlNode* n1 = n->GetChildren(); n1 != nullptr; n1 = n1->GetNext()) {
                     OutputProcess* op = OutputProcess::CreateFromXml(_outputManager, n1);
@@ -138,7 +148,7 @@ ScheduleManager::ScheduleManager(xScheduleFrame* frame, const std::string& showD
 
     if (_scheduleOptions == nullptr) {
         _scheduleOptions = new ScheduleOptions();
-        Schedule::SetCity(_scheduleOptions->GetCity());
+        _scheduleOptions->ApplyLocation();
         _outputManager->SetParallelTransmission(_scheduleOptions->IsParallelTransmission());
         _outputManager->SetSyncEnabled(_scheduleOptions->IsSync());
         OutputManager::SetRetryOpen(_scheduleOptions->IsRetryOpen());
@@ -159,11 +169,11 @@ ScheduleManager::ScheduleManager(xScheduleFrame* frame, const std::string& showD
 
     if (_scheduleOptions->IsSendOffWhenNotRunning()) {
         if (!_outputManager->IsOutputting()) {
-            if (GetConfigBool("OutputActive", false)) {
+            if (ScheduleConfig::GetBool("OutputActive", false)) {
                 spdlog::warn("Warning: Lights output is already open in another process. This will cause issues.");
             }
             DisableRemoteOutputs();
-            if (_outputManager->StartOutput()) SetConfigBool("OutputActive", true);
+            if (StartOutputToLights()) ScheduleConfig::SetBool("OutputActive", true);
 #ifdef __WXMSW__
             ::SetPriorityClass(::GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
@@ -346,7 +356,7 @@ ScheduleManager::~ScheduleManager() {
     AllOff();
     spdlog::debug("ScheduleManager destructor: stopping output.");
     _outputManager->StopOutput();
-    SetConfigBool("OutputActive", false);
+    ScheduleConfig::SetBool("OutputActive", false);
 #ifdef __WXMSW__
     ::SetPriorityClass(::GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
 #endif
@@ -358,7 +368,9 @@ ScheduleManager::~ScheduleManager() {
     if (IsDirty()) {
         spdlog::debug("ScheduleManager destructor: schedule is dirty, prompting to save.");
         if (wxMessageBox("Unsaved changes to the schedule. Save now?", "Unsaved changes", wxYES_NO) == wxYES) {
-            Save();
+            if (!Save()) {
+                wxMessageBox("The schedule could not be saved to " + _showDir + ". See the log for details.", "Save failed", wxOK | wxICON_ERROR);
+            }
         }
     }
 
@@ -418,6 +430,7 @@ ScheduleManager::~ScheduleManager() {
         delete _immediatePlay;
         _immediatePlay = nullptr;
     }
+    ClearInterruptedPlays();
 
     if (_queuedSongs != nullptr) {
         delete _queuedSongs;
@@ -490,7 +503,7 @@ void ScheduleManager::SetDirty() {
     _changeCount++;
 }
 
-void ScheduleManager::Save() {
+bool ScheduleManager::Save() {
     wxXmlDocument doc;
     wxXmlNode* root = new wxXmlNode(nullptr, wxXML_ELEMENT_NODE, "xSchedule");
     doc.SetRoot(root);
@@ -517,9 +530,26 @@ void ScheduleManager::Save() {
         root->AddChild(background);
     }
 
-    doc.Save(_showDir + "/" + GetScheduleFile());
+    // write a temporary file and rename it over the show file, so a failed save cannot damage it
+    std::string backupError;
+    if (!ShowBackups::Take(_showDir, GetScheduleFile(), ShowBackups::Now(), backupError)) {
+        spdlog::warn("Could not back up the show file before saving: {}", backupError);
+    }
+
+    const std::string file = _showDir + "/" + GetScheduleFile();
+    const std::string temp = file + ".saving";
+    if (!doc.Save(temp)) {
+        spdlog::error("Unable to write schedule to {}.", temp);
+        if (wxFileExists(temp)) wxRemoveFile(temp);
+        return false;
+    }
+    if (!wxRenameFile(temp, file, true)) {
+        spdlog::error("Unable to replace {} with the newly saved schedule {}.", file, temp);
+        return false;
+    }
     ClearDirty();
-    spdlog::info("Saved Schedule to {}.", _showDir + "/" + GetScheduleFile());
+    spdlog::info("Saved Schedule to {}.", file);
+    return true;
 }
 
 void ScheduleManager::ClearDirty() {
@@ -577,6 +607,8 @@ void ScheduleManager::StopAll(bool sustain) {
 
     _syncManager->SendStop();
 
+    _playNext.reset();
+    ClearInterruptedPlays();
     if (_immediatePlay != nullptr) {
         _immediatePlay->Stop();
         delete _immediatePlay;
@@ -724,7 +756,7 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
     }
 
     if (IsTest()) {
-        long msec = wxGetUTCTimeMillis().GetLo() - _startTime;
+        long msec = OutputTimeMS();
 
         if (outputframe) {
             memset(_buffer, 0x00, totalChannels); // clear out any prior frame data
@@ -750,7 +782,20 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
             _outputManager->EndFrame();
         }
     } else {
+        if (!IsSlave() && ReleaseFinishedImmediatePlay()) {
+            // let any suspended schedule carry on now rather than at the next schedule check
+            wxCommandEvent event(EVT_DOCHECKSCHEDULE);
+            wxPostEvent(wxGetApp().GetTopWindow(), event);
+            wxCommandEvent event2(EVT_SCHEDULECHANGED);
+            wxPostEvent(wxGetApp().GetTopWindow(), event2);
+        }
         PlayList* running = GetRunningPlayList();
+        static PlayListStep* lastStep = nullptr;
+        PlayListStep* step = running != nullptr ? running->GetRunningStep() : nullptr;
+        if (step != lastStep) {
+            lastStep = step;
+            Diagnostics::SetPlaying(step != nullptr ? running->GetNameNoTime() + " / " + step->GetNameNoTime() : std::string());
+        }
         if (running != nullptr || _xyzzy != nullptr) {
             rate = 50;
             std::string fseq = "";
@@ -762,7 +807,7 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
                 rate = running->GetFrameMS();
             }
 
-            long msec = wxGetUTCTimeMillis().GetLo() - _startTime;
+            long msec = OutputTimeMS();
 
             if (outputframe) {
                 memset(_buffer, 0x00, totalChannels); // clear out any prior frame data
@@ -772,8 +817,24 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
             bool done = false;
             if (running != nullptr) {
                 spdlog::debug("Frame: About to run step frame {}ms", sw.Time());
+                Diagnostics::Activity activity("playing a step");
                 done = running->Frame(_buffer, totalChannels, outputframe);
                 spdlog::debug("Frame: step frame done {}ms", sw.Time());
+
+                std::string call = running->TakePendingCall();
+                if (!call.empty() && !done) {
+                    PlayList* p = GetPlayList(call);
+                    if (p == nullptr || p->GetId() == running->GetId()) {
+                        spdlog::warn("Branch in playlist {} can't play playlist '{}'.", running->GetNameNoTime(), call);
+                    } else {
+                        // the step after the branch has just started; it starts again once the other playlist ends
+                        running->SetRestartStepOnResume(true);
+                        running->Suspend(true);
+                        _playNext = p->GetId();
+                        wxCommandEvent event(EVT_DOCHECKSCHEDULE);
+                        wxPostEvent(wxGetApp().GetTopWindow(), event);
+                    }
+                }
 
                 if (running->GetRunningStep() != nullptr) {
                     size_t fms;
@@ -783,6 +844,7 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
                         tsn = running->GetRunningStep()->GetTimeSource(fms)->GetNameNoTime();
                     }
 
+                    Diagnostics::Activity activity("sending sync");
                     _syncManager->SendSync(rate,
                                            running->GetRunningStep()->GetLengthMS(),
                                            running->GetRunningStep()->GetPosition(),
@@ -798,7 +860,9 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
                 // for queued songs we must remove the queued song when it finishes
                 if (running == _queuedSongs) {
                     if (_queuedSongs->GetRunningStep() != _queuedSongs->GetSteps().front()) {
-                        _queuedSongs->RemoveStep(_queuedSongs->GetSteps().front());
+                        PlayListStep* finished = _queuedSongs->GetSteps().front();
+                        _queuedSongs->RemoveStep(finished);
+                        delete finished;
                         wxCommandEvent event(EVT_DOCHECKSCHEDULE);
                         wxPostEvent(wxGetApp().GetTopWindow(), event);
                         wxCommandEvent event2(EVT_SCHEDULECHANGED);
@@ -816,6 +880,7 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
             }
 
             if (_eventPlayLists.size() > 0) {
+                Diagnostics::Activity activity("playing event playlists");
                 auto it = _eventPlayLists.begin();
                 while (it != _eventPlayLists.end()) {
                     if ((*it)->Frame(_buffer, _outputManager->GetTotalChannels(), outputframe)) {
@@ -871,6 +936,7 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
 
                 spdlog::debug("Frame: Data set {}ms", sw.Time());
 
+                Diagnostics::Activity activity("sending output to the controllers");
                 _outputManager->EndFrame();
 
                 spdlog::debug("Frame: Data sent {}ms", sw.Time());
@@ -1003,6 +1069,8 @@ int ScheduleManager::Frame(bool outputframe, xScheduleFrame* frame) {
         }
     }
 
+    UpdatePlaybackSnapshot();
+
     reentry = false;
     if (rate == 0)
         rate = 50;
@@ -1037,6 +1105,69 @@ void ScheduleManager::CreateBrightnessArray() {
 }
 
 bool ScheduleManager::PlayPlayList(PlayList* playlist, size_t& rate, bool loop, const std::string& step, bool forcelast, int plloops, bool random, int steploops) {
+    // the original play commands replace any manual playlist, including ones waiting to resume
+    ClearInterruptedPlays();
+    return StartManualPlayList(playlist, rate, loop, step, forcelast, plloops, random, steploops);
+}
+
+void ScheduleManager::ClearInterruptedPlays() {
+    for (auto it : _interruptedPlays) {
+        it->Stop();
+        delete it;
+    }
+    _interruptedPlays.clear();
+}
+
+bool ScheduleManager::PlayPlayListThenResume(PlayList* playlist, size_t& rate, bool restartInterruptedStep) {
+    if (playlist == nullptr) return false;
+
+    if (_immediatePlay != nullptr && _immediatePlay->IsRunning()) {
+        spdlog::info("Manual playlist {} interrupted by {}.", _immediatePlay->GetNameNoTime(), playlist->GetNameNoTime());
+        if (restartInterruptedStep) _immediatePlay->SetRestartStepOnResume(true);
+        if (!_immediatePlay->IsSuspended()) _immediatePlay->Suspend(true);
+        _interruptedPlays.push_back(_immediatePlay);
+        _immediatePlay = nullptr;
+        if (_interruptedPlays.size() > 10) {
+            spdlog::info("Too many interrupted playlists, dropping {}.", _interruptedPlays.front()->GetNameNoTime());
+            _interruptedPlays.front()->Stop();
+            delete _interruptedPlays.front();
+            _interruptedPlays.pop_front();
+        }
+    } else if (restartInterruptedStep) {
+        PlayList* running = GetRunningPlayList();
+        if (running != nullptr) running->SetRestartStepOnResume(true);
+    }
+    return StartManualPlayList(playlist, rate);
+}
+
+bool ScheduleManager::PlayPlayListNext(PlayList* playlist, size_t& rate) {
+    if (playlist == nullptr) return false;
+
+    PlayList* running = GetRunningPlayList();
+    if (running == nullptr || running->IsSuspended()) {
+        _playNext.reset();
+        return PlayPlayListThenResume(playlist, rate, false);
+    }
+    spdlog::info("Playlist {} will play when {} finishes its current step.", playlist->GetNameNoTime(), running->GetNameNoTime());
+    _playNext = playlist->GetId();
+    running->SetSuspendAtEndOfCurrentStep();
+    return true;
+}
+
+// Runs before the schedule check resumes anything, as that would otherwise resume the playlist that just paused for it.
+bool ScheduleManager::StartPlayNextIfReady(size_t& rate) {
+    if (!_playNext.has_value()) return false;
+    PlayList* running = GetRunningPlayList();
+    if (running != nullptr && !running->IsSuspended()) return false;
+
+    PlayList* p = GetPlayList(*_playNext);
+    _playNext.reset();
+    if (p == nullptr) return false;
+    spdlog::info("Playing playlist {} next.", p->GetNameNoTime());
+    return PlayPlayListThenResume(p, rate, false);
+}
+
+bool ScheduleManager::StartManualPlayList(PlayList* playlist, size_t& rate, bool loop, const std::string& step, bool forcelast, int plloops, bool random, int steploops) {
     bool result = true;
 
     if (playlist == nullptr) {
@@ -1084,6 +1215,70 @@ bool ScheduleManager::PlayPlayList(PlayList* playlist, size_t& rate, bool loop, 
     return result;
 }
 
+// A manual playlist can end without going through StopPlayList (next step on the last step, a jump to a step that
+// doesn't exist, a timecode stop, an empty playlist). Left in place, it keeps every schedule suspended.
+bool ScheduleManager::ReleaseFinishedImmediatePlay() {
+    bool released = false;
+    if (_immediatePlay != nullptr && !_immediatePlay->IsRunning()) {
+        spdlog::info("Manual playlist {} has ended.", _immediatePlay->GetNameNoTime());
+        delete _immediatePlay;
+        _immediatePlay = nullptr;
+        released = true;
+    }
+    if (_immediatePlay == nullptr && !_interruptedPlays.empty()) {
+        _immediatePlay = _interruptedPlays.back();
+        _interruptedPlays.pop_back();
+        spdlog::info("Resuming manual playlist {}.", _immediatePlay->GetNameNoTime());
+        _immediatePlay->Suspend(false);
+        released = true;
+    }
+    return released;
+}
+
+struct ScheduleManager::PlaybackSnapshot {
+    PlaybackState state;
+    bool paused = false;
+    wxLongLong taken = 0;
+};
+
+void ScheduleManager::UpdatePlaybackSnapshot() {
+    PlaybackSnapshot snapshot;
+    PlayList* pl = GetRunningPlayList();
+    if (pl != nullptr && !IsTest()) {
+        PlayListStep* step = pl->GetRunningStep();
+        snapshot.state.playing = true;
+        snapshot.state.playlistMS = (uint32_t)pl->GetPosition();
+        snapshot.state.stepNo = pl->GetRunningStepIndex();
+        snapshot.state.stepMS = step == nullptr ? 0 : (uint32_t)step->GetPosition();
+        snapshot.state.baseTimeCodeSecs = step == nullptr ? -1 : step->GetBaseTimeCodeTime();
+        snapshot.paused = pl->IsPaused() || pl->IsSuspended();
+    }
+    snapshot.taken = wxGetUTCTimeMillis();
+
+    std::lock_guard<std::mutex> lock(_snapshotLock);
+    if (_snapshot == nullptr) _snapshot = std::make_unique<PlaybackSnapshot>();
+    *_snapshot = snapshot;
+}
+
+PlaybackState ScheduleManager::GetPlaybackSnapshot() const {
+    std::lock_guard<std::mutex> lock(_snapshotLock);
+    if (_snapshot == nullptr) return PlaybackState();
+    PlaybackState state = _snapshot->state;
+    if (state.playing && !_snapshot->paused) {
+        uint32_t since = (uint32_t)(wxGetUTCTimeMillis() - _snapshot->taken).GetValue();
+        state.playlistMS += since;
+        state.stepMS += since;
+    }
+    return state;
+}
+
+// Milliseconds since start, for the outputs' frame timing. long is 32 bits on Windows, so the plain difference went
+// negative after about 24.8 days and LOR outputs then sent a heartbeat every frame. It now wraps back to 0 instead,
+// which the LOR heartbeat already treats as time moving backwards.
+long ScheduleManager::OutputTimeMS() const {
+    return (long)((wxUint32)(wxGetUTCTimeMillis().GetLo() - _startTime) & 0x7FFFFFFF);
+}
+
 bool compare_runningschedules(const RunningSchedule* first, const RunningSchedule* second) {
     return first->GetSchedule()->GetPriority() > second->GetSchedule()->GetPriority();
 }
@@ -1091,6 +1286,10 @@ bool compare_runningschedules(const RunningSchedule* first, const RunningSchedul
 int ScheduleManager::CheckSchedule() {
     if (_syncManager->IsSlave())
         return 50;
+
+    ReleaseFinishedImmediatePlay();
+    size_t playNextRate = 50;
+    StartPlayNextIfReady(playNextRate);
 
     spdlog::debug("Checking the schedule ...");
 
@@ -1156,6 +1355,12 @@ int ScheduleManager::CheckSchedule() {
                         it->Stop();
                         StopPlayList(it->GetPlayList(), false);
                         todelete.push_back(it);
+                    } else if (it->GetSchedule()->IsStopAtEndOfLoop()) {
+                        // finish the current pass through the playlist (and its end steps) then stop
+                        if (it->GetPlayList()->IsStoppingAtEndOfThisLoop()) continue;
+                        spdlog::info("   Scheduler telling playlist {} due to schedule {} to stop at the end of this loop.", it->GetPlayList()->GetNameNoTime(), it->GetSchedule()->GetName());
+                        it->GetPlayList()->SetStepLooping(false); // a looping step would never reach the end of the loop
+                        it->GetPlayList()->StopAtEndOfThisLoop();
                     } else {
                         spdlog::info("   Scheduler telling playlist {} due to schedule {} it is time to finish up.", it->GetPlayList()->GetNameNoTime(), it->GetSchedule()->GetName());
                         it->GetPlayList()->JumpToEndStepsAtEndOfCurrentStep();
@@ -1262,7 +1467,7 @@ int ScheduleManager::CheckSchedule() {
             _queuedSongs->Suspend(true);
         }
 
-        if (_queuedSongs->GetRunningStep() != nullptr) {
+        if (_immediatePlay->GetRunningStep() != nullptr) {
             framems = _immediatePlay->GetRunningStep()->GetFrameMS();
         }
     }
@@ -1328,6 +1533,9 @@ bool ScheduleManager::IsQuery(const wxString& command) {
         c == "getplayingstatus" ||
         c == "getrangesset" ||
         c == "getbuttons" ||
+        c == "getcalendar" ||
+        c == "getcalendarday" ||
+        c == "getnightplan" ||
         c == "getmatrix") {
         return true;
     }
@@ -1350,11 +1558,11 @@ bool ScheduleManager::IsQueuedPlaylistRunning() const {
 
 // localhost/xScheduleCommand?Command=<command>&Parameters=<comma separated parameters>
 bool ScheduleManager::Action(const wxString& command, const wxString& parameters, const wxString& data, PlayList* selplaylist, PlayListStep* selplayliststep, Schedule* selschedule, size_t& rate, wxString& msg) {
-    static 
 
     bool result = true;
     bool scheduleChanged = false;
 
+    Diagnostics::Activity activity("running a command", command.ToStdString());
     Command* cmd = _commandManager.GetCommand(command);
 
     if (cmd == nullptr) {
@@ -1370,12 +1578,13 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
 
                 // Because of what this function can do calling it on the main thread is dangerous ... so we need to switch threads
                 ActionMessageData* amd = new ActionMessageData(command, parameters, data);
+                amd->_source = Diagnostics::GetCommandSource();
                 wxCommandEvent event(EVT_DOACTION);
                 event.SetClientData(amd);
                 wxPostEvent(wxGetApp().GetTopWindow(), event);
             } else {
-                spdlog::debug("Action '{}':'{}'.",
-                              command.ToStdString(), parameters.ToStdString());
+                std::string source = Diagnostics::GetCommandSource();
+                spdlog::info("Command '{}' '{}' from {}.", command.ToStdString(), parameters.ToStdString(), source.empty() ? std::string("xSchedule") : source);
                 if (command == "Stop all now") {
                     // we cant stop here as this might be in the middle of playing the playlist
                     wxCommandEvent event(EVT_STOP);
@@ -1485,6 +1694,20 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                             result = false;
                             msg = "Unable to start playlist.";
                         }
+                    }
+                    scheduleChanged = true;
+                } else if (command == "Play specified playlist next") {
+                    PlayList* p = GetPlayList(DecodePlayList(parameters));
+                    if (p == nullptr || !PlayPlayListNext(p, rate)) {
+                        result = false;
+                        msg = "Unable to start playlist.";
+                    }
+                    scheduleChanged = true;
+                } else if (command == "Play specified playlist now then resume" || command == "Play specified playlist now then restart interrupted step") {
+                    PlayList* p = GetPlayList(DecodePlayList(parameters));
+                    if (p == nullptr || !PlayPlayListThenResume(p, rate, command == "Play specified playlist now then restart interrupted step")) {
+                        result = false;
+                        msg = "Unable to start playlist.";
                     }
                     scheduleChanged = true;
                 } else if (command == "Play specified playlist if not running") {
@@ -1684,6 +1907,9 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                     scheduleChanged = true;
                 } else if (command == "Stop specified playlist at end of current loop") {
                     PlayList* p = GetPlayList(DecodePlayList(parameters));
+                    if (p != nullptr) {
+                        p = GetRunningPlayList(p->GetId());
+                    }
 
                     if (p != nullptr) {
                         p->StopAtEndOfThisLoop();
@@ -1712,7 +1938,9 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                     if (p != nullptr) {
                         if (_queuedSongs != nullptr && p->GetId() == _queuedSongs->GetId()) {
                             _queuedSongs->Stop();
-                            _queuedSongs->RemoveStep(_queuedSongs->GetSteps().front());
+                            PlayListStep* skipped = _queuedSongs->GetSteps().front();
+                            _queuedSongs->RemoveStep(skipped);
+                            delete skipped;
                             _queuedSongs->Start();
                         } else {
                             p->JumpToNextStep();
@@ -1828,9 +2056,8 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                         if (pls != nullptr) {
                             spdlog::info("Playing event playlist {} step {}.", p->GetNameNoTime(), pls->GetNameNoTime());
 
-                            _eventPlayLists.push_back(new PlayList(*p));
-                            _eventPlayLists.back()->Start(false, false, false);
-                            _eventPlayLists.back()->JumpToStep(step);
+                            _eventPlayLists.push_back(new PlayList(*p, step));
+                            _eventPlayLists.back()->Start(false, false, 0, step);
                             _eventPlayLists.back()->StopAtEndOfCurrentStep();
                         }
                     }
@@ -1846,10 +2073,21 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                         PlayListStep* pls = p->GetStep(step);
 
                         if (pls != nullptr) {
+                            // a loop of this step already running is replaced; another copy would only play on top of it
+                            for (auto it2 = _eventPlayLists.begin(); it2 != _eventPlayLists.end();) {
+                                if ((*it2)->GetId() == p->GetId() && (*it2)->GetRunningStep() != nullptr && (*it2)->GetRunningStep()->GetNameNoTime() == pls->GetNameNoTime()) {
+                                    (*it2)->Stop();
+                                    delete *it2;
+                                    it2 = _eventPlayLists.erase(it2);
+                                } else {
+                                    ++it2;
+                                }
+                            }
+
                             spdlog::info("Playing event playlist {} step {}.", p->GetNameNoTime(), pls->GetNameNoTime());
 
-                            _eventPlayLists.push_back(new PlayList(*p));
-                            _eventPlayLists.back()->Start(false, false, false);
+                            _eventPlayLists.push_back(new PlayList(*p, step));
+                            _eventPlayLists.back()->Start(false, false, 0, step);
                             _eventPlayLists.back()->LoopStep(step);
                         }
                     }
@@ -1881,9 +2119,8 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
 
                             spdlog::info("Playing event playlist {} step {}.", p->GetNameNoTime(), pls->GetNameNoTime());
 
-                            _eventPlayLists.push_back(new PlayList(*p));
-                            _eventPlayLists.back()->Start(false, false, false);
-                            _eventPlayLists.back()->JumpToStep(step);
+                            _eventPlayLists.push_back(new PlayList(*p, step));
+                            _eventPlayLists.back()->Start(false, false, 0, step);
                             _eventPlayLists.back()->StopAtEndOfCurrentStep();
                         }
                     }
@@ -1984,8 +2221,8 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
 
                             spdlog::info("Playing event playlist {} step {}.", p->GetNameNoTime(), pls->GetNameNoTime());
 
-                            _eventPlayLists.push_back(new PlayList(*p));
-                            _eventPlayLists.back()->Start(false, false, false);
+                            _eventPlayLists.push_back(new PlayList(*p, step));
+                            _eventPlayLists.back()->Start(false, false, 0, step);
                             _eventPlayLists.back()->LoopStep(step);
                         }
                     }
@@ -2016,9 +2253,8 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                             if (pls != nullptr) {
                                 spdlog::info("Playing event playlist {} step {}.", p->GetNameNoTime(), pls->GetNameNoTime());
 
-                                _eventPlayLists.push_back(new PlayList(*p));
-                                _eventPlayLists.back()->Start(false, false, false);
-                                _eventPlayLists.back()->JumpToStep(step);
+                                _eventPlayLists.push_back(new PlayList(*p, step));
+                                _eventPlayLists.back()->Start(false, false, 0, step);
                                 _eventPlayLists.back()->StopAtEndOfCurrentStep();
                             }
                         } else {
@@ -2052,8 +2288,8 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                             if (pls != nullptr) {
                                 spdlog::info("Playing event playlist {} step {}.", p->GetNameNoTime(), pls->GetNameNoTime());
 
-                                _eventPlayLists.push_back(new PlayList(*p));
-                                _eventPlayLists.back()->Start(false, false, false);
+                                _eventPlayLists.push_back(new PlayList(*p, step));
+                                _eventPlayLists.back()->Start(false, false, 0, step);
                                 _eventPlayLists.back()->LoopStep(step);
                             }
                         } else {
@@ -2330,7 +2566,10 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                     result = ToggleCurrentPlayListLoop(msg);
                     scheduleChanged = true;
                 } else if (command == "Save schedule") {
-                    Save();
+                    if (!Save()) {
+                        result = false;
+                        msg = "Unable to save the schedule.";
+                    }
                     scheduleChanged = true;
                 } else if (command == "Run command at end of current step") {
                     PlayList* p = GetRunningPlayList();
@@ -2467,7 +2706,7 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                     PlayList* p = GetPlayList(pl);
 
                     if (p != nullptr) {
-                        if (!PlayPlayList(p, rate, false, "", false, loops)) {
+                        if (!PlayPlayList(p, rate, loops > 1, "", false, loops)) {
                             result = false;
                             msg = "Unable to start playlist.";
                         }
@@ -2602,6 +2841,7 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                             if (data.length() == 0) {
                                 spdlog::debug("Pixel overlay data removed.");
                                 _overlayData.remove(p);
+                                delete p;
                             } else {
                                 spdlog::debug("Pixel overlay data changed.");
                                 p->SetData(data, blendMode);
@@ -2629,33 +2869,33 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
                         APPLYMETHOD blendMode = APPLYMETHOD::METHOD_OVERWRITE;
                         blendMode = EncodeBlendMode(split[3].ToStdString());
 
-                        PixelData* p = nullptr;
-                        for (const auto& it : _overlayData) {
-                            if (it->GetStartChannel() == sc) {
-                                if (ch == 0) {
-                                    p = it;
-                                    spdlog::debug("Pixel overlay data removed.");
-                                    _overlayData.remove(p);
-                                    break;
-                                } else if (it->GetSize() == ch) {
-                                    p = it;
+                        bool changed = false;
+                        for (auto it = _overlayData.begin(); it != _overlayData.end(); ++it) {
+                            if ((*it)->GetStartChannel() == sc) {
+                                if (ch != 0 && (*it)->GetSize() == ch) {
                                     spdlog::debug("Pixel overlay data changed.");
-                                    p->SetColor(c, blendMode);
-                                    break;
+                                    (*it)->SetColor(c, blendMode);
+                                    changed = true;
+                                } else {
+                                    // removed, or replaced below by one of the new size
+                                    spdlog::debug("Pixel overlay data removed.");
+                                    delete *it;
+                                    _overlayData.erase(it);
                                 }
+                                break;
                             }
                         }
 
-                        if (p == nullptr && ch != 0) {
+                        if (!changed && ch != 0) {
                             spdlog::debug("Pixel overlay data added.");
-                            p = new PixelData(sc, ch, c, blendMode);
-                            _overlayData.push_back(p);
+                            _overlayData.push_back(new PixelData(sc, ch, c, blendMode));
                         }
                     }
                 } else if (command == "Clear all overlays") {
                     std::list<PixelData*>::iterator i = _overlayData.begin();
                     while (i != _overlayData.end()) {
                         spdlog::debug("Pixel overlay data removed.");
+                        delete *i;
                         i = _overlayData.erase(i);
                     }
                 } else if (command == "Play specified playlist step n times") {
@@ -2691,12 +2931,12 @@ bool ScheduleManager::Action(const wxString& command, const wxString& parameters
         wxPostEvent(wxGetApp().GetTopWindow(), event);
     }
 
-    // Clean up immediate play of one of the actions led to it stopping
-    if (_immediatePlay != nullptr) {
-        if (!_immediatePlay->IsRunning()) {
-            delete _immediatePlay;
-            _immediatePlay = nullptr;
-        }
+    // Clean up immediate play if one of the actions led to it stopping, and let a suspended schedule carry on now
+    // rather than at the next schedule check
+    if (_mainThread == wxThread::GetCurrentId() && ReleaseFinishedImmediatePlay()) {
+        wxCommandEvent event(EVT_DOCHECKSCHEDULE);
+        wxPostEvent(wxGetApp().GetTopWindow(), event);
+        scheduleChanged = true;
     }
 
     if (scheduleChanged) {
@@ -2728,7 +2968,18 @@ bool ScheduleManager::Action(const wxString& label, PlayList* selplaylist, PlayL
     }
 }
 
-void ScheduleManager::StopPlayList(PlayList* playlist, bool atendofcurrentstep, bool sustain) {
+void ScheduleManager::StopPlayList(PlayList* playlist, bool atendofcurrentstep, bool sustain, bool stopSchedules) {
+    if (!atendofcurrentstep) {
+        for (auto it = _interruptedPlays.begin(); it != _interruptedPlays.end();) {
+            if ((*it)->GetId() == playlist->GetId()) {
+                (*it)->Stop();
+                delete *it;
+                it = _interruptedPlays.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
     if (_immediatePlay != nullptr && _immediatePlay->GetId() == playlist->GetId()) {
         if (atendofcurrentstep) {
             _immediatePlay->StopAtEndOfCurrentStep();
@@ -2751,6 +3002,20 @@ void ScheduleManager::StopPlayList(PlayList* playlist, bool atendofcurrentstep, 
         }
     }
 
+    // a schedule plays its own copy of the playlist, which the loops above never match
+    if (stopSchedules) {
+        for (const auto& it : _activeSchedules) {
+            if (it->GetPlayList()->GetId() == playlist->GetId() && it->GetPlayList()->IsRunning()) {
+                if (atendofcurrentstep) {
+                    it->GetPlayList()->StopAtEndOfCurrentStep();
+                } else {
+                    _syncManager->SendStop();
+                    it->Stop();
+                }
+            }
+        }
+    }
+
     if (!sustain) {
         if (!IsSlave() || GetOptions()->IsRemoteAllOff()) {
             AllOff();
@@ -2759,9 +3024,23 @@ void ScheduleManager::StopPlayList(PlayList* playlist, bool atendofcurrentstep, 
 }
 
 void ScheduleManager::GetNextScheduledPlayList(PlayList** p, Schedule** s) {
+    size_t signature = _playLists.size();
+    for (const auto& pit : _playLists) {
+        signature = signature * 31 + pit->GetId();
+        for (const auto& sit : pit->GetSchedules()) {
+            signature = signature * 31 + sit->GetId() * 7 + sit->GetChangeCount() + (sit->GetEnabled() ? 1 : 0);
+        }
+    }
+    const wxDateTime zero((time_t)0);
+    bool passed = _nextAt.IsValid() && _nextAt != zero && _nextAt <= wxDateTime::Now();
+    if (signature == _nextSignature && time(nullptr) - _nextWorkedOut < 30 && !passed) {
+        *p = _nextPlayList;
+        *s = _nextSchedule;
+        return;
+    }
+
     *p = nullptr;
     *s = nullptr;
-    ;
     wxDateTime next = wxDateTime((time_t)0);
     for (const auto& pit : _playLists) {
         auto schedules = pit->GetSchedules();
@@ -2780,6 +3059,12 @@ void ScheduleManager::GetNextScheduledPlayList(PlayList** p, Schedule** s) {
             }
         }
     }
+
+    _nextPlayList = *p;
+    _nextSchedule = *s;
+    _nextAt = next;
+    _nextWorkedOut = time(nullptr);
+    _nextSignature = signature;
 }
 
 // 127.0.0.1/xScheduleStash?Command=Store&Key=<key> ... this must be posted with the data in the body of the request ... key must be filename legal
@@ -2790,7 +3075,8 @@ void ScheduleManager::GetNextScheduledPlayList(PlayList** p, Schedule** s) {
 // 127.0.0.1/xScheduleQuery?Query=GetPlayingStatus&Parameters=
 // 127.0.0.1/xScheduleQuery?Query=GetButtons&Parameters=
 
-bool ScheduleManager::Query(const wxString& command, const wxString& parameters, wxString& data, wxString& msg, const wxString& ip, const wxString& reference) {
+bool ScheduleManager::Query(const wxString& command, const wxString& parameters, wxString& data, wxString& msg, const wxString& ip, const wxString& referenceIn) {
+    const std::string reference = JSONSafe(referenceIn.ToStdString());
     wxASSERT(IsQuery(command));
 
     bool result = true;
@@ -2805,7 +3091,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             } else {
                 data += ",";
             }
-            data += "{\"name\":\"" + it->GetNameNoTime() +
+            data += "{\"name\":\"" + JSONSafe(it->GetNameNoTime()) +
                     "\",\"id\":\"" + wxString::Format(wxT("%i"), it->GetId()).ToStdString() +
                     "\",\"nextscheduled\":\"" + it->GetNextScheduledTime() +
                     "\",\"length\":\"" + FormatTime(it->GetLengthMS()) +
@@ -2823,7 +3109,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             }
             auto running = it->GetRunningStep();
             if (running != nullptr) {
-                data += "{\"name\":\"" + running->GetNameNoTime() + "\"}";
+                data += "{\"name\":\"" + JSONSafe(running->GetNameNoTime()) + "\"}";
             }
         }
         data += "],\"reference\":\"" + reference + "\"}";
@@ -2852,7 +3138,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                     last = "\",\"endonly\":\"false";
                 }
 
-                data += "{\"name\":\"" + (*it)->GetNameNoTime() +
+                data += "{\"name\":\"" + JSONSafe((*it)->GetNameNoTime()) +
                         "\",\"id\":\"" + wxString::Format(wxT("%i"), (*it)->GetId()).ToStdString() +
                         first + last +
                         "\",\"everystep\":\"" + ((*it)->GetEveryStep() ? _("true") : _("false")) +
@@ -2873,14 +3159,14 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             if (it != ms->begin()) {
                 data += ",";
             }
-            data += "\"" + (*it)->GetName() + "\"";
+            data += "\"" + JSONSafe((*it)->GetName()) + "\"";
         }
         data += "],\"reference\":\"" + reference + "\"}";
     } else if (c == "getmatrix") {
         auto ms = _scheduleOptions->GetMatrices();
         for (auto it : *ms) {
             if (wxString(it->GetName()).Lower() == wxString(parameters).Lower()) {
-                data = "{\"name\":\"" + it->GetName() +
+                data = "{\"name\":\"" + JSONSafe(it->GetName()) +
                        "\",\"width\":\"" + wxString::Format(wxT("%i"), it->GetWidth()) +
                        "\",\"height\":\"" + wxString::Format(wxT("%i"), it->GetHeight()) +
                        "\",\"startchannel\":\"" + it->GetStartChannel() +
@@ -2919,7 +3205,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             if (it != steps.begin()) {
                 data += ",";
             }
-            data += "{\"name\":\"" + (*it)->GetNameNoTime() +
+            data += "{\"name\":\"" + JSONSafe((*it)->GetNameNoTime()) +
                     "\",\"id\":\"" + wxString::Format(wxT("%i"), (*it)->GetId()).ToStdString() +
                     "\",\"length\":\"" + FormatTime((*it)->GetLengthMS()) +
                     "\",\"lengthms\":\"" + wxString::Format("%ld", (long)((*it)->GetLengthMS())) + "\"}";
@@ -2964,7 +3250,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                         data += ",";
                     }
                     first = false;
-                    data += "\"" + dirname + "\"";
+                    data += "\"" + JSONSafe(dirname.ToStdString()) + "\"";
 
                     found = dir.GetNext(&dirname);
                 }
@@ -2979,9 +3265,9 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
         if (p == nullptr) {
             data = "{\"playlistname\":\"\",\"playlistid\":\"\",\"schedulename\":\"\",\"scheduleid\":\"\",\"start\":\"Never\",\"end\":\"\",\"reference\":\"" + reference + "\"}";
         } else {
-            data = "{\"playlistname\":\"" + p->GetNameNoTime() + "\"," +
+            data = "{\"playlistname\":\"" + JSONSafe(p->GetNameNoTime()) + "\"," +
                    "\"playlistid\":\"" + wxString::Format("%i", p->GetId()).ToStdString() + "\"," +
-                   "\"schedulename\":\"" + s->GetName() + "\"," +
+                   "\"schedulename\":\"" + JSONSafe(s->GetName()) + "\"," +
                    "\"scheduleid\":\"" + wxString::Format("%i", s->GetId()).ToStdString() + "\"," +
                    "\"start\":\"" + s->GetNextTriggerTime() + "\"," +
                    "\"end\":\"" + s->GetEndTimeAsString() + "\"," +
@@ -3014,7 +3300,7 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                 Schedule* schedule = p->GetSchedule(DecodeSchedule(plsc[1].ToStdString()));
 
                 if (schedule != nullptr) {
-                    data = schedule->GetJSON(reference);
+                    data = schedule->GetJSON(referenceIn.ToStdString());
                 } else {
                     result = false;
                     msg = "Playlist '" + plsc[0] + "' does not have a schedule '" + plsc[1] + "'.";
@@ -3037,18 +3323,17 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                    "\",\"version\":\"" + xschedule_version_string +
                    "\",\"reference\":\"" + reference +
                    "\",\"passwordset\":\"" + (_scheduleOptions->GetPassword() == "" ? "false" : "true") +
-                   "\",\"time\":\"" + wxDateTime::Now().Format("%Y-%m-{} %H:%M:{}") +
+                   "\",\"time\":\"" + wxDateTime::Now().Format("%Y-%m-%d %H:%M:%S") +
                    "\"," + GetPingStatus() + "}";
         } else {
             std::string nextsong;
             std::string nextsongid;
-            bool didloop;
 
             if (p->IsRandom()) {
                 nextsong = "God knows";
                 nextsongid = "";
             } else {
-                auto next = p->GetNextStep(didloop);
+                auto next = p->PeekNextStep();
                 if (next == nullptr) {
                     nextsong = "";
                     nextsongid = "";
@@ -3061,12 +3346,12 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             RunningSchedule* rs = GetRunningSchedule();
 
             data = "{\"status\":\"" + std::string(p->IsPaused() ? "paused" : "playing") +
-                   "\",\"playlist\":\"" + p->GetNameNoTime() +
+                   "\",\"playlist\":\"" + JSONSafe(p->GetNameNoTime()) +
                    "\",\"playlistid\":\"" + wxString::Format(wxT("%i"), p->GetId()).ToStdString() +
                    "\",\"playlistlooping\":\"" + (p->IsLooping() || p->GetLoopsLeft() > 0 ? "true" : "false") +
                    "\",\"playlistloopsleft\":\"" + wxString::Format(wxT("%i"), p->GetLoopsLeft()).ToStdString() +
                    "\",\"random\":\"" + (p->IsRandom() ? "true" : "false") +
-                   "\",\"step\":\"" + p->GetRunningStep()->GetNameNoTime() +
+                   "\",\"step\":\"" + JSONSafe(p->GetRunningStep()->GetNameNoTime()) +
                    "\",\"stepid\":\"" + wxString::Format(wxT("%i"), p->GetRunningStep()->GetId()).ToStdString() +
                    "\",\"steplooping\":\"" + (p->IsStepLooping() || p->GetRunningStep()->GetLoopsLeft() > 0 ? "true" : "false") +
                    "\",\"steploopsleft\":\"" + wxString::Format(wxT("%i"), p->GetRunningStep()->GetLoopsLeft()).ToStdString() +
@@ -3082,19 +3367,19 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
                    "\",\"playlistleftms\":\"" + wxString::Format("%ld", (long)(p->GetLengthMS() - p->GetPosition())) +
                    "\",\"trigger\":\"" + std::string(IsCurrentPlayListScheduled() ? "scheduled" : (_immediatePlay != nullptr) ? "manual"
                                                                                                                               : "queued") +
-                   "\",\"schedulename\":\"" + std::string((IsCurrentPlayListScheduled() && rs != nullptr) ? rs->GetSchedule()->GetName() : "N/A") +
+                   "\",\"schedulename\":\"" + std::string((IsCurrentPlayListScheduled() && rs != nullptr) ? JSONSafe(rs->GetSchedule()->GetName()) : "N/A") +
                    "\",\"scheduleend\":\"" + std::string((IsCurrentPlayListScheduled() && rs != nullptr) ? rs->GetSchedule()->GetNextEndTime() : "N/A") +
                    "\",\"scheduleid\":\"" + std::string((IsCurrentPlayListScheduled() && rs != nullptr) ? wxString::Format(wxT("%i"), rs->GetSchedule()->GetId()).ToStdString() : "N/A") +
-                   "\",\"nextstep\":\"" + nextsong +
+                   "\",\"nextstep\":\"" + JSONSafe(nextsong) +
                    "\",\"nextstepid\":\"" + nextsongid +
                    "\",\"version\":\"" + xschedule_version_string +
-                   "\",\"queuelength\":\"" + wxString::Format(wxT("%i"), (long)_queuedSongs->GetSteps().size()) +
+                   "\",\"queuelength\":\"" + wxString::Format(wxT("%ld"), (long)_queuedSongs->GetSteps().size()) +
                    "\",\"volume\":\"" + wxString::Format(wxT("%i"), GetVolume()) +
                    "\",\"brightness\":\"" + wxString::Format(wxT("%i"), GetBrightness()) +
-                   "\",\"time\":\"" + wxDateTime::Now().Format("%Y-%m-{} %H:%M:{}") +
+                   "\",\"time\":\"" + wxDateTime::Now().Format("%Y-%m-%d %H:%M:%S") +
                    "\",\"ip\":\"" + ip +
                    "\",\"reference\":\"" + reference +
-                   "\",\"autooutputtolights\":\"" + (_manualOTL ? "false" : "true") +
+                   "\",\"autooutputtolights\":\"" + (_manualOTL == -1 ? "true" : "false") +
                    "\",\"passwordset\":\"" + (_scheduleOptions->GetPassword() == "" ? "false" : "true") +
                    "\",\"outputtolights\":\"" + std::string(_outputManager->IsOutputting() ? "true" : "false") +
                    "\"," + GetPingStatus() + "}";
@@ -3102,13 +3387,176 @@ bool ScheduleManager::Query(const wxString& command, const wxString& parameters,
             // spdlog::info("{}", data);
         }
     } else if (c == "getbuttons") {
-        data = _scheduleOptions->GetButtonsJSON(_commandManager, reference);
+        data = _scheduleOptions->GetButtonsJSON(_commandManager, referenceIn.ToStdString());
+    } else if (c == "getcalendar" || c == "getcalendarday") {
+        data = CalendarJSON(c == "getcalendarday", parameters.ToStdString(), reference, msg);
+        result = !data.empty();
+    } else if (c == "getnightplan") {
+        data = NightPlanJSON(parameters.ToStdString(), reference, msg);
+        result = !data.empty();
     } else {
         result = false;
         msg = "Unknown query.";
     }
 
     return result;
+}
+
+// GetCalendar: "from,to[,inactive]", dates as YYYY-MM-DD. GetCalendarDay: "date[,inactive]". Times are minutes from
+// the night's midnight, so 1470 is 12:30 AM the next morning.
+std::string ScheduleManager::CalendarJSON(bool day, const std::string& parameters, const std::string& reference, wxString& msg) {
+    auto parts = wxSplit(parameters, ',');
+    auto date = [&parts](size_t i, wxDateTime& d) {
+        return i < parts.size() && d.ParseISODate(parts[i].Trim().Trim(false));
+    };
+    bool inactive = parts.size() > (day ? 1u : 2u) && parts.back().Trim().Trim(false).Lower() == "inactive";
+    wxDateTime from;
+    wxDateTime to;
+    if (!date(0, from) || (!day && !date(1, to))) {
+        msg = day ? "Expected a date, YYYY-MM-DD." : "Expected two dates, YYYY-MM-DD,YYYY-MM-DD.";
+        return "";
+    }
+    if (!day && (to < from || (to - from).GetDays() > 400)) {
+        msg = "The range must run forward, and cover at most 400 days.";
+        return "";
+    }
+
+    auto id = [](const ScheduleCalendar::Window& w) { return wxString::Format("%u", (unsigned)w.schedule->GetId()).ToStdString(); };
+    auto windowJSON = [&id](const ScheduleCalendar::Window& w) {
+        return "{\"id\":\"" + id(w) + "\",\"night\":\"" + w.night.FormatISODate().ToStdString() +
+               "\",\"start\":" + std::to_string(w.start) + ",\"end\":" + std::to_string(w.end) + ",\"playEnd\":" + std::to_string(w.playEnd) +
+               ",\"skipped\":" + (w.skipped ? "true" : "false") + ",\"enabled\":" + (w.enabled ? "true" : "false") + "}";
+    };
+    auto clashesJSON = [&id](const std::vector<ScheduleCalendar::Clash>& clashes, const std::vector<ScheduleCalendar::Window>& windows) {
+        std::string res = "[";
+        for (const auto& c : clashes) {
+            if (res.size() > 1) res += ",";
+            res += "{\"start\":" + std::to_string(c.start) + ",\"end\":" + std::to_string(c.end) +
+                   ",\"a\":\"" + id(windows[c.a]) + "\",\"b\":\"" + id(windows[c.b]) + "\"}";
+        }
+        return res + "]";
+    };
+    auto nightJSON = [](const ScheduleCalendar::Night& n) {
+        return "\"date\":\"" + n.date.FormatISODate().ToStdString() + "\",\"holiday\":\"" + JSONSafe(n.holiday) +
+               "\",\"sunset\":" + std::to_string(n.sunset) + ",\"dusk\":" + std::to_string(n.dusk);
+    };
+
+    std::string res = "{\"schedules\":[";
+    int index = 0;
+    for (const auto& pl : _playLists) {
+        for (const auto& s : pl->GetSchedules()) {
+            if (index > 0) res += ",";
+            res += "{\"id\":\"" + wxString::Format("%u", (unsigned)s->GetId()).ToStdString() + "\",\"name\":\"" + JSONSafe(s->GetName()) +
+                   "\",\"playlist\":\"" + JSONSafe(pl->GetNameNoTime()) + "\",\"priority\":" + std::to_string(s->GetPriority()) +
+                   ",\"enabled\":" + (s->GetEnabled() ? "true" : "false") + ",\"index\":" + std::to_string(index) + "}";
+            ++index;
+        }
+    }
+    res += "],";
+
+    if (day) {
+        auto d = ScheduleCalendar::DetailOf(*this, from, inactive);
+        res += nightJSON(d.night) + ",\"axisStart\":" + std::to_string(d.axisStart) + ",\"axisEnd\":" + std::to_string(d.axisEnd) + ",\"windows\":[";
+        for (size_t i = 0; i < d.windows.size(); ++i) {
+            if (i > 0) res += ",";
+            res += windowJSON(d.windows[i]);
+        }
+        res += "],\"lanes\":[";
+        for (size_t i = 0; i < d.lanes.size(); ++i) {
+            if (i > 0) res += ",";
+            res += "{\"window\":" + std::to_string(d.lanes[i].window) + ",\"segments\":[";
+            for (size_t j = 0; j < d.lanes[i].segments.size(); ++j) {
+                const auto& g = d.lanes[i].segments[j];
+                if (j > 0) res += ",";
+                const char* state = g.state == ScheduleCalendar::State::Plays ? "plays" : g.state == ScheduleCalendar::State::Hidden ? "hidden" : g.state == ScheduleCalendar::State::Clash ? "clash" : "done";
+                res += "{\"start\":" + std::to_string(g.start) + ",\"end\":" + std::to_string(g.end) + ",\"state\":\"" + state + "\",\"by\":" + std::to_string(g.by) + "}";
+            }
+            res += "]}";
+        }
+        res += "],\"onTheLights\":[";
+        for (size_t i = 0; i < d.onTheLights.size(); ++i) {
+            const auto& g = d.onTheLights[i];
+            if (i > 0) res += ",";
+            res += "{\"start\":" + std::to_string(g.start) + ",\"end\":" + std::to_string(g.end) + ",\"window\":" + std::to_string(g.by) + "}";
+        }
+        res += "],\"clashes\":" + clashesJSON(d.clashes, d.windows);
+    } else {
+        res += "\"days\":[";
+        bool first = true;
+        for (const auto& n : ScheduleCalendar::Nights(*this, from, to, inactive)) {
+            if (!first) res += ",";
+            first = false;
+            res += "{" + nightJSON(n) + ",\"windows\":[";
+            for (size_t i = 0; i < n.windows.size(); ++i) {
+                if (i > 0) res += ",";
+                res += windowJSON(n.windows[i]);
+            }
+            res += "],\"clashes\":" + clashesJSON(ScheduleCalendar::ClashesOf(n.windows), n.windows) + "}";
+        }
+        res += "]";
+    }
+    return res + ",\"reference\":\"" + reference + "\"}";
+}
+
+// GetNightPlan: "date[,inactive]", the date as YYYY-MM-DD. What each schedule will play that night, step by step, with
+// times in ms from the night's midnight.
+std::string ScheduleManager::NightPlanJSON(const std::string& parameters, const std::string& reference, wxString& msg) {
+    auto parts = wxSplit(parameters, ',');
+    wxDateTime date;
+    if (parts.empty() || !date.ParseISODate(parts[0].Trim().Trim(false))) {
+        msg = "Expected a date, YYYY-MM-DD.";
+        return "";
+    }
+    bool inactive = parts.size() > 1 && parts.back().Trim().Trim(false).Lower() == "inactive";
+    auto d = ScheduleCalendar::DetailOf(*this, date, inactive);
+    auto p = ScheduleCalendar::PreviewOf(*this, d);
+    auto window = [&](int w) {
+        if (w < 0) return std::string("\"schedule\":\"\",\"id\":\"\"");
+        const auto& dw = d.windows[p.detailWindow[w]];
+        return "\"schedule\":\"" + JSONSafe(dw.schedule->GetName()) + "\",\"id\":\"" + wxString::Format("%u", (unsigned)dw.schedule->GetId()).ToStdString() + "\"";
+    };
+    static const char* endings[] = { "finished", "suspended", "cut", "unfinished" };
+    static const char* flags[] = { "none", "late", "wait", "cut" };
+    static const char* kinds[] = { "runslate", "startslate", "cutoff", "goesdark" };
+    std::string res = "{\"date\":\"" + date.FormatISODate().ToStdString() + "\",\"plays\":[";
+    for (size_t i = 0; i < p.plan.plays.size(); ++i) {
+        const auto& pl = p.plan.plays[i];
+        if (i > 0) res += ",";
+        res += "{\"start\":" + std::to_string(pl.start) + ",\"end\":" + std::to_string(pl.end) + "," + window(pl.window) +
+               ",\"playlist\":\"" + JSONSafe(p.playlists[pl.playlist]) + "\",\"step\":\"" + JSONSafe(pl.step) + "\",\"pass\":" + std::to_string(pl.pass) +
+               ",\"offset\":" + std::to_string(pl.offset) + ",\"called\":" + (pl.called ? "true" : "false") + ",\"estimated\":" + (pl.estimated ? "true" : "false") +
+               ",\"ending\":\"" + endings[(int)pl.ending] + "\",\"flag\":\"" + flags[(int)pl.flag] + "\",\"note\":\"" + JSONSafe(pl.note) + "\"}";
+    }
+    res += "],\"findings\":[";
+    for (size_t i = 0; i < p.plan.findings.size(); ++i) {
+        const auto& f = p.plan.findings[i];
+        if (i > 0) res += ",";
+        res += "{\"kind\":\"" + std::string(kinds[(int)f.kind]) + "\"," + window(f.window) + ",\"at\":" + std::to_string(f.at) + ",\"amount\":" + std::to_string(f.amount) +
+               ",\"upTo\":" + (f.upTo ? "true" : "false") + ",\"play\":" + std::to_string(f.play) + ",\"text\":\"" + JSONSafe(SchedulePreview::Describe(f, p.windows)) + "\"}";
+    }
+    res += "],\"truncated\":" + std::string(p.plan.truncated ? "true" : "false") + ",\"background\":\"" + JSONSafe(p.background) + "\"";
+    return res + ",\"reference\":\"" + reference + "\"}";
+}
+
+static std::atomic<bool> __startingOutputToLights = false;
+
+bool ScheduleManager::IsStartingOutputToLights() {
+    return __startingOutputToLights;
+}
+
+// xSchedule runs unattended: an output that will not open is skipped and logged, and the others keep
+// going. The xLights core only asks "continue?" when interactive; otherwise it closes every output.
+bool ScheduleManager::StartOutputToLights() {
+    OutputManager::SetConfirmCallback([](const std::string& message, const std::string& title) {
+        spdlog::warn("{} Continuing with the other outputs.", message);
+        return true;
+    });
+
+    struct Starting {
+        Starting() { __startingOutputToLights = true; OutputManager::SetInteractive(true); }
+        ~Starting() { OutputManager::SetInteractive(false); __startingOutputToLights = false; }
+    } starting;
+    return _outputManager->StartOutput();
 }
 
 void ScheduleManager::DisableRemoteOutputs() {
@@ -3146,7 +3594,7 @@ std::string ScheduleManager::GetPingStatus() {
                 res += ",";
             }
 
-            res += "{\"controller\":\"" + it->GetIP() + " " + it->GetName() +
+            res += "{\"controller\":\"" + it->GetIP() + " " + JSONSafe(it->GetName()) +
                    "\",\"ip\":\"" + it->GetIP() +
                    "\",\"result\":\"" + APinger::GetPingResultName(it->GetPingResult()) +
                    "\",\"failcount\":\"" + wxString::Format("%i", it->GetFailCount()) + "\"}";
@@ -3327,12 +3775,12 @@ void ScheduleManager::SetOutputToLights(xScheduleFrame* frame, bool otl, bool in
     if (_outputManager != nullptr) {
         if (otl) {
             if (!IsOutputToLights()) {
-                if (GetConfigBool("OutputActive", false) && interactive) {
+                if (ScheduleConfig::GetBool("OutputActive", false) && interactive) {
                     wxMessageBox("Warning: Lights output is already open in another process. This will cause issues.", "WARNING", 4 | wxCENTRE, frame);
                 }
                 DisableRemoteOutputs();
-                bool success = _outputManager->StartOutput();
-                if (success) SetConfigBool("OutputActive", true);
+                bool success = StartOutputToLights();
+                if (success) ScheduleConfig::SetBool("OutputActive", true);
 #ifdef __WXMSW__
                 ::SetPriorityClass(::GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
@@ -3347,7 +3795,7 @@ void ScheduleManager::SetOutputToLights(xScheduleFrame* frame, bool otl, bool in
         } else {
             if (IsOutputToLights()) {
                 _outputManager->StopOutput();
-                SetConfigBool("OutputActive", false);
+                ScheduleConfig::SetBool("OutputActive", false);
 #ifdef __WXMSW__
                 ::SetPriorityClass(::GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
 #endif
@@ -3367,11 +3815,11 @@ void ScheduleManager::ManualOutputToLightsClick(xScheduleFrame* frame) {
     if (_manualOTL > 1)
         _manualOTL = -1;
     if (_manualOTL == 1) {
-        if (GetConfigBool("OutputActive", false)) {
+        if (ScheduleConfig::GetBool("OutputActive", false)) {
             wxMessageBox("Warning: Lights output is already open in another process. This will cause issues.", "WARNING", 4 | wxCENTRE, frame);
         }
         DisableRemoteOutputs();
-        if (_outputManager->StartOutput()) SetConfigBool("OutputActive", true);
+        if (StartOutputToLights()) ScheduleConfig::SetBool("OutputActive", true);
 #ifdef __WXMSW__
         ::SetPriorityClass(::GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
@@ -3380,7 +3828,7 @@ void ScheduleManager::ManualOutputToLightsClick(xScheduleFrame* frame) {
         GetListenerManager()->ProcessPacket("State", "Lights On");
     } else if (_manualOTL == 0) {
         _outputManager->StopOutput();
-        SetConfigBool("OutputActive", false);
+        ScheduleConfig::SetBool("OutputActive", false);
 #ifdef __WXMSW__
         ::SetPriorityClass(::GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
 #endif
@@ -3460,9 +3908,9 @@ void ScheduleManager::SetMode(int mode, REMOTEMODE remote) {
     _mode = mode;
     _remoteMode = remote;
 
-    wxConfigBase* config = wxConfigBase::Get();
-    config->Write(_("SyncMode"), (long)_mode);
-    config->Write(_("RemoteMode"), (long)_remoteMode);
+    auto* config = GetXLightsConfig();
+    config->Write("SyncMode", (long)_mode);
+    config->Write("RemoteMode", (long)_remoteMode);
     config->Flush();
 
     _syncManager->Start(mode, remote, GetForceLocalIP());
@@ -3567,7 +4015,7 @@ bool ScheduleManager::ShowDirectoriesMatch() const {
     std::string xlsd = xLightsShowDir();
     std::string xssd = xScheduleShowDir();
 
-    if (xlsd != "" && xssd != "" && xlsd != xssd) {
+    if (xlsd != "" && xssd != "" && !ScheduleConfig::IsSameFolder(xlsd, xssd)) {
         return false;
     }
 
@@ -3575,7 +4023,6 @@ bool ScheduleManager::ShowDirectoriesMatch() const {
 }
 
 void ScheduleManager::CheckScheduleIntegrity(bool display) {
-    static 
 
     int errcount = 0;
     int warncount = 0;
@@ -3659,7 +4106,7 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
     std::string xlsd = xLightsShowDir();
     std::string xssd = xScheduleShowDir();
 
-    if (xlsd != "" && xssd != "" && xlsd != xssd) {
+    if (xlsd != "" && xssd != "" && !ScheduleConfig::IsSameFolder(xlsd, xssd)) {
         wxString msg = wxString::Format("    ERR: xLights show directory %s does not match xSchedule show directory %s.", xlsd.c_str(), xssd.c_str());
         LogAndWrite(f, msg.ToStdString());
         errcount++;
@@ -4260,7 +4707,6 @@ void ScheduleManager::CheckScheduleIntegrity(bool display) {
 }
 
 void ScheduleManager::ImportxLightsSchedule(const std::string& filename) {
-    static 
 
     wxFileName fn(filename);
     std::string base = fn.GetPath().ToStdString();
@@ -4514,7 +4960,6 @@ std::string ScheduleManager::FindStepForFSEQ(const std::string& fseq) const {
 }
 
 void ScheduleManager::StartTiming(const std::string timingName) {
-    static 
 
     // find this fseq file and run it
     PlayList* pl = GetRunningPlayList();
@@ -4555,7 +5000,6 @@ void ScheduleManager::StartTiming(const std::string timingName) {
 }
 
 void ScheduleManager::StartStep(const std::string stepName) {
-    static 
 
     // find this step and run it
     PlayList* pl = GetRunningPlayList();
@@ -4687,23 +5131,15 @@ std::string ScheduleManager::DecodeButton(const std::string& buttonlabelparamete
 }
 
 std::string ScheduleManager::xLightsShowDir() {
-    wxString showDir = "";
-
-    wxConfig* xlconfig = new wxConfig(_("xLights"));
-    if (xlconfig != nullptr) {
-        xlconfig->Read(_("LastDir"), &showDir);
-        delete xlconfig;
-    }
-
-    return showDir.ToStdString();
+    return ScheduleConfig::GetXLightsSetting("LastDir");
 }
 
 std::string ScheduleManager::xScheduleShowDir() {
     wxString showDir = "";
 
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
     if (config != nullptr) {
-        config->Read(_("SchedulerLastDir"), &showDir);
+        config->Read("SchedulerLastDir", &showDir);
     }
 
     return showDir.ToStdString();
@@ -4818,8 +5254,9 @@ void ScheduleManager::ForceLocalIP(const std::string& forceLocalIP) {
 }
 
 void ScheduleManager::SetForceLocalIP(const std::string& forceLocalIP) {
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
     config->Write("xLightsLocalIP", wxString(forceLocalIP));
+    config->Flush();
 
     if (forceLocalIP != "") {
         ForceLocalIP(forceLocalIP);
@@ -4828,22 +5265,21 @@ void ScheduleManager::SetForceLocalIP(const std::string& forceLocalIP) {
         bool outputting = false;
         if (_outputManager->IsOutputting()) {
             _outputManager->StopOutput();
-            SetConfigBool("OutputActive", false);
+            ScheduleConfig::SetBool("OutputActive", false);
         }
         _outputManager->Load(_showDir);
         if (outputting) {
-            if (_outputManager->StartOutput()) SetConfigBool("OutputActive", true);
+            if (StartOutputToLights()) ScheduleConfig::SetBool("OutputActive", true);
         }
     }
 }
 
 std::string ScheduleManager::GetForceLocalIP() const {
-    static 
-    wxConfigBase* config = wxConfigBase::Get();
+    auto* config = GetXLightsConfig();
     wxString localIP;
-    config->Read(_("xLightsLocalIP"), &localIP, "");
+    config->Read("xLightsLocalIP", &localIP, "");
     if (localIP != "") {
-        if (IsValidLocalIP(localIP)) {
+        if (ip_utils::IsValidLocalIP(localIP.ToStdString())) {
             spdlog::info("Forcing output via {}.", localIP.ToStdString());
         } else {
             spdlog::warn("Forcing output via {} IGNORED as the IP does not exist on this machine at this time.", localIP.ToStdString());

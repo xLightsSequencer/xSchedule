@@ -10,11 +10,12 @@
 
 #include "ListenerFPP.h"
 #include "ListenerManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/outputs/IPOutput.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/outputs/IPOutput.h"
 #include "../xScheduleVersion.h"
 #include "../Control.h"
+#include "../../xlights/src-core/utils/ip_utils.h"
 #include <log.h>
 #include <wx/socket.h>
 
@@ -62,7 +63,6 @@ void ListenerFPP::Stop() {
 }
 
 void ListenerFPP::StartProcess(const std::string& localIP) {
-    static 
 
     wxIPV4address localaddr;
     // if (IPOutput::GetLocalIP() == "")
@@ -187,6 +187,17 @@ void ListenerFPP::StopProcess() {
     _isOk = false;
 }
 
+// The host field of an FPP command: empty for every host, otherwise a comma separated list of host names and IPs
+bool ListenerFPP::IsForThisHost(const std::string& hosts) const {
+    if (hosts.empty()) return true;
+    wxString me = wxGetHostName().Lower();
+    for (auto h : wxSplit(hosts, ',')) {
+        h = h.Trim().Trim(false);
+        if (h.Lower() == me || ip_utils::IsValidLocalIP(h.ToStdString())) return true;
+    }
+    return false;
+}
+
 void ListenerFPP::Poll() {
 
 
@@ -242,23 +253,24 @@ void ListenerFPP::Poll() {
                     } else if (cp->pktType == CTRL_PKT_EVENT) {
                         _listenerManager->ProcessPacket(GetType(), std::string((char*)(buffer + sizeof(ControlPkt))));
                     } else if (cp->pktType == CTRL_PKT_CMD) {
-                        // FIXME - command?
-                        std::string str(buffer, buffer + sizeof(buffer));
-                        std::vector<std::string> parms;
-                        std::string parm;
-                        for (int i = 5; i < (int)sizeof(buffer); ++i) {
-                            if (0x20 > buffer[i] || 0x7E < buffer[i]) {
-                                if (!parm.empty()) {
-                                    parms.push_back(parm);
-                                    parm.clear();
-                                }
-                            } else {
-                                parm += buffer[i];
+                        // An FPP command: [argument count][host][command][arguments], each string null terminated
+                        // and an empty host meaning all hosts
+                        size_t len = std::min((size_t)_socket->GetLastIOReadSize(), sizeof(ControlPkt) + (size_t)cp->extraDataLen);
+                        size_t pos = sizeof(ControlPkt);
+                        if (pos < len) {
+                            size_t numArgs = buffer[pos++];
+                            std::vector<std::string> fields; // host, command, arguments
+                            while (pos < len && fields.size() < numArgs + 2) {
+                                const char* s = (const char*)&buffer[pos];
+                                size_t slen = strnlen(s, len - pos);
+                                if (slen == len - pos) break; // not terminated inside the packet
+                                fields.emplace_back(s, slen);
+                                pos += slen + 1;
                             }
-                        }
-                        if (parms.size() == 4) {
-                            if (parms[2].compare("Trigger Command Preset") == 0) {
-                                _listenerManager->ProcessPacket("FPPCommandPreset", parms[3]);
+                            if (fields.size() == numArgs + 2 && numArgs >= 1 && IsForThisHost(fields[0])) {
+                                if (fields[1] == "Trigger Command Preset" || fields[1] == "Trigger Command Preset Slot") {
+                                    _listenerManager->ProcessPacket("FPPCommandPreset", fields[2]);
+                                }
                             }
                         }
                     } else if (cp->pktType == CTRL_PKT_BLANK) {

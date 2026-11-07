@@ -12,6 +12,7 @@
 // If you find this project useful and wish to donate you can do with an
 // Amazon Gift Cards - E-mail Delivery https://www.amazon.it/gp/product/B005VG4G3U/gcrnsts
 
+#include <wx/file.h>
 #include "wxhttpserver.h"
 
 #include <wx/filename.h>
@@ -36,25 +37,41 @@ HttpResponse::HttpResponse(HttpConnection &connection, HttpRequest &request, con
 	MakeFromFile(fileName, charset);
 }
 
+static const wxString& ServerName()
+{
+	static const wxString name = wxString::Format(SERVER_NAME "(" SERVER_VERSION ") (%s)", wxGetOsDescription());
+	return name;
+}
+
 void HttpResponse::MakeFromFile(const wxString &fileName, const wxString &charset /*= wxEmptyString*/)
 {
 	if (!wxFileName::FileExists(fileName))
 		MakeFromCode(HttpStatus::NotFound);
 	else
 	{
-		wxFileInputStream stream(fileName);
+		// with a modification date the browser asks "only if changed" on later loads and gets a 304 instead of the file
+		wxString modified = wxFileName(fileName).GetModificationTime().Format("%a, %d %b %Y %H:%M:%S GMT", wxDateTime::GMT0);
+		if (!_request["If-Modified-Since"].IsEmpty() && _request["If-Modified-Since"] == modified)
+		{
+			_status.SetCode(HttpStatus::NotModified);
+			_headers.Add("Date", wxDateTime::Now().Format("%a, %d %b %Y %H:%M:%S GMT", wxDateTime::GMT0));
+			_headers.Add("Last-Modified", modified);
+			_headers.Add("Cache-Control", "private, s-maxage=0, max-age=0, must-revalidate");
+			return;
+		}
 
-		if (!stream.IsOk())
+		wxFile file(fileName);
+
+		if (!file.IsOpened())
 			MakeFromCode(HttpStatus::BadRequest);
 		else
 		{
-			unsigned char buffer[1024];
-
-			do
+			size_t length = (size_t)file.Length();
+			if (length > 0)
 			{
-				stream.Read(buffer, sizeof(buffer));
-				_content.AppendData(buffer, stream.LastRead());
-			} while (stream.LastRead());
+				ssize_t read = file.Read(_content.GetWriteBuf(length), length);
+				_content.UngetWriteBuf(read < 0 ? 0 : (size_t)read);
+			}
 
 			wxFileType *fileType = wxTheMimeTypesManager->GetFileTypeFromExtension(wxFileName(fileName).GetExt());
 			wxString    mimeType("text/plain");
@@ -66,7 +83,8 @@ void HttpResponse::MakeFromFile(const wxString &fileName, const wxString &charse
 			}
 
 			_headers.Add("Date", wxDateTime::Now().Format("%a, %d %b %Y %H:%M:%S GMT", wxDateTime::GMT0));
-			_headers.Add("Server", wxString::Format(SERVER_NAME "(" SERVER_VERSION ") (%s)", wxGetOsDescription()));
+			_headers.Add("Last-Modified", modified);
+			_headers.Add("Server", ServerName());
 			_headers.Add("Vary", "Accept-Encoding,Cookie");
 			_headers.Add("Cache-Control", "private, s-maxage=0, max-age=0, must-revalidate");
 			_headers.Add("Content-Type", mimeType + (charset.IsEmpty() ? "" : ("; " + charset)));
@@ -85,7 +103,7 @@ void HttpResponse::MakeFromText(const wxString &text, const wxString &mimeType /
 	_content.AppendData(buffer.data(), buffer.length());
 
 	_headers.Add("Date", wxDateTime::Now().Format("%a, %d %b %Y %H:%M:%S GMT", wxDateTime::GMT0));
-	_headers.Add("Server", wxString::Format(SERVER_NAME "(" SERVER_VERSION ") (%s)", wxGetOsDescription()));
+	_headers.Add("Server", ServerName());
 	_headers.Add("Vary", "Accept-Encoding,Cookie");
 	_headers.Add("Cache-Control", "private, s-maxage=0, max-age=0, must-revalidate");
 	_headers.Add("Content-Type", mimeType + "; utf-8");

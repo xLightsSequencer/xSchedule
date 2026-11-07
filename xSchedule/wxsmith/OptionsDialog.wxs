@@ -9,6 +9,17 @@
 			<cols>1</cols>
 			<growablecols>0</growablecols>
 			<object class="sizeritem">
+				<object class="wxStaticText" name="ID_STATICTEXT_SECTIONGENERAL" variable="StaticText_SectionGeneral" member="yes">
+					<label>General</label>
+					<font>
+						<weight>bold</weight>
+					</font>
+				</object>
+				<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+				<border>5</border>
+				<option>1</option>
+			</object>
+			<object class="sizeritem">
 				<object class="wxFlexGridSizer" variable="FlexGridSizer7" member="no">
 					<cols>3</cols>
 					<object class="sizeritem">
@@ -231,6 +242,17 @@
 				<option>1</option>
 			</object>
 			<object class="sizeritem">
+				<object class="wxStaticText" name="ID_STATICTEXT_SECTIONWEB" variable="StaticText_SectionWeb" member="yes">
+					<label>Web interface</label>
+					<font>
+						<weight>bold</weight>
+					</font>
+				</object>
+				<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+				<border>5</border>
+				<option>1</option>
+			</object>
+			<object class="sizeritem">
 				<object class="wxFlexGridSizer" variable="FlexGridSizer8" member="no">
 					<cols>2</cols>
 					<growablecols>1</growablecols>
@@ -354,6 +376,17 @@
 				<option>1</option>
 			</object>
 			<object class="sizeritem">
+				<object class="wxStaticText" name="ID_STATICTEXT_SECTIONAUDIO" variable="StaticText_SectionAudio" member="yes">
+					<label>Audio, timecode &amp;&amp; location</label>
+					<font>
+						<weight>bold</weight>
+					</font>
+				</object>
+				<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+				<border>5</border>
+				<option>1</option>
+			</object>
+			<object class="sizeritem">
 				<object class="wxFlexGridSizer" variable="FlexGridSizer3" member="no">
 					<cols>4</cols>
 					<growablecols>3</growablecols>
@@ -470,7 +503,57 @@
 						<option>1</option>
 					</object>
 					<object class="sizeritem">
-						<object class="wxChoice" name="ID_CHOICE3" variable="Choice_Location" member="yes" />
+						<object class="wxChoice" name="ID_CHOICE3" variable="Choice_Location" member="yes">
+							<handler function="OnChoice_LocationSelect" entry="EVT_CHOICE" />
+						</object>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxStaticText" name="ID_STATICTEXT_COORDINATES" variable="StaticText_Coordinates" member="yes">
+							<label>Latitude, Longitude:</label>
+						</object>
+						<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxBoxSizer" variable="BoxSizer2" member="no">
+							<object class="sizeritem">
+								<object class="wxTextCtrl" name="ID_TEXTCTRL_COORDINATES" variable="TextCtrl_Coordinates" member="yes">
+									<tooltip>Decimal degrees, as a map site shows them: north and east are positive, south and west negative. For example 40.7128, -74.0060.</tooltip>
+									<handler function="OnTextCtrl_CoordinatesText" entry="EVT_TEXT" />
+								</object>
+								<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+								<option>1</option>
+							</object>
+							<object class="sizeritem">
+								<object class="wxButton" name="ID_BUTTON_FINDLOCATION" variable="Button_FindLocation" member="yes">
+									<label>Find...</label>
+									<tooltip>Look up a town, city or postcode on OpenStreetMap.</tooltip>
+									<handler function="OnButton_FindLocationClick" entry="EVT_BUTTON" />
+								</object>
+								<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+							</object>
+						</object>
+						<flag>wxEXPAND</flag>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxStaticText" name="ID_STATICTEXT_HOLIDAYS" variable="StaticText_Holidays" member="yes">
+							<label>Holidays:</label>
+						</object>
+						<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxChoice" name="ID_CHOICE_HOLIDAYS" variable="Choice_Holidays" member="yes">
+							<tooltip>Which country&apos;s holidays the calendar shows and schedules offer to start or end on.</tooltip>
+						</object>
 						<flag>wxALL|wxEXPAND</flag>
 						<border>5</border>
 						<option>1</option>
@@ -486,6 +569,28 @@
 					<object class="sizeritem">
 						<object class="wxChoice" name="ID_CHOICE5" variable="Choice1" member="yes">
 							<tooltip>When set this will override any forced IP on all controllers. If you want to set individual controllers to specific network cards then you must do this in xLights.</tooltip>
+						</object>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxStaticText" name="ID_STATICTEXT_LOGLEVEL" variable="StaticText_LogLevel" member="yes">
+							<label>Log file:</label>
+						</object>
+						<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxChoice" name="ID_CHOICE_LOGLEVEL" variable="Choice_LogLevel" member="yes">
+							<content>
+								<item>Normal</item>
+								<item>Errors and warnings only</item>
+								<item>Off</item>
+							</content>
+							<selection>0</selection>
+							<tooltip>What xSchedule writes to xschedule_spdlog.log. Without a log, problems are much harder to track down.</tooltip>
 						</object>
 						<flag>wxALL|wxEXPAND</flag>
 						<border>5</border>

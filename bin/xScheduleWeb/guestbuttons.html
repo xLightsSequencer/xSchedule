@@ -3,7 +3,6 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Guest Buttons</title>
     <link rel="apple-touch-icon" sizes="57x57" href="img/favcon/apple-icon-57x57.png">
     <link rel="apple-touch-icon" sizes="60x60" href="img/favcon/apple-icon-60x60.png">
@@ -29,7 +28,15 @@
     <link href="css/bootstrap-colorpicker.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <script>
+      try {
+        var t = localStorage.getItem('xsTheme');
+        if (t == 'light' || t == 'dark') document.documentElement.setAttribute('data-theme', t);
+        var v = JSON.parse(localStorage.getItem('xsColorVars') || '{}');
+        for (var k in v) document.documentElement.style.setProperty(k, v[k]);
+      } catch (e) {}
+    </script>
     <script src="js/assets/jquery.min.js"></script>
     <script src="js/assets/bootstrap.min.js"></script>
     <script src="js/assets/bootstrap-slider.min.js"></script>
@@ -139,38 +146,32 @@
 	}
 
 	function populateButtons(response){
-	  console.log(response);
+	  var colors = ['green', 'red', 'blue', 'cyan', 'orange'];
 	  for (var i = 0; i < response.buttons.length; i++) {
 
 		// only add buttons prefixed by GB_
 		if (response.buttons[i].label.startsWith("GB_"))
 		{
-			var l = response.buttons[i].label.substring(3);
-			if (response.buttons[i].color == "default"){
-			  var color = "btn-default";
-			}else if (response.buttons[i].color == "blue"){
-			  var color = "btn-primary";
-			}else if (response.buttons[i].color == "green"){
-			  var color = "btn-success";
-			}else if (response.buttons[i].color == "cyan"){
-			  var color = "btn-info";
-			}else if (response.buttons[i].color == "orange"){
-			  var color = "btn-warning";
-			}else if (response.buttons[i].color == "red"){
-			  var color = "btn-danger";
-			}
-
-			var button = `<button onclick="runCommand('PressButton', 'id:`+response.buttons[i].id+`', '')" class="btn `+color+` bigButtons"><wbr>`+l+`</wbr></button>`;
+			var l = $('<div>').text(response.buttons[i].label.substring(3)).html();
+			var color = colors.indexOf(response.buttons[i].color) >= 0 ? response.buttons[i].color : 'default';
+			var button = `<button onclick="runCommand('PressButton', 'id:`+response.buttons[i].id+`', '')" class="ub ub-`+color+`">`+l+`</button>`;
 			$('#buttonContainer').append(button);
 		}
 	  }
+	  if ($('#buttonContainer').children().length == 0)
+		$('#buttonContainer').html('<p class="xs-empty">There are no buttons to press right now.</p>');
 	}
 
 	</script>
   </head>
   <body>
-	<div class="container">
-	  <div id='buttonContainer' class="bigbutton-container">
+	<nav id="nav" class="xs-nav">
+	  <div class="xs-bar">
+		<span id="header" class="xs-brand"><img src="img/xlights.png" alt="xLights"><span id="headerName">Guest Buttons</span></span>
+	  </div>
+	</nav>
+	<div class="xs-wrap">
+	  <div id='buttonContainer' class="bigbutton-container xs-bigbtns">
 	  </div>
 	</div>
 

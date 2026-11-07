@@ -14,12 +14,13 @@ function loadButtonsData(){
     socket.send('{"Type":"Query","Query":"GetButtons", "Reference":"populateButtons"}');
   }else{
     $.ajax({
-      url: '/xScheduleQueryQuery=' + command,
+      url: '/xScheduleQuery?Query=GetButtons&Reference=populateButtons',
       success: function(response) {
-        if (response.result == 'ok')
-          populateButtons(response);
+        // a successful query returns the data itself; only failures carry a result
         if (response.result == 'failed')
           notification('Failed: ' + response.message, 'danger', '0');
+        else
+          populateButtons(response);
       },
       error: function(response) {
         notification(response.result + ': ' + response.message, 'danger', '1');

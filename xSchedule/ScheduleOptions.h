@@ -324,6 +324,11 @@ class ScheduleOptions {
     std::list<EventBase*> _events;
     TIMECODEFORMAT _artNetTimeCodeFormat;
     std::string _city;
+    std::string _logLevel = "Normal"; // Normal, Errors or Off
+    std::string _holidayCountry; // "" from the location, "all", or a country code
+    bool _customLocation = false;
+    double _latitude = 0;
+    double _longitude = 0;
     std::string _MIDITimecodeDevice;
     TIMECODEFORMAT _MIDITimecodeFormat;
     size_t _MIDITimecodeOffset = 0;
@@ -586,6 +591,26 @@ public:
     std::string GetCrashBehaviour() const {
         return _crashBehaviour;
     }
+    std::string GetLogLevel() const {
+        return _logLevel;
+    }
+    std::string GetHolidayCountry() const {
+        return _holidayCountry;
+    }
+    void SetHolidayCountry(const std::string& country) {
+        if (country != _holidayCountry) {
+            _holidayCountry = country;
+            _changeCount++;
+        }
+    }
+    // the country of the nearest listed city to the location, or "" when it isn't one the holidays cover
+    std::string LocalCountry() const;
+    void SetLogLevel(const std::string& level) {
+        if (level != _logLevel) {
+            _logLevel = level;
+            _changeCount++;
+        }
+    }
     void SetCrashBehaviour(std::string crashBehaviour) {
         if (crashBehaviour != _crashBehaviour) {
             _crashBehaviour = crashBehaviour;
@@ -654,6 +679,23 @@ public:
     std::string GetCity() const {
         return _city;
     }
+    // a latitude and longitude entered by the user, used instead of the city
+    bool HasCustomLocation() const {
+        return _customLocation;
+    }
+    double GetLatitude() const {
+        return _latitude;
+    }
+    double GetLongitude() const {
+        return _longitude;
+    }
+    // the custom location, or the city's; false if the city is not one we know
+    bool GetLocation(double& latitude, double& longitude) const;
+    // passes the location to the schedules, for sunrise, sunset, dawn and dusk
+    void ApplyLocation() const;
+    // "latitude, longitude" in decimal degrees, as map sites show it
+    static bool ParseLocation(const std::string& text, double& latitude, double& longitude);
+    static std::string FormatLocation(double latitude, double longitude);
     int GetPasswordTimeout() const {
         return _passwordTimeout;
     }
@@ -702,6 +744,20 @@ public:
     void SetCity(const std::string& city) {
         if (_city != city) {
             _city = city;
+            _changeCount++;
+        }
+    }
+    void SetCustomLocation(double latitude, double longitude) {
+        if (!_customLocation || _latitude != latitude || _longitude != longitude) {
+            _customLocation = true;
+            _latitude = latitude;
+            _longitude = longitude;
+            _changeCount++;
+        }
+    }
+    void ClearCustomLocation() {
+        if (_customLocation) {
+            _customLocation = false;
             _changeCount++;
         }
     }

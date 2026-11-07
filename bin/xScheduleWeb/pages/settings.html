@@ -1,92 +1,49 @@
-    <section id="main">
-      <div class="container">
-        <div class="row">
-          <div id="sidebarContainer" class="col-md-3">
-            <div id='sideBar1'></div>
-            <div id='sideBar2'></div>
-          </div>
-          <div id="mainContainer" class="col-md-9">
-              <!-- Latest Users -->
-              <div class="panel panel-default">
-                <div class="panel-heading main-color-bg">
-                  <h3 class="panel-title">Settings</h3>
-                </div>
-                <div class="panel-body">
-                  <legend>Global Settings</legend>
-                  <ul>
-                    <div class="form-group">
-                      <label for="exampleInputEmail1">Show Name:</label>
-                      <input type="text" class="form-control" id="webNameSetting" placeholder="Show Name">
-                    </div>
-                    <div class="form-group">
-                      <label for="exampleInputPassword1">Nav Color Picker:</label>
-                      <input type="text" class="form-control " id="webColorSetting" placeholder="#000000">
-                    </div>
-                    <div class="form-group">
-                      <label>Notification Level:</label>
-                    <select class="form-control" id="notificationLevelSetting">
-                        <option value='1'>Default</option>
-                        <option value='2'>Debug</option>
-                        <option value='3'>ALL</option>
-                    </select>
-                    </div>
-
-                    <div class="form-group">
-                      <label>Navigation Control Buttons:</label><br />
-                      <label class="text-danger">SMART buttons disabled on mobile due to screen resolution</label><br />
-                      <table class="table table-striped table-hover  table-bordered">
-                        <thead>
-                          <tr>
-                            <th class="col-md-8">Button</th>
-                            <th class="col-md-5">Options</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <th class="col-md-8">Smart Brightness</th>
-                            <th class="col-md-5"><input type="checkbox" class="form-check-input" id="smartBrightnessSetting"></th>
-                          </tr>
-                          <tr>
-                            <th class="col-md-8">Toggle Randomize Playlist</th>
-                            <th class="col-md-5"><input type="checkbox" class="form-check-input" id="toggleRandomSetting"></th>
-                          </tr>
-                          <tr>
-                            <th class="col-md-8">Toggle Output To Lights</th>
-                            <th class="col-md-5"><input type="checkbox" class="form-check-input" id="outputToLightsSetting"></th>
-                          </tr>
-                          <tr>
-                            <th class="col-md-8">Toggle Repeat Playlist</th>
-                            <th class="col-md-5"><input type="checkbox" class="form-check-input" id="repeatPlaylistSetting"></th>
-                          </tr>
-                          <tr>
-                            <th class="col-md-8">Toggle Repeat Current Step</th>
-                            <th class="col-md-5"><input type="checkbox" class="form-check-input" id="repeatStepsSetting"></th>
-                          </tr>
-                          <tr>
-                            <th class="col-md-8">Smart Volume</th>
-                            <th class="col-md-5"><input type="checkbox" class="form-check-input" id="smartVolumeSetting"></th>
-                          </tr>
-                          <tr>
-                            <th class="col-md-8">Toggle Mute</th>
-                            <th class="col-md-5"><input type="checkbox" class="form-check-input" id="toggleMuteSetting"></th>
-                          </tr>
-                        </tbody>
-                      </table>
-                      <hr/>
-                      <div class="form-group">
-                        <div class="pull-right">
-                          <button onClick="updateSettings()" class="btn btn-primary">Save</button>
-                          <button onClick="loadUISettings(true); " class="btn btn-warning">Reset to default</button>
-                        </div>
-                      </div>
-                    </div>
-              </ul>
-              </div>
+    <div class="xs-wrap xs-narrow">
+      <section class="xs-card">
+        <div class="xs-card-h"><h2>Settings</h2><span class="sub">Saved in xSchedule, so every browser gets them</span></div>
+        <form class="xs-form" id="settingsForm" autocomplete="off">
+          <label class="xs-field"><span>Show name</span>
+            <input type="text" class="form-control" id="webNameSetting" placeholder="Show Name">
+          </label>
+          <label class="xs-field"><span>Nav color</span>
+            <input type="text" class="form-control" id="webColorSetting" placeholder="#004800">
+            <small>Colors the top bar and the buttons. Light and dark versions are worked out from it.</small>
+          </label>
+          <label class="xs-field"><span>Theme</span>
+            <select class="form-control" id="themeSetting">
+              <option value="auto">Match this device</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <fieldset class="xs-field">
+            <legend>Player controls</legend>
+            <div class="xs-checks">
+              <label><input type="checkbox" id="toggleRandomSetting">Shuffle</label>
+              <label><input type="checkbox" id="repeatStepsSetting">Loop step</label>
+              <label><input type="checkbox" id="repeatPlaylistSetting">Loop playlist</label>
+              <label><input type="checkbox" id="smartVolumeSetting">Volume slider</label>
+              <label><input type="checkbox" id="toggleMuteSetting">Mute button</label>
+              <label><input type="checkbox" id="smartBrightnessSetting">Brightness slider</label>
+              <label><input type="checkbox" id="outputToLightsSetting">Lights on/off in the top bar</label>
             </div>
+            <small>The mute button also shows with the volume slider.</small>
+          </fieldset>
+          <label class="xs-field"><span>Notifications</span>
+            <select class="form-control" id="notificationLevelSetting">
+              <option value='1'>Normal</option>
+              <option value='2'>Detailed</option>
+              <option value='3'>Everything (for troubleshooting)</option>
+            </select>
+          </label>
+          <div class="xs-actions">
+            <button type="button" onclick="loadUISettings(true);" class="xs-btn">Reset to default</button>
+            <button type="submit" class="xs-btn xs-btn-primary">Save</button>
           </div>
-        </div>
-      </div>
-    </section>
+        </form>
+        <div class="xs-about" id="settingsAbout"></div>
+      </section>
+    </div>
 
     <!-- Help -->
 
@@ -95,12 +52,13 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="myModalLabel">Help - Playlists</h4>
+            <h4 class="modal-title" id="myModalLabel">Help - Settings</h4>
           </div>
           <div class="modal-body">
+            <p>These settings change how this web page looks. They are stored in xSchedule, so they apply to every phone and computer that opens it.</p>
             <p>Please reference xLights.org for support</p>
+          </div>
         </div>
-      </div>
       </div>
     </div>
     <!-- Page -->

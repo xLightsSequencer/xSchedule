@@ -70,9 +70,11 @@ void OutputProcessDimWhite::Frame(uint8_t* buffer, size_t size, std::list<Output
     if (!_enabled) return;
     if (_dim == 100) return;
 
-    size_t sc = GetStartChannelAsNumber();
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
+    size_t sc = off + 1;
 
-    size_t nodes = std::min(_nodes, (size - (sc - 1)) / 3);
+    size_t nodes = std::min(_nodes, (size - off) / 3);
 
     auto ed = GetExcludeDim(processes, sc, sc + nodes * 3 - 1);
 

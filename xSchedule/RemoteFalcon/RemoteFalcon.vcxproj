@@ -43,14 +43,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>false</SpectreMitigation>
@@ -82,8 +82,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\xLights;..\..\xlights\xLights\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\..\wxWidgets\lib\vc_x64_lib;..\..\xlights\lib\windows64;..\..\..\wxWidgets\lib\vc_x64_lib;..\..\xlights\lib\windows;GL;$(VCToolsInstallDir)lib\x64</LibraryPath>
+    <IncludePath>..\..\xlights\dependencies-bundle\wxWidgets\include;..\..\xlights\dependencies-bundle\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\dependencies-bundle\include;..\..\xlights\include;..\..\xlights\src-core;..\..\xlights\src-core\utils;..\..\xlights\src-ui-wx;..\..\xlights\src-ui-wx\shared\utils;..\..\xlights\common;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include;..\..\xlights\dependencies</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\xlights\dependencies-bundle\wxWidgets\lib\vc_x64_lib;..\..\xlights\dependencies-bundle\lib</LibraryPath>
     <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
@@ -95,8 +95,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\xLights;..\..\xlights\xLights\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\..\wxWidgets\lib\vc_x64_lib;..\..\xlights\lib\windows64;$(VCToolsInstallDir)lib\x64</LibraryPath>
+    <IncludePath>..\..\xlights\dependencies-bundle\wxWidgets\include;..\..\xlights\dependencies-bundle\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\dependencies-bundle\include;..\..\xlights\include;..\..\xlights\src-core;..\..\xlights\src-core\utils;..\..\xlights\src-ui-wx;..\..\xlights\src-ui-wx\shared\utils;..\..\xlights\common;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include;..\..\xlights\dependencies</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\xlights\dependencies-bundle\wxWidgets\lib\vc_x64_lib;..\..\xlights\dependencies-bundle\lib</LibraryPath>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
@@ -189,14 +189,32 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\xlights\src-core\utils\TraceLog.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\xlights\src-core\utils\JobPool.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\xlights\src-core\utils\ip_utils.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\xlCrashCapture.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\xlExceptionDescribe.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\ShowGuid.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\xlights\src-core\utils\AppCallbacks.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\FileUtils.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\Color.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\settings\XLightsSettings.cpp" />
+    <ClCompile Include="..\..\xlights\src-ui-wx\settings\XLightsConfigAdapter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\..\dependencies\pugixml\src\pugixml.cpp" />
     <ClCompile Include="..\..\xlights\common\xlBaseApp.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\utils\SpecialOptions.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\utils\UtilFunctions.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\ui\wxUtilities.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\utils\CurlManager.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\utils\string_utils.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\xLightsVersion.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\SpecialOptions.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\UtilFunctions.cpp" />
+    <ClCompile Include="..\..\xlights\src-ui-wx\shared\utils\wxUtilities.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\CurlManager.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\string_utils.cpp" />
     <ClCompile Include="RemoteFalcon.cpp" />
     <ClCompile Include="RemoteFalconOptions.cpp" />
     <ClCompile Include="RemoteFalconSettingsDialog.cpp" />
@@ -207,12 +225,12 @@
   <ItemGroup>
     <ClInclude Include="..\..\xlights\common\xlBaseApp.h" />
     <ClInclude Include="..\..\xlights\common\xlStackWalker.h" />
-    <ClInclude Include="..\..\xlights\xLights\utils/ExternalHooks.h" />
-    <ClInclude Include="..\..\xlights\xLights\utils\SpecialOptions.h" />
-    <ClInclude Include="..\..\xlights\xLights\ui\wxUtilities.h" />
-    <ClInclude Include="..\..\xlights\xLights\utils\CurlManager.h" />
-    <ClInclude Include="..\..\xlights\xLights\utils\string_utils.h" />
-    <ClInclude Include="..\..\xlights\xLights\xLightsVersion.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\ExternalHooks.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\SpecialOptions.h" />
+    <ClInclude Include="..\..\xlights\src-ui-wx\shared\utils\wxUtilities.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\CurlManager.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\string_utils.h" />
+    <ClInclude Include="..\..\xlights\src-core\xLightsVersion.h" />
     <ClInclude Include="RemoteFalconOptions.h" />
     <ClInclude Include="RemoteFalconSettingsDialog.h" />
     <ClInclude Include="RemoteFalcon.h" />

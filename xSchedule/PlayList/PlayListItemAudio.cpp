@@ -13,9 +13,9 @@
 
 #include "PlayListItemAudio.h"
 #include "PlayListItemAudioPanel.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/media/AudioManager.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 #include <log.h>
 
@@ -84,7 +84,7 @@ void PlayListItemAudio::LoadFiles() {
 
     if (IsInSlaveMode() && IsSuppressAudioOnSlaves()) {
     } else if (wxFile::Exists(_audioFile)) {
-        _audioManager = new AudioManager(_audioFile, -1, _audioDevice);
+        _audioManager = _preload.TakeOrCreate(_audioFile, _audioDevice);
 
         if (_audioManager == nullptr || !_audioManager->IsOk()) {
             spdlog::error("Audio: Audio file '{}' has a problem opening.", (const char*)_audioFile.c_str());
@@ -133,14 +133,21 @@ PlayListItem* PlayListItemAudio::Copy(const bool isClone) const {
     res->_fastStartAudio = _fastStartAudio;
     res->_durationMS = _durationMS;
     res->_controlsTimingCache = _controlsTimingCache;
-    res->SetAudioFile(_audioFile); // we set this way to trigger file loading
-    res->SetAudioDevice(_audioDevice);
+    // the duration is copied, so the file needn't be opened again to find it
+    res->_audioFile = _audioFile;
+    res->_audioDevice = _audioDevice;
 
     if (_fastStartAudio) {
-        res->LoadFiles();
+        res->PreloadAudio();
     }
 
     return res;
+}
+
+void PlayListItemAudio::PreloadAudio() {
+    if (_audioManager == nullptr && !(IsInSlaveMode() && IsSuppressAudioOnSlaves())) {
+        _preload.Start(_audioFile, _audioDevice);
+    }
 }
 
 wxXmlNode* PlayListItemAudio::Save() {

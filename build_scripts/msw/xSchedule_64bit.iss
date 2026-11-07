@@ -28,7 +28,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "D
 Source: "../../xSchedule/x64/Release/xSchedule.exe"; DestDir: "{app}"
 Source: "../../xlights/include/xSchedule64.ico"; DestDir: "{app}"; Flags: "ignoreversion"
 Source: "../../bin/xScheduleWeb\*.*"; DestDir: "{app}/xScheduleWeb"; Flags: ignoreversion recursesubdirs
-Source: "../../controllers\*.*"; DestDir: "{app}/controllers"; Flags: ignoreversion recursesubdirs
+Source: "../../xlights/resources/controllers\*.*"; DestDir: "{app}/controllers"; Flags: ignoreversion recursesubdirs
 
 ; xSMSDaemon
 Source: "../../xSchedule/xSMSDaemon/x64/Release/xSMSDaemon.dll"; DestDir: "{app}"
@@ -39,20 +39,23 @@ Source: "../../xSchedule/xSMSDaemon/PhoneBlacklist.txt"; DestDir: "{app}"; Flags
 ; RemoteFalcon
 Source: "../../xSchedule/RemoteFalcon/x64/Release/RemoteFalcon.dll"; DestDir: "{app}"
 
-; DLLs from xLights repo
-Source: "../../xlights/bin64/libcurl-x64.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/avcodec-60.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/avformat-60.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/avutil-58.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/swresample-4.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/swscale-7.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/SDL2.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+; DLLs from the xLights dependency bundle (fetched by build_xSchedule_x64.cmd)
+Source: "../../xlights/dependencies-bundle/bin/libcurl.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/dependencies-bundle/bin/avcodec-62.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/dependencies-bundle/bin/avfilter-11.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/dependencies-bundle/bin/avformat-62.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/dependencies-bundle/bin/avutil-60.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/dependencies-bundle/bin/swresample-6.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/dependencies-bundle/bin/swscale-9.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/dependencies-bundle/bin/SDL2.dll"; DestDir: "{app}"; Flags: "ignoreversion"
 
 ; readmes and licenses
 Source: "../../LICENSE"; DestDir: "{app}";
+Source: "../../xSchedule/libltc/COPYING"; DestDir: "{app}/licenses"; DestName: "libltc-COPYING.txt"
+Source: "../../xSchedule/portmidi/license.txt"; DestDir: "{app}/licenses"; DestName: "portmidi-license.txt"
 
-; VC++ Redistributable
-Source: "vcredist/vc_redist.x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall
+; VC++ Redistributable (fetched by build_xSchedule_x64.cmd); must be at least as new as the build toolset
+Source: "../../xlights/build_scripts/msw/vcredist/VC_redist.x64.exe"; DestDir: {tmp}; DestName: "vc_redist.x64.exe"; Flags: deleteafterinstall
 
 [Icons]
 Name: "{group}\xSchedule"; Filename: "{app}\xSchedule.EXE"; WorkingDir: "{app}"
@@ -68,3 +71,7 @@ Filename: "{app}\xSchedule.exe"; Description: "Launch application"; Flags: posti
 [Registry]
 Root: HKCU; Subkey: "Software\xSchedule"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\xSMSDaemon"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\RemoteFalcon"; Flags: uninsdeletekey
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{userappdata}\xSchedule"

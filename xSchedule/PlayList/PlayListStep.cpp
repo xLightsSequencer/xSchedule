@@ -12,6 +12,7 @@
 
 #include "PlayList.h"
 #include "PlayListItemVideo.h"
+#include "PlayListItemBranch.h"
 #include "PlayListItemImage.h"
 #include "PlayListItemJukebox.h"
 #include "PlayListItemESEQ.h"
@@ -43,9 +44,9 @@
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
 #include "../ReentrancyCounter.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/render/FSEQFile.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../../xlights/src-core/render/FSEQFile.h"
 #include "../ScheduleOptions.h"
 
 #include <wx/filename.h>
@@ -54,6 +55,13 @@
 #include <log.h>
 
 int __playliststepid = 0;
+
+// Step times are 32 bit milliseconds and wrap every 49.7 days. GetLo() is 64 bits on 64 bit Linux, so differences
+// are only right once the clock is cut to 32 bits.
+static wxUint32 NowMS()
+{
+    return (wxUint32)wxGetUTCTimeMillis().GetLo();
+}
 
 PlayListStep::PlayListStep(OutputManager* outputManager, wxXmlNode* node)
 {
@@ -347,6 +355,10 @@ void PlayListStep::Load(OutputManager* outputManager, wxXmlNode* node)
         {
             _items.push_back(new PlayListItemOSC(n));
         }
+        else if (n->GetName() == "PLIBranch")
+        {
+            _items.push_back(new PlayListItemBranch(n));
+        }
         else if (n->GetName() == "PLIVirtualMatrix")
         {
             // ignore this node ... these are not supported here any more.
@@ -549,7 +561,7 @@ bool PlayListStep::Frame(uint8_t* buffer, size_t size, bool outputframe)
     }
     else
     {
-        frameMS = wxGetUTCTimeMillis().GetLo() - _startTime;
+        frameMS = NowMS() - _startTime;
     }
 
     //logger_base.debug("Step %s frame %ld start.", (const char *)GetNameNoTime().c_str(), (long)frameMS);
@@ -569,19 +581,20 @@ bool PlayListStep::Frame(uint8_t* buffer, size_t size, bool outputframe)
 
     if (sw.Time() > (float)msPerFrame * 0.8)
     {
-        spdlog::warn("Step {} frame {} took longer than 80% frame time to output: {}ms.", (const char*)GetNameNoTime().c_str(), (long)frameMS, (long)sw.Time());
+        // every slow frame would otherwise write a warning, flushed to disk, just when the machine is behind
+        static uint32_t slowFrames = 0;
+        spdlog::log(++slowFrames % 200 == 1 ? spdlog::level::warn : spdlog::level::debug, "Step {} frame {} took longer than 80% frame time to output: {}ms. {} slow frames so far.", (const char*)GetNameNoTime().c_str(), (long)frameMS, (long)sw.Time(), slowFrames);
     }
 
     //logger_base.debug("    Step %s frame %ld done in %ld.", (const char *)GetNameNoTime().c_str(), (long)frameMS, (long)sw.Time());
 
-    if (timesource != nullptr)
-    {
-        return timesource->Done();
+    bool done = timesource != nullptr ? timesource->Done() : frameMS >= GetLengthMS() - GetFrameMS();
+    if (done) {
+        for (const auto& it : _items) {
+            if (it->IsBusy()) return false;
+        }
     }
-    else
-    {
-        return frameMS >= GetLengthMS() - GetFrameMS();
-    }
+    return done;
 }
 
 size_t PlayListStep::GetFrameMS()
@@ -591,12 +604,29 @@ size_t PlayListStep::GetFrameMS()
     return ms;
 }
 
+void PlayListStep::PreloadAudio()
+{
+    ReentrancyCounter rec(_reentrancyCounter);
+    for (auto it : _items) {
+        it->PreloadAudio();
+    }
+}
+
+PlayListItemBranch* PlayListStep::GetBranch() const
+{
+    for (auto it : _items) {
+        if (auto branch = dynamic_cast<PlayListItemBranch*>(it); branch != nullptr) return branch;
+    }
+    return nullptr;
+}
+
 void PlayListStep::Start(int loops)
 {
     spdlog::info("         ######## Playlist step {} starting.", (const char*)GetNameNoTime().c_str());
 
     _loops = loops;
-    _startTime = wxGetUTCTimeMillis().GetLo();
+    _suspend = 0;
+    _startTime = NowMS();
     {
         ReentrancyCounter rec(_reentrancyCounter);
         for (auto it: _items)
@@ -611,7 +641,7 @@ void PlayListStep::Pause(bool pause)
     
     if (pause)
     {
-        _pause = wxGetUTCTimeMillis().GetLo();
+        _pause = NowMS();
         spdlog::info("                  Playlist step {} pausing.", (const char*)GetNameNoTime().c_str());
     }
     else
@@ -640,8 +670,10 @@ void PlayListStep::Advance(int seconds)
     }
 
     _startTime -= seconds * 1000;
-    if (_startTime > wxGetUTCTimeMillis().GetLo()) _startTime = wxGetUTCTimeMillis().GetLo();
-    if (wxGetUTCTimeMillis().GetLo() - _startTime > GetLengthMS()) _startTime = wxGetUTCTimeMillis().GetLo() - GetLengthMS();
+    wxUint32 now = NowMS();
+    int32_t elapsed = (int32_t)(now - _startTime);
+    if (elapsed < 0) _startTime = now;
+    else if ((size_t)elapsed > GetLengthMS()) _startTime = now - GetLengthMS();
 }
 
 std::string PlayListStep::GetFSEQTimeStamp() const
@@ -674,7 +706,7 @@ void PlayListStep::Suspend(bool suspend)
     {
         if (suspend)
         {
-            _suspend = wxGetUTCTimeMillis().GetLo();
+            _suspend = NowMS();
             spdlog::info("                  Playlist step {} suspending.", (const char*)GetNameNoTime().c_str());
         }
         else
@@ -697,7 +729,7 @@ void PlayListStep::Restart()
 {
     spdlog::info("Playlist step {} restarting.", (const char*)GetNameNoTime().c_str());
 
-    _startTime = wxGetUTCTimeMillis().GetLo();
+    _startTime = NowMS();
     {
         ReentrancyCounter rec(_reentrancyCounter);
         for (auto it : _items)
@@ -732,7 +764,7 @@ size_t PlayListStep::GetPosition()
     }
     else
     {
-        auto now = wxGetUTCTimeMillis().GetLo();
+        auto now = NowMS();
         if (_pause == 0)
         {
             if (_suspend == 0)
@@ -1199,7 +1231,7 @@ bool PlayListStep::SetPosition(size_t frame, size_t ms)
         // Set position should handled it
     }
     else {
-        auto now = wxGetUTCTimeMillis().GetLo();
+        auto now = NowMS();
         if (_pause == 0) {
             if (_suspend == 0) {
                 _startTime = now - ms;

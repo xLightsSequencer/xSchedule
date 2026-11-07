@@ -27,7 +27,14 @@ class ListenerMQTT : public ListenerBase {
     int _port = 1883;
     wxSocketClient _client;
     std::list<std::string> _toSubscribe;
+    // every topic, to subscribe again after reconnecting
+    std::list<std::string> _subscribed;
     std::mutex _topicLock;
+    wxLongLong _nextRetry = 0;
+    int _retryDelay = 1000;
+
+    bool SendSubscribe(const std::string& topic);
+    void Reconnect();
 
 public:
     ListenerMQTT(ListenerManager* _listenerManager, const std::string& ip, int port, const std::string& username = "", const std::string& password = "", const std::string& clientId = "", const std::string& localIP = "");
@@ -41,6 +48,9 @@ public:
     virtual void StartProcess(const std::string& localIP) override;
     virtual void StopProcess() override;
     virtual void Poll() override;
+    virtual bool PollsWhenNotOk() const override {
+        return true;
+    }
     std::string GetBrokerIP() const {
         return _ip;
     }

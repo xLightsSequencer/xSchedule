@@ -19,9 +19,11 @@
 #include "PlayListItemFSEQ.h"
 #include "PlayListItemFSEQVideo.h"
 #include "PlayListItemAudio.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "../ScheduleOptions.h"
+#include "../ModernUI.h"
+#include "../../xlights/src-ui-wx/settings/XLightsConfigAdapter.h"
 
 #include <wx/xml/xml.h>
 #include <wx/menu.h>
@@ -143,14 +145,25 @@ PlayListSimpleDialog::PlayListSimpleDialog(wxWindow* parent, OutputManager* outp
 	//*)
 
     int x, y, w, h;
-    wxConfigBase* config = wxConfigBase::Get();
-    x = config->ReadLong(_("xsPLWindowPosX"), 50);
-    y = config->ReadLong(_("xsPLWindowPosY"), 50);
-    w = config->ReadLong(_("xsPLWindowPosW"), 800);
-    h = config->ReadLong(_("xsPLWindowPosH"), 600);
+    auto* config = GetXLightsConfig();
+    x = config->ReadLong("xsPLWindowPosX", 50);
+    y = config->ReadLong("xsPLWindowPosY", 50);
+    w = config->ReadLong("xsPLWindowPosW", 800);
+    h = config->ReadLong("xsPLWindowPosH", 600);
     SetPosition(wxPoint(x, y));
     SetSize(w, h);
     EnsureWindowHeaderIsOnScreen(this);
+    // two rows of buttons, as in the full editor, so the list doesn't have to be as wide as all five
+    if (auto grid = new wxGridSizer(2, 3, 0, 0); Panel1->GetSizer()->Replace(BoxSizer1, grid, true)) {
+        for (auto b : { Button_AddFSEQ, Button_FSEQVideo, Button_AddAudio, Button_Clone, Button_Delete }) {
+            grid->Add(b, 1, wxALL | wxEXPAND, 4);
+        }
+        if (auto item = Panel1->GetSizer()->GetItem(grid); item != nullptr) item->SetFlag(wxALL | wxEXPAND);
+        Panel1->Layout();
+    }
+    CallAfter([this]() {
+        ModernUI::BalanceSplitter(SplitterWindow1, 0.55);
+    });
 
     // save the current state in case the user cancels
     _savedState = new PlayList(*playlist);
@@ -179,11 +192,11 @@ PlayListSimpleDialog::~PlayListSimpleDialog()
     int w, h;
     GetSize(&w, &h);
 
-    wxConfigBase* config = wxConfigBase::Get();
-    config->Write(_("xsPLWindowPosX"), x);
-    config->Write(_("xsPLWindowPosY"), y);
-    config->Write(_("xsPLWindowPosW"), w);
-    config->Write(_("xsPLWindowPosH"), h);
+    auto* config = GetXLightsConfig();
+    config->Write("xsPLWindowPosX", x);
+    config->Write("xsPLWindowPosY", y);
+    config->Write("xsPLWindowPosW", w);
+    config->Write("xsPLWindowPosH", h);
     config->Flush();
 
     // manually remove the notebook page to force updating now rather than during deletion
@@ -285,8 +298,12 @@ void PlayListSimpleDialog::OnTreeCtrl_PlayListSelectionChanged(wxTreeEvent& even
                 PlayListItem* pli = pls->GetItems().front();
                 SwapPage(nullptr);
                 pli->Configure(Notebook1);
+                ModernUI::EscapePageTitles(Notebook1);
             }
         }
+        ModernUI::GrowFilePickers(Notebook1);
+        ModernUI::FitToContents(this);
+        ModernUI::BalanceSplitter(SplitterWindow1, 0.55);
     }
 
     ValidateWindow();

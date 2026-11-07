@@ -48,7 +48,7 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
-					<label>Time offset (milliseconds)</label>
+					<label>Time offset (milliseconds):</label>
 				</object>
 				<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 				<border>5</border>

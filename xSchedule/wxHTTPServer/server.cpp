@@ -15,6 +15,8 @@
 #include "wxhttpserver.h"
 #include "spdlog/spdlog.h"
 
+#include <vector>
+
 //#define DETAILED_LOGGING
 
 #define SERVER_ID	100
@@ -32,6 +34,8 @@ END_EVENT_TABLE()
 HttpServer::HttpServer() :
 	_server(NULL)
 {
+	_sweep.SetOwner(this);
+	Bind(wxEVT_TIMER, &HttpServer::OnSweep, this, _sweep.GetId());
 }
 
 HttpServer::~HttpServer()
@@ -82,6 +86,7 @@ bool HttpServer::Start(const HttpContext &context)
 		_server->SetEventHandler(*this, SERVER_ID);
 		_server->SetNotify(wxSOCKET_CONNECTION_FLAG);
 		_server->Notify(true);
+		_sweep.Start(5000);
 	}
 
 	return _server->IsOk();
@@ -93,11 +98,14 @@ bool HttpServer::Stop()
     
     if (!_server) return false;
 
+    _sweep.Stop();
+
     // close all open connections
+    std::vector<wxSocketBase *> sockets;
     for (auto it = _connections.begin(); it != _connections.end(); ++it)
-    {
-        it->second->Close();
-    }
+        sockets.push_back(it->first);
+    for (auto socket : sockets)
+        DropConnection(socket);
 
     _server->Notify(false);
 	_server->Close();
@@ -108,6 +116,36 @@ bool HttpServer::Stop()
     spdlog::debug("closed server on {}:{}", _address.IPAddress().ToStdString(), _address.Service());
 
 	return true;
+}
+
+void HttpServer::DropConnection(wxSocketBase *socket)
+{
+    auto it = _connections.find(socket);
+    if (it == _connections.end())
+        return;
+    HttpConnection *connection = it->second;
+    _connections.erase(it);
+    delete connection;
+
+    // Destroy() rather than delete: wxSocket events can still be on their way to us
+    socket->Notify(false);
+    socket->Destroy();
+}
+
+void HttpServer::OnSweep(wxTimerEvent &event)
+{
+    wxLongLong now = wxGetUTCTimeMillis();
+    std::vector<wxSocketBase *> stale;
+    for (auto it = _connections.begin(); it != _connections.end(); ++it)
+    {
+        if (it->second->IsStale(now))
+            stale.push_back(it->first);
+    }
+    for (auto socket : stale)
+    {
+        spdlog::debug("Web server dropping a connection that is failed, closed, idle or not reading.");
+        DropConnection(socket);
+    }
 }
 
 // Added for xLights
@@ -153,17 +191,14 @@ void HttpServer::OnServerEvent(wxSocketEvent& event)
         spdlog::info("created socket client (socket {})", socket->GetSocket());
 #endif
 
-        HttpConnection *connection = nullptr;
-
-        if (event.GetSocketEvent() == wxSOCKET_CONNECTION)
+        if (_connections.size() >= 200)
         {
-            connection = new HttpConnection(this, socket);
-            _connections[socket] = connection;
+            spdlog::warn("Web server has too many connections; refusing a new one.");
+            socket->Destroy();
+            return;
         }
-        else
-            connection = _connections[socket];
 
-        wxASSERT(connection != nullptr);
+        _connections[socket] = new HttpConnection(this, socket);
 
         socket->SetEventHandler(*this, SOCKET_ID);
         socket->SetNotify(wxSOCKET_INPUT_FLAG | wxSOCKET_LOST_FLAG);
@@ -209,8 +244,10 @@ void HttpServer::OnSocketEvent(wxSocketEvent& event)
 
 	wxSocketBase *socket = event.GetSocket();
 
-	HttpConnection *connection = _connections[socket];
-	wxASSERT(connection != NULL);
+	auto found = _connections.find(socket);
+	if (found == _connections.end())
+		return; // already dropped
+	HttpConnection *connection = found->second;
 
 	// Now we process the event
 	switch(event.GetSocketEvent())
@@ -224,24 +261,15 @@ void HttpServer::OnSocketEvent(wxSocketEvent& event)
 			connection->HandleRequest();
 
 			// Enable input events again.
-			socket->SetNotify(wxSOCKET_LOST_FLAG | wxSOCKET_INPUT_FLAG);
+			connection->UpdateNotify();
 			break;
 		}
+	case wxSOCKET_OUTPUT:
+		connection->FlushOutbound();
+		break;
 	case wxSOCKET_LOST:
-		{
-			_connections.erase(_connections.find(socket));
-			delete connection;
-
-			// Destroy() should be used instead of delete wherever possible, due to the fact that wxSocket uses 'delayed events'
-			// (see the documentation for wxPostEvent) and we don't want an event to arrive to the event handler (the frame,
-			// here) after the socket has been deleted. Also, we might be doing some other thing with the socket at the same
-			// time; for example, we might be in the middle of a test or something. Destroy() takes care of all this for us.
-#ifdef DETAILED_LOGGING
-            spdlog::info("deleted socket client (socket {})", socket->GetSocket());
-#endif
-			socket->Destroy();
-			break;
-		}
+		DropConnection(socket);
+		break;
     default:
         break;
 	}

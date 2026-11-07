@@ -4,6 +4,7 @@ const socket = new ReconnectingWebSocket(url);
 // Connection opened
 socket.addEventListener('open', function(event) {
   console.log("Socket Opened");
+  $('#connectionChip').attr('hidden', true);
 });
 
 socket.addEventListener('message', function(event) {
@@ -20,7 +21,7 @@ socket.addEventListener('message', function(event) {
     if (response.status != undefined) {
       playingStatus = response;
       updateNavStatus();
-	  callRegisteredForStatus(response);
+      callRegisteredForStatus(response);
     }
 
     if (response.result == 'failed') {
@@ -41,21 +42,9 @@ socket.addEventListener('message', function(event) {
 });
 
 socket.onclose = function(e) {
+  $('#connectionChip').removeAttr('hidden');
   notification('Web Socket: Disconnected "' + e + '"', 'danger', '2');
 };
-
-//
-// Listen for messages
-// socket.addEventListener('message', function(event) {
-//   //console.log('Message from server', JSON.parse(event.data));
-//   var response = JSON.parse(event.data);
-//   if (response.reference != undefined) {
-//     console.log(response.reference);
-//     var fun = "test";
-//     var fn = window[fun];
-//     fn("");
-//   }
-// });
 
 function test(response) {
   notification('Test Function: "' + response + '"', 'success', '0');

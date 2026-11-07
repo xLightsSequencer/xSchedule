@@ -21,7 +21,7 @@
 #include "OutputProcessGamma.h"
 #include "OutputProcessColourOrder.h"
 #include "OutputProcessDeadChannel.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 OutputProcess::OutputProcess(OutputManager* outputManager, wxXmlNode* node)
 {
@@ -75,6 +75,14 @@ size_t OutputProcess::GetStartChannelAsNumber()
     }
 
     return _sc;
+}
+
+bool OutputProcess::GetBufferOffset(size_t size, size_t& offset)
+{
+    size_t sc = GetStartChannelAsNumber();
+    if (sc == 0 || sc > size) return false;
+    offset = sc - 1;
+    return true;
 }
 
 bool compare_excluderanges(const OutputProcessExcludeDim* first, const OutputProcessExcludeDim* second)

@@ -13,6 +13,7 @@
 #include <wx/xml/xml.h>
 #include "../ScheduleManager.h"
 #include <log.h>
+#include "../Diagnostics.h"
 
 int EventBase::__nextId = 0;
 
@@ -93,6 +94,7 @@ void EventBase::ProcessCommand(uint8_t value, ScheduleManager* scheduleManager)
 
     size_t rate = 0;
     wxString msg;
+    Diagnostics::CommandSource source("event " + GetType() + ":" + GetName());
     scheduleManager->Action(_command, parameters, "", nullptr, nullptr, nullptr, rate, msg);
     spdlog::debug("    Event processed.");
 }

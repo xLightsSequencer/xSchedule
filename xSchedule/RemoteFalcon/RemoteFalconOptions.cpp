@@ -9,15 +9,16 @@
  **************************************************************/
 
 #include "RemoteFalconOptions.h"
+#include "RemoteFalconApp.h"
+#include "../SettingsFiles.h"
 
 #include <wx/xml/xml.h>
 #include <wx/file.h>
 #include <wx/filename.h>
-#include <wx/config.h>
 #include <wx/wxcrt.h>
 
-#include "../../xlights/xLights/utils/UtilFunctions.h"
-#include "../../xlights/xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 RemoteFalconOptions::RemoteFalconOptions()
 {
@@ -25,33 +26,34 @@ RemoteFalconOptions::RemoteFalconOptions()
 
 void RemoteFalconOptions::Load()
 {
-    wxConfigBase* config = wxConfigBase::Get();
-    _token = config->Read(_("RemoteFalconToken"), wxEmptyString).ToStdString();
-    _playDuring = config->Read(_("RemoteFalconPlayDuring"), wxEmptyString).ToStdString();
-    _playlist = config->ReadLong(_("RemoteFalconPlaylist"), -1);
-    _immediatelyInterrupt = config->ReadBool(_("RemoteFalconImmediatelyInterrupt"), true);
-    _sendEnableDisable = config->ReadBool(_("RemoteFalconSendEnableDisable"), true);
-    _leadTime = config->ReadLong(_("RemoteFalconLeadTime"), 5);
-    _effectPlaylist = config->ReadBool(_("RemoteFalconEffectPlaylist"), false);
-    _effectMode = (EFFECT_MODE)config->ReadLong(_("RemoteFalconEffectMode"), (int)EFFECT_MODE::EM_PLAY_IMMEDIATELY);
-    _messageLevel = (MESSAGE_LEVEL)config->ReadLong(_("RemoteFalconMessageLevel"), (int)MESSAGE_LEVEL::ML_WARN);
-    _sendPlayingEffect = config->ReadBool(_("RemoteFalconSendPlayingEffect"), false);
+    const auto& config = RemoteFalconSettings();
+    _token = config.Read("RemoteFalconToken", "");
+    _playDuring = config.Read("RemoteFalconPlayDuring", "");
+    _playlist = config.ReadLong("RemoteFalconPlaylist", -1);
+    _immediatelyInterrupt = config.ReadBool("RemoteFalconImmediatelyInterrupt", true);
+    _sendEnableDisable = config.ReadBool("RemoteFalconSendEnableDisable", true);
+    _leadTime = config.ReadLong("RemoteFalconLeadTime", 5);
+    _effectPlaylist = config.ReadBool("RemoteFalconEffectPlaylist", false);
+    _effectMode = (EFFECT_MODE)config.ReadLong("RemoteFalconEffectMode", (int)EFFECT_MODE::EM_PLAY_IMMEDIATELY);
+    _messageLevel = (MESSAGE_LEVEL)config.ReadLong("RemoteFalconMessageLevel", (int)MESSAGE_LEVEL::ML_WARN);
+    _sendPlayingEffect = config.ReadBool("RemoteFalconSendPlayingEffect", false);
     ClearDirty();
 }
 
 void RemoteFalconOptions::Save()
 {
-    wxConfigBase* config = wxConfigBase::Get();
-    config->Write(_("RemoteFalconToken"), wxString(_token));
-    config->Write(_("RemoteFalconPlayDuring"), wxString(_playDuring));
-    config->Write(_("RemoteFalconPlaylist"), _playlist);
-    config->Write(_("RemoteFalconLeadTime"), _leadTime);
-    config->Write(_("RemoteFalconImmediatelyInterrupt"), _immediatelyInterrupt);
-    config->Write(_("RemoteFalconSendEnableDisable"), _sendEnableDisable);
-    config->Write(_("RemoteFalconEffectPlaylist"), _effectPlaylist);
-    config->Write(_("RemoteFalconEffectMode"), (int)_effectMode);
-    config->Write(_("RemoteFalconMessageLevel"), (int)_messageLevel);
-    config->Write(_("RemoteFalconSendPlayingEffect"), _sendPlayingEffect);
+    auto& config = RemoteFalconSettings();
+    config.Write("RemoteFalconToken", _token);
+    config.Write("RemoteFalconPlayDuring", _playDuring);
+    config.Write("RemoteFalconPlaylist", _playlist);
+    config.Write("RemoteFalconLeadTime", _leadTime);
+    config.Write("RemoteFalconImmediatelyInterrupt", _immediatelyInterrupt);
+    config.Write("RemoteFalconSendEnableDisable", _sendEnableDisable);
+    config.Write("RemoteFalconEffectPlaylist", _effectPlaylist);
+    config.Write("RemoteFalconEffectMode", (int)_effectMode);
+    config.Write("RemoteFalconMessageLevel", (int)_messageLevel);
+    config.Write("RemoteFalconSendPlayingEffect", _sendPlayingEffect);
+    config.Flush();
     ClearDirty();
 }
 

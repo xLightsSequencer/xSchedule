@@ -1,270 +1,211 @@
-$("#volume").slider();
-$("#volume").on("slide", function(slideEvt) {
-  $("#volumeSliderVal").text(slideEvt.value);
-});
-$("#brightness").slider();
-$("#brightness").on("slide", function(slideEvt) {
-  $("#brightnessSliderVal").text(slideEvt.value);
-  console.log(slideEvt.value);
-});
+var homeState = { status: '', playlistId: null, steps: [] };
+
 $(document).ready(function() {
-  window.setInterval(function() {
-    checkForUpdate();
-  }, 100);
-
-  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent)) {
-    $('#sideNav').html("");
+  homeState = { status: '', playlistId: null, steps: [] };
+  smartVolume();
+  smartBrightness();
+  onStatus('home', homeStatus);
+  if (playingStatus.status != undefined) {
+    updateNavStatus();
+    homeStatus(playingStatus);
   }
-  populateSideBar();
-
+  homeLoadComingUp();
+  homeLoadButtons();
 });
 
-var oldPlayingStatus = '';
+function homeStatus(s) {
+  if (!$('#playerCard').length || s.status == undefined) return;
 
-function checkForUpdate() {
-  //update Clock begining
-  $('#homeTimeContainer').html(playingStatus.time);
+  var idle = s.status == 'idle';
+  var changed = s.status != homeState.status;
+  $('#playerActive').prop('hidden', idle);
+  $('#playerIdle').prop('hidden', !idle);
 
-  if (oldPlayingStatus.status != playingStatus.status) {
-    //status changed redraw page
-    if (playingStatus.status == 'idle') {
-      populateTableIdle();
-      $("#controlButtonContainer").html("");
-    } else if (playingStatus.status == 'playing') {
-
-      if (oldPlayingStatus.status != 'paused') {
-        populateTablePlaying();
-      }
-
-      var toggleButtons =
-        `<div class="span6 text-center">
-      <button onclick="runCommand('Prior step in current playlist')" class="btn btn-default glyphicon glyphicon-backward" title='Back' type="button"></button>
-      <button id="buttonPlayPause" onclick="runCommand('Pause')" class="btn btn-default glyphicon glyphicon-pause" title='Pause' type="button"></button>
-      <button onclick="runCommand('Stop all now')" class="btn btn-default glyphicon glyphicon-stop" title='Stop All' ype="button"></button>
-      <button onclick="runCommand('Next step in current playlist')" class="btn btn-default glyphicon glyphicon-forward" title='Next' type="button"></button>
-      </div>`;
-      $("#controlButtonContainer").html(toggleButtons);
-
-
-    } else if (playingStatus.status == 'paused') {
-      if ($("#playlistItems").html() == undefined) {
-        populateTablePlaying();
-      }
-      var toggleButtons =
-        `<div class="span6 text-center">
-      <button onclick="runCommand('Prior step in current playlist')" class="btn btn-default glyphicon glyphicon-backward" title='Back' type="button"></button>
-      <button id="buttonPlayPause" onclick="runCommand('Pause')" class="btn btn-default glyphicon glyphicon-play" title='Pause' type="button"></button>
-      <button onclick="runCommand('Stop all now')" class="btn btn-default glyphicon glyphicon-stop" title='Stop All' ype="button"></button>
-      <button onclick="runCommand('Next step in current playlist')" class="btn btn-default glyphicon glyphicon-forward" title='Next' type="button"></button>
-      </div>`;
-      $("#controlButtonContainer").html(toggleButtons);
-
+  if (idle) {
+    if (changed) {
+      homeState.playlistId = null;
+      homeLoadNext();
+      homeShowPlaylists();
+      homeLoadComingUp();
     }
-    dashboardLoadStatus();
-  }
-
-  if (playingStatus.status == 'playing') {
-    //update "Playing status" box
-    dashboardLoadStatus();
-
-    if (oldPlayingStatus.stepid != playingStatus.stepid) {
-      $('#table' + oldPlayingStatus.stepid).removeClass('success');
-      $('#table' + oldPlayingStatus.stepid).removeClass('warning');
-      $('#table' + playingStatus.stepid).addClass('success');
-      $('#table' + oldPlayingStatus.nextstepid).removeClass('warning');
-      $('#table' + playingStatus.nextstepid).addClass('warning');
-    }
-  }
-  oldPlayingStatus = playingStatus;
-}
-
-function dashboardLoadStatus() {
-
-  if (playingStatus.status == "idle") {
-    //Populate Idle Page
-    $.ajax({
-      url: '/xScheduleQuery?Query=GetNextScheduledPlayList',
-      dataType: "json",
-      indexValue: status,
-      success: function(response) {
-        if (response.start == "Never") {
-          var notPlaying = '<p><center>Show Not Running!</center></p>';
-          $('#currentStep').html(notPlaying);
-        } else {
-
-          var awaitingSchedule = `
-          <p><h2>Schedule: ` + response.schedulename + `</h2></p
-          <p><h4>Playlist: ` + response.playlistname + `</h4></p>
-          <p>Schedule Start: ` + response.start + `</p>
-          <p>Time End: ` + response.end + `</p>
-          </p>
-
-          `;
-          $('#currentStep').html(awaitingSchedule);
-
-          if (response.start == "NOW!") {
-            var restartButton = `<hr><p><b>Looks like your schedule should be running, please restart!</b></p><button onclick="runCommand('Restart playlist schedules','id:` + response.playlistid + `')" class="btn btn-warning glyphicon glyphicon-triangle-right" title='Back' type="button">Restart</button>`;
-            $("#controlButtonContainer").html(restartButton);
-            console.log("Button Loaded");
-          }
-        }
-
-        console.log(response);
-        //$("#controlButtonContainer").html("");
-      }
-    });
-
-
   } else {
-    //playing
+    homeShowPlaying(s, changed);
+    if (s.playlistid != homeState.playlistId) {
+      homeLoadSteps(s);
+    } else {
+      homeMarkSteps(s);
+    }
+    if (changed && homeState.status == 'idle') homeLoadComingUp();
+  }
+  homeState.status = s.status;
+}
 
-    var currentPlaylist =
-      `<span class="icon"><i class="icon-file"></i></span><h5>Playlist: ` +
-      playingStatus.playlist + `</h5>`
-    var Playing = `
-    <h3>` + playingStatus.step + `</h3><h5>Duration: ` + playingStatus.length.split(".")[0] + `</h5>
-      <div class="progress">
-  <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: ` + findPercent(playingStatus.length, playingStatus.left) + `;">
-    ` + playingStatus.left.split(".")[0] + `
-  </div>
-</div>
-<h4>Next: ` + playingStatus.nextstep + `</h4>
-      `;
+function homeUntil(end) {
+  return xsWhen(end).replace(/^Today /, '');
+}
 
-    $("#currentStep").html(Playing);
-    //Set bar
-    // $("#currentPlaylistLoadingBar").css("width", findPercent(
-    //   playingStatus
-    //   .length.split(".")[0], playingStatus.left.split(".")[0]));
-    //updatePlaylistSteps(playingStatus.playlist, playingStatus.step);
+function homeShowPlaying(s, changed) {
+  var paused = s.status == 'paused';
+  if (changed) {
+    $('#playState').attr('class', 'xs-pill ' + (paused ? 'p-wait' : 'p-ok')).find('span:last').text(paused ? 'Paused' : 'Playing');
+    $('#buttonPlayPause').html(xsIcon(paused ? 'play' : 'pause', 26)).attr('title', paused ? 'Resume' : 'Pause').attr('aria-label', paused ? 'Resume' : 'Pause');
+  }
+  $('#playPlaylist').text(s.playlist);
+  if (s.scheduleend && s.scheduleend != 'N/A') {
+    $('#playSchedule').text((s.schedulename ? s.schedulename + ', ' : '') + 'until ' + homeUntil(s.scheduleend));
+  } else {
+    $('#playSchedule').text('');
+  }
+  var queued = parseInt(s.queuelength, 10) || 0;
+  $('#playQueue').prop('hidden', queued == 0).text(queued + ' queued');
+  $('#playStep').text(s.step);
+
+  var length = parseInt(s.lengthms, 10) || 0;
+  var position = parseInt(s.positionms, 10) || 0;
+  var percent = length > 0 ? Math.min(100, Math.max(0, position / length * 100)) : 0;
+  $('#playFill').css('width', percent.toFixed(1) + '%');
+  $('#playPos').text(xsDuration(s.position));
+  $('#playLeft').text(length > 0 ? '−' + xsDuration(s.left) : '');
+
+  var stepText = '';
+  var index = homeStepIndex(s.stepid);
+  if (index >= 0) stepText = 'Step ' + (index + 1) + ' of ' + homeState.steps.length;
+  if (s.playlistleft) stepText += (stepText ? ' · ' : '') + xsDuration(s.playlistleft) + ' left in playlist';
+  $('#playListLeft').text(stepText);
+
+  $('#playNext').html(s.nextstep ? 'Up next: <b>' + xsEscape(s.nextstep) + '</b>' : '');
+}
+
+function homeStepIndex(id) {
+  for (var i = 0; i < homeState.steps.length; i++) {
+    if (homeState.steps[i].id == id) return i;
+  }
+  return -1;
+}
+
+function homeLoadSteps(s) {
+  homeState.playlistId = s.playlistid;
+  homeState.steps = [];
+  $.ajax({
+    url: '/xScheduleQuery?Query=GetPlayListSteps&Parameters=' + encodeURIComponent(s.playlist),
+    dataType: "json",
+    success: function(response) {
+      if (homeState.playlistId != s.playlistid) return;
+      homeState.steps = response.steps || [];
+      var total = 0;
+      var items = '';
+      for (var i = 0; i < homeState.steps.length; i++) {
+        var step = homeState.steps[i];
+        total += parseInt(step.lengthms, 10) || 0;
+        items += '<li class="xs-item" data-step="' + xsEscape(step.id) + '">' +
+          '<span class="n">' + (i + 1) + '</span>' +
+          '<span class="name">' + xsEscape(step.name) + '</span>' +
+          '<span class="tag"></span>' +
+          '<span class="len">' + xsEscape(xsDuration(step.length)) + '</span>' +
+          '<span class="acts"><button type="button" class="xs-btn xs-btn-sm xs-hover-btn" data-play-step="' + xsEscape(step.id) + '" title="Play the playlist from this step">' + xsIcon('play', 12) + '<span class="txt">Play from here</span></button></span>' +
+          '</li>';
+      }
+      $('#playlistsTable').html(
+        '<div class="xs-card-h"><h2>' + xsEscape(s.playlist) + '</h2><span class="sub">' + homeState.steps.length + ' steps · ' + xsDuration(homeFormatMS(total)) + '</span></div>' +
+        '<ol class="xs-list">' + items + '</ol>');
+      homeMarkSteps(playingStatus);
+      homeShowPlaying(playingStatus, false);
+    }
+  });
+}
+
+function homeFormatMS(ms) {
+  var seconds = Math.round(ms / 1000);
+  var h = Math.floor(seconds / 3600);
+  var m = Math.floor(seconds / 60) % 60;
+  var sec = ('0' + (seconds % 60)).slice(-2);
+  return h > 0 ? h + ':' + ('0' + m).slice(-2) + ':' + sec : m + ':' + sec;
+}
+
+function homeMarkSteps(s) {
+  var list = $('#playlistsTable .xs-item[data-step]');
+  if (!list.length) return;
+  if (list.filter('.cur').attr('data-step') == s.stepid && list.data('next') == s.nextstepid && list.data('state') == s.status) return;
+  list.data('next', s.nextstepid).data('state', s.status);
+  list.removeClass('cur').find('.tag').html('');
+  $('#playlistsTable .xs-item[data-step="' + s.stepid + '"]').addClass('cur')
+    .find('.tag').html('<span class="xs-pill p-acc">' + (s.status == 'paused' ? 'Paused' : 'Playing') + '</span>');
+  if (s.nextstepid != s.stepid) {
+    $('#playlistsTable .xs-item[data-step="' + s.nextstepid + '"] .tag').html('<span class="xs-pill p-off">Next</span>');
   }
 }
 
+$('#playlistsTable').on('click', '[data-play-step]', function() {
+  runCommand('Play playlist starting at step', 'id:' + playingStatus.playlistid + ',id:' + $(this).attr('data-play-step'));
+});
 
-
-function populateTableIdle(status, query) {
-
+function homeShowPlaylists() {
   $.ajax({
     url: '/xScheduleQuery?Query=GetPlayLists',
     dataType: "json",
-    indexValue: status,
     success: function(response) {
-      populatePlaylistBox('playlists', 'Available Playlists');
-
-      for (var i = 0; i < response.playlists.length; i++) {
-
-
-        var idle =
-          `<tr id='table` + response.playlists[i].id + `'>
-                <td class="col-md-8">` + response.playlists[i].name + `</td>
-                <td class="col-md-3">` + response.playlists[i].nextscheduled + `</td>
-                <td class="col-md-1">` + response.playlists[i].length.split(".")[0] + `</td>
-                <td class="col-md-2">
-                  <button type="button" onclick="runCommand('Play specified playlist', 'id:` + response.playlists[i].id + `')" class="btn btn-info btn-xs" name="button">Play</button>
-                  <button type="button" onclick="updatePage('page', 'playlists','` + response.playlists[i].name + `')" class="btn btn-default btn-xs" title='More info' name="button">View</button>
-                </td>
-             </tr>`;
-        $("#playlistItems").append(idle);
-      }
-
-      // load Table Logic
-
-
-      $('#tablePlaylists').dataTable({
-        "ordering": false,
-        "searching": false,
-      });
-
-
+      if (playingStatus.status != 'idle' || !response.playlists) return;
+      $('#playlistsTable').html(
+        '<div class="xs-card-h"><h2>Playlists</h2><span class="sub">' + response.playlists.length + ' playlists</span></div>' +
+        '<ol class="xs-list">' + response.playlists.map(xsPlaylistItem).join('') + '</ol>');
     }
   });
 }
 
-function populateTablePlaying() {
-
+function homeLoadNext() {
   $.ajax({
-    url: '/xScheduleQuery?Query=GetPlayListSteps&Parameters=' + playingStatus.playlist,
+    url: '/xScheduleQuery?Query=GetNextScheduledPlayList',
     dataType: "json",
     success: function(response) {
-
-	  if (playingStatus.scheduleend == 'N/A') {
-	    populatePlaylistBox('steps', playingStatus.playlist + ': ');
-	  }
-	  else {
-	    populatePlaylistBox('steps', playingStatus.playlist + ': until ' + playingStatus.scheduleend);
-	  }
-	  
-      for (var i = 0; i < response.steps.length; i++) {
-        var playing =
-          `<tr id='table` + response.steps[i].id + `'>
-              <td class="col-md-8">` + response.steps[i].name + `</td>
-              <td class="col-md-1">` + response.steps[i].length.split(".")[0] + `</td>
-              <td class="col-md-2">
-                  <button type="button" onclick="runCommand('Play playlist starting at step', 'id:` + playingStatus.playlistid + `,id:` + response.steps[i].id + `')" class="btn btn-info btn-xs " name="button" title="Jump to this step">Play</button>
-                   <!--<button type="button" class="btn btn-default btn-xs glyphicon glyphicon-plus" onclick="runCommand('Enqueue playlist step', '` + playingStatus.playlist + `,` + response.steps[i].name + `')" name="button" title="Queue step next"></button
-              </td>
-           </tr>`;
-        $("#playlistItems").append(playing);
+      var restart = response.start == "NOW!";
+      $('#idleRestart').prop('hidden', !restart);
+      $('#idlePlay').prop('hidden', !response.playlistid || response.start == "Never");
+      if (response.start == "Never" || !response.playlistname) {
+        $('#idleNext').text('No shows are scheduled.');
+        return;
       }
-      // load Table Logic
-      $('#tableSteps').dataTable({
-        "ordering": false,
-        "searching": false,
-      });
-
-
+      $('#idlePlay').data('playlist', response.playlistid).find('span:last').text('Play ' + response.playlistname);
+      if (restart) {
+        $('#idleNext').text('');
+        $('#idleRestartText').html('The <b>' + xsEscape(response.schedulename) + '</b> schedule should be playing ' + xsEscape(response.playlistname) + ' now, until ' + xsEscape(response.end) + '.');
+        $('#idleRestartButton').data('playlist', response.playlistid);
+      } else {
+        $('#idleNext').html('Next: <b>' + xsEscape(response.schedulename) + '</b> plays ' + xsEscape(response.playlistname) + ' ' + xsEscape(xsWhen(response.start)) + '.');
+      }
     }
   });
 }
 
-var statusTable = '';
+$('#idlePlay').on('click', function() {
+  runCommand('Play specified playlist', 'id:' + $(this).data('playlist'));
+});
+$('#idleRestartButton').on('click', function() {
+  runCommand('Restart playlist schedules', 'id:' + $(this).data('playlist'));
+});
 
-function populatePlaylistBox(type, title) {
+function homeLoadComingUp() {
+  $.ajax({
+    url: '/xScheduleQuery?Query=GetPlayLists',
+    dataType: "json",
+    success: function(response) {
+      var upcoming = (response.playlists || []).filter(function(p) { return p.nextscheduled; });
+      upcoming.sort(function(a, b) { return a.nextscheduled < b.nextscheduled ? -1 : a.nextscheduled > b.nextscheduled ? 1 : 0; });
+      var rows = upcoming.slice(0, 4).map(function(p) {
+        return '<div class="xs-sched"><span>' + xsEscape(p.name) + '</span><span class="when">' + xsEscape(xsWhen(p.nextscheduled)) + '</span></div>';
+      }).join('');
+      $('#comingUp').html(rows || '<p class="xs-empty">Nothing is scheduled.</p>');
+    }
+  });
+}
 
-  var playlists =
-    `<div class="panel panel-default">
-      <div class="panel-heading main-color-bg">
-        <h3 id="currentPlaylist" id="playlistTableTitle" class="panel-title">` + title + `</h3>
-      </div>
-      <div class="panel-body">
-        <table id="tablePlaylists" class="table table-striped table-hover  table-bordered">
-          <thead>
-            <tr>
-              <th class="col-md-8">Name</th>
-              <th class="col-md-3">Schedule</th>
-              <th class="col-md-1">Length</th>
-              <th class="col-md-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="playlistItems">
-          </tbody>
-          </table>
-      </div>
-    </div>`;
-
-  var steps =
-    `<div class="panel panel-default">
-        <div class="panel-heading main-color-bg">
-          <h3 id="currentPlaylist" id="playlistTableTitle" class="panel-title">` + title + `</h3>
-        </div>
-        <div class="panel-body">
-          <table id="tableSteps" class="table table-striped table-hover  table-bordered">
-            <thead>
-              <tr>
-                <th class="col-md-8">Name</th>
-                <th class="col-md-1">Length</th>
-                <th class="col-md-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="playlistItems">
-            </tbody>
-            </table>
-        </div>
-      </div>`;
-  if (type == 'playlists') {
-    $("#playlistsTable").html(playlists);
-  } else if (type == 'steps') {
-    $("#playlistsTable").html(steps);
-  }
-
+function homeLoadButtons() {
+  $.ajax({
+    url: '/xScheduleQuery?Query=GetButtons',
+    dataType: "json",
+    success: function(response) {
+      var buttons = response.buttons || [];
+      $('#quickButtonsCard').prop('hidden', buttons.length == 0);
+      $('#quickButtons').html(buttons.slice(0, 6).map(xsUserButton).join(''));
+    }
+  });
 }

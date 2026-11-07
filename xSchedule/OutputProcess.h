@@ -46,6 +46,9 @@ class OutputProcess
         virtual wxXmlNode* Save() = 0;
         std::string GetStartChannel() const { return _startChannel; }
         size_t GetStartChannelAsNumber();
+        // The start channel as an offset into a buffer of the given size. False when the start channel does not
+        // resolve (for example after the controllers changed in xLights) or lies past the end of the buffer.
+        bool GetBufferOffset(size_t size, size_t& offset);
         virtual size_t GetP1() const = 0;
         virtual size_t GetP2() const = 0;
         virtual std::string GetType() const = 0;

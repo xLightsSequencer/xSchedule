@@ -24,7 +24,7 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxStaticText" name="ID_STATICTEXT6" variable="StaticText6" member="yes">
-					<label>Method</label>
+					<label>Method:</label>
 				</object>
 				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
@@ -33,9 +33,9 @@
 			<object class="sizeritem">
 				<object class="wxChoice" name="ID_CHOICE1" variable="Choice_Method" member="yes">
 					<content>
-						<item>Oldest</item>
-						<item>Old</item>
-						<item>Current</item>
+						<item>FPP 4 and older: event</item>
+						<item>FPP 4: Trigger Event command</item>
+						<item>FPP 5 and newer: command preset slot</item>
 					</content>
 					<selection>2</selection>
 					<handler function="OnChoice_MethodSelect" entry="EVT_CHOICE" />
@@ -54,7 +54,6 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxTextCtrl" name="ID_TEXTCTRL1" variable="TextCtrl_IPAddress" member="yes">
-					<maxlength>15</maxlength>
 					<handler function="OnTextCtrl_IPAddressText" entry="EVT_TEXT" />
 				</object>
 				<flag>wxALL|wxEXPAND</flag>
@@ -73,7 +72,7 @@
 				<object class="wxSpinCtrl" name="ID_SPINCTRL1" variable="SpinCtrl_Major" member="yes">
 					<value>1</value>
 					<min>1</min>
-					<max>24</max>
+					<max>255</max>
 				</object>
 				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>

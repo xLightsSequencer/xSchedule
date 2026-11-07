@@ -11,7 +11,7 @@
 #if !defined(SKIP_SMPTE)
 #include "ListenerSMPTE.h"
 #include "ListenerManager.h"
-#include "../../xLights/utils/AudioManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
 #include "../ScheduleManager.h"
 #include "../ScheduleOptions.h"
 #include "../xScheduleMain.h"
@@ -46,7 +46,7 @@ void ListenerSMPTE::StartProcess(const std::string& localIP) {
     _decoder = ltc_decoder_create(apv, 32);
 
     if (_decoder != nullptr) {
-        auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+        auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
         if (sdl != nullptr) {
             spdlog::debug("SMPTE listener starting SDL device: {}", _device.c_str());
             sdl->StartListening();
@@ -57,7 +57,7 @@ void ListenerSMPTE::StartProcess(const std::string& localIP) {
 }
 
 void ListenerSMPTE::StopProcess() {
-    auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+    auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
     if (sdl != nullptr) {
         spdlog::debug("SMPTE listener stopping SDL device: {}", _device.c_str());
         sdl->StopListening();
@@ -76,7 +76,7 @@ void ListenerSMPTE::Poll() {
     if (_decoder == nullptr || _stop)
         return;
 
-    auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+    auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
     if (sdl != nullptr) {
         int read = sdl->GetAudio((uint8_t*)_buffer, sizeof(_buffer));
 

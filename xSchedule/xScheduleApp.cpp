@@ -12,11 +12,13 @@
 
 //(*AppHeaders
 #include "xScheduleMain.h"
+#include <map>
 #include <wx/image.h>
 //*)
 
 #include <log.h>
-#include "spdlog/sinks/rotating_file_sink.h"
+#include "LogSink.h"
+#include "Diagnostics.h"
 #include "spdlog/common.h"
 
 #include <SpecialOptions.h>
@@ -25,11 +27,16 @@
 #include <wx/msgdlg.h>
 
 #include "ScheduleManager.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
-#include "../xlights/xLights/xLightsVersion.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
+#include "../xlights/src-core/xLightsVersion.h"
 #include "xScheduleVersion.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "ScheduleConfig.h"
+#include "../xlights/src-core/settings/XLightsSettings.h"
+#include "ModernUI.h"
+#include <wx/dialog.h>
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/utils/AppCallbacks.h"
 #include <wx/cmdline.h>
 #include <wx/confbase.h>
 #include <wx/debugrpt.h>
@@ -56,13 +63,9 @@
         #pragma comment(lib, "wxwebpd.lib")
         #pragma comment(lib, "wxmsw" WXWIDGETS_VERSION "ud_qa.lib")
         #pragma comment(lib, "wxexpatd.lib")
-        #pragma comment(lib, "portmidid.lib")
         #pragma comment(lib, "msvcprtd.lib")
         #pragma comment(lib, "libzstdd_static_VS.lib")
 
-        #if !defined(SKIP_SMPTE)
-            #pragma comment(lib, "libltcd.lib")
-        #endif
 
     #else
         #pragma comment(lib, "wxbase"WXWIDGETS_VERSION"u.lib")
@@ -79,14 +82,10 @@
         #pragma comment(lib, "wxmsw" WXWIDGETS_VERSION "u_qa.lib")
         #pragma comment(lib, "wxexpat.lib")
         #pragma comment(lib, "libzstd_static_VS.lib")
-        #pragma comment(lib, "portmidi.lib")
         #pragma comment(lib, "msvcprt.lib")
-        #if !defined(SKIP_SMPTE)
-            #pragma comment(lib, "libltc.lib")
-        #endif
     #endif
 
-    #pragma comment(lib, "libcurl.dll.a")
+    #pragma comment(lib, "libcurl.lib")
     #pragma comment(lib, "z.lib")
     #pragma comment(lib, "iphlpapi.lib")
     #pragma comment(lib, "WS2_32.Lib")
@@ -111,7 +110,6 @@
     #pragma comment(lib, "avfilter.lib")
     #pragma comment(lib, "avformat.lib")
     #pragma comment(lib, "avutil.lib")
-    #pragma comment(lib, "postproc.lib")
     #pragma comment(lib, "swresample.lib")
     #pragma comment(lib, "swscale.lib")
     #pragma comment(lib, "SDL2.lib")
@@ -208,6 +206,13 @@ void DumpConfig()
 #endif
 }
 
+static std::shared_ptr<LogSink> __logSink;
+
+std::string GetXScheduleLogPath()
+{
+    return __logSink != nullptr ? __logSink->GetPath() : std::string();
+}
+
 void InitialiseLogging(bool fromMain)
 {
     static bool loggingInitialised = false;
@@ -231,12 +236,13 @@ void InitialiseLogging(bool fromMain)
 
         // wxStandardPaths::Get().Get()
 
-        auto rotating_file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logFilePath, 1024 * 1024 * 10, 10);
+        __logSink = std::make_shared<LogSink>(logFilePath, 10 * 1024 * 1024, 7, 30 * 1024 * 1024);
+        Diagnostics::NameThread("main");
 
-        auto file_logger = std::make_shared<spdlog::logger>("xschedule", rotating_file_sink);
-        auto curl_logger = std::make_shared<spdlog::logger>("curl", rotating_file_sink);
-        auto frame_logger = std::make_shared<spdlog::logger>("frame", rotating_file_sink);
-        auto job_logger = std::make_shared<spdlog::logger>("job", rotating_file_sink);
+        auto file_logger = std::make_shared<spdlog::logger>("xschedule", __logSink);
+        auto curl_logger = std::make_shared<spdlog::logger>("curl", __logSink);
+        auto frame_logger = std::make_shared<spdlog::logger>("frame", __logSink);
+        auto job_logger = std::make_shared<spdlog::logger>("job", __logSink);
         curl_logger->set_level(spdlog::level::from_str(SpecialOptions::GetOption("curl_logger", "info")));
         frame_logger->set_level(spdlog::level::from_str(SpecialOptions::GetOption("frame_logger", "info")));
         spdlog::register_logger(curl_logger);
@@ -246,8 +252,7 @@ void InitialiseLogging(bool fromMain)
         loggingInitialised = true;
         spdlog::initialize_logger(file_logger);
         spdlog::set_default_logger(file_logger);
-        spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e [%l] %v");
-        spdlog::flush_on(spdlog::level::info);
+        spdlog::set_formatter(Diagnostics::MakeFormatter("%Y-%m-%d %H:%M:%S.%e [%l] [%N] %v"));
 
         // wxOperatingSystemId os = wxGetOsVersion();
         // std::string osStr = DecodeOS(os);
@@ -267,8 +272,7 @@ void xScheduleApp::WipeSettings()
 {
     spdlog::info("Wiping settings.");
 
-    wxConfigBase* config = wxConfigBase::Get();
-    config->DeleteAll();
+    ScheduleConfig::Wipe();
 }
 
 int xScheduleApp::OnExit()
@@ -278,8 +282,27 @@ int xScheduleApp::OnExit()
         _checker = nullptr;
     }
     spdlog::info("xSchedule exiting.");
+    XLightsSettings::Get().Flush();
+    Diagnostics::StopWatchdog();
+    if (__logSink != nullptr) {
+        __logSink->Stop();
+    }
 
     return 0;
+}
+
+int xScheduleApp::FilterEvent(wxEvent& event)
+{
+    // every dialog opens big enough for its contents, whatever display scale its saved size came from
+    if (event.GetEventType() == wxEVT_SHOW && static_cast<wxShowEvent&>(event).IsShown()) {
+        if (auto dlg = dynamic_cast<wxDialog*>(event.GetEventObject()); dlg != nullptr) {
+            ModernUI::FitListHeaders(dlg);
+            ModernUI::GrowFilePickers(dlg);
+            ModernUI::FitToContents(dlg);
+            dlg->CallAfter([dlg]() { ModernUI::LogClippedControls(dlg); });
+        }
+    }
+    return xlBaseApp::FilterEvent(event);
 }
 
 bool xScheduleApp::OnInit()
@@ -295,11 +318,58 @@ bool xScheduleApp::OnInit()
 
     InitialiseLogging(false);
     spdlog::info("******* OnInit: xSchedule started.");
+    Diagnostics::StartWatchdog();
+
+    // The wx-free xLights core reaches the app through these hooks. Without them "main thread" work runs on
+    // the calling thread, errors are only logged, and a worker thread exception terminates.
+    AppCallbacks::SetPostToMainThread([](std::function<void()> fn) {
+        wxTheApp->CallAfter(std::move(fn));
+    });
+    AppCallbacks::SetHandleUnhandledException([] {
+        wxTheApp->OnUnhandledException();
+    });
+    AppCallbacks::SetSetupThreadCrashHandler([] {
+        xlCrashHandler::SetupCrashHandlerForNonWxThread();
+    });
+    AppCallbacks::SetDisplayMessageCallback([](AppCallbacks::DisplayMessageLevel level, const std::string& msg) {
+        // already logged by the core; see ScheduleManager::StartOutputToLights
+        if (ScheduleManager::IsStartingOutputToLights()) return;
+        // Shown after the caller returns: a box opened inside a frame tick stops that timer until someone clicks
+        // OK, and an unattended machine would collect boxes inside boxes. One at a time, and not the same one again
+        // for 10 minutes; the core has logged them all.
+        auto showBox = [level, msg]() {
+            static bool showing = false;
+            static std::map<std::string, time_t> shown;
+            if (showing) return;
+            auto last = shown.find(msg);
+            if (last != shown.end() && time(nullptr) - last->second < 600) return;
+            shown[msg] = time(nullptr);
+            showing = true;
+            switch (level) {
+            case AppCallbacks::DisplayMessageLevel::Error:
+                wxMessageBox(msg, "Error", wxICON_ERROR | wxOK);
+                break;
+            case AppCallbacks::DisplayMessageLevel::Warning:
+                wxMessageBox(msg, "Warning", wxICON_WARNING | wxOK);
+                break;
+            case AppCallbacks::DisplayMessageLevel::Info:
+                wxMessageBox(msg, "Information", wxICON_INFORMATION | wxOK);
+                break;
+            }
+            showing = false;
+        };
+        AppCallbacks::PostToMainThread(showBox);
+    });
+
+    // the core finds the controller definitions here
+    spdlog::info("Resources folder: {}", GetResourcesDirectory());
+
+    ScheduleConfig::Initialize();
 
 #ifdef __WXMSW__
     spdlog::debug("xSchedule module handle {:#x}", reinterpret_cast<uintptr_t>(::GetModuleHandle(nullptr)));
     spdlog::debug("xSchedule wxTheApp {:#x}", reinterpret_cast<uintptr_t>(wxTheApp));
-    if (!IsSuppressDarkMode()) {
+    if (!ScheduleConfig::IsSuppressDarkMode()) {
         MSWEnableDarkMode();
     }
 #endif

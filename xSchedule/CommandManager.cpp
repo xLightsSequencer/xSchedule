@@ -303,6 +303,9 @@ CommandManager::CommandManager()
     _commands.push_back(new Command("Play specified playlist step once only", 2, plst, false, false, false, false, false, false, true, true, false));
     _commands.push_back(new Command("Play specified playlist n times", 2, pli, false, false, false, false, false, false, true, true, false));
     _commands.push_back(new Command("Play specified playlist step n times", 3, plsti, false, false, false, false, false, false, true, true, false));
+    _commands.push_back(new Command("Play specified playlist next", 1, pl, false, false, false, false, false, false, true, true, false));
+    _commands.push_back(new Command("Play specified playlist now then resume", 1, pl, false, false, false, false, false, false, true, true, false));
+    _commands.push_back(new Command("Play specified playlist now then restart interrupted step", 1, pl, false, false, false, false, false, false, true, true, false));
 
     _commands.push_back(new Command("Next step in current playlist", 0, {}, false, false, false, true, false, false, true, true, false));
     _commands.push_back(new Command("Prior step in current playlist", 0, {}, false, false, false, true, false, false, false, true, false));

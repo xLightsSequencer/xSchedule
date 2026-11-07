@@ -12,7 +12,7 @@
 #include "PlayListDialog.h"
 #include "PlayListItemAudio.h"
 #include "PlayListSimpleDialog.h"
-#include "../../xLights/utils/AudioManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
 
 //(*InternalHeaders(PlayListItemAudioPanel)
 #include <wx/intl.h>

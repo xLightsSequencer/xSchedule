@@ -39,6 +39,11 @@ class xSchedule
 
 public:
 	static void Initialise(p_xSchedule_Action action) { __action = action; }
+	// asks xSchedule to turn this plugin off, as unticking it in the Plugins menu does
+	static void StopPlugin(const std::string& label)
+	{
+		Action("Stop plugin", label);
+	}
 	static std::string GetPlayingStatus()
 	{
 		return Action("GetPlayingStatus");

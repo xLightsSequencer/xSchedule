@@ -13,12 +13,14 @@
 #include "events/ListenerManager.h"
 
 #include <log.h>
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include <wx/filename.h>
 #include "Control.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
+#include "../xlights/src-core/utils/ip_utils.h"
 #include "xScheduleVersion.h"
+#include "Diagnostics.h"
 
 #define FPP_MEDIA_SYNC_INTERVAL_MS 500
 #define FPP_SEQ_SYNC_INTERVAL_FRAMES 16
@@ -34,7 +36,16 @@ void SyncFPP::Ping(bool remote, const std::string& localIP)
     wxIPV4address localaddr;
     if (localIP == "")
     {
-        localaddr.Hostname(wxGetFullHostName());
+        // this runs on the UI thread every minute, and looking up our own name can wait on DNS
+        static wxString ownAddress;
+        static time_t lookedUp = 0;
+        if (ownAddress.empty() || time(nullptr) - lookedUp > 600) {
+            wxIPV4address own;
+            own.Hostname(wxGetFullHostName());
+            ownAddress = own.IPAddress();
+            lookedUp = time(nullptr);
+        }
+        localaddr.Hostname(ownAddress);
     }
     else
     {
@@ -100,137 +111,78 @@ void SyncFPP::Ping(bool remote, const std::string& localIP)
 }
 
 void SyncFPP::SendSync(uint32_t frameMS, uint32_t stepLengthMS, uint32_t stepMS, uint32_t playlistMS, const std::string& fseq, const std::string& media, const std::string& step, const std::string& timeItem, uint32_t stepno, int overridetimeSecs) const {
-    static std::string lastfseq = "";
-    static std::string lastmedia = "";
-    static size_t lastfseqmsec = 0;
-    static size_t lastmediamsec = 0;
+    if (frameMS == 0) frameMS = 50;
 
-    if (fseq == "" && media == "")
-    {
-        // nothing to sync (or SendStop) ... stop whatever we last started, once
-        if (lastfseq != "")
-        {
-            SendFPPSync(lastfseq, 0xFFFFFFFF, 50);
+    if (stepMS == 0xFFFFFFFF) {
+        for (Tracked* t : { &_seq, &_media }) {
+            if (!t->item.empty()) {
+                SendFPPSync(t->item, SYNC_PKT_STOP, 0, frameMS);
+                t->item.clear();
+            }
         }
-
-        if (lastmedia != "")
-        {
-            SendFPPSync(lastmedia, 0xFFFFFFFF, 50);
-        }
-
-        lastfseq = "";
-        lastfseqmsec = 0;
-        lastmedia = "";
-        lastmediamsec = 0;
-
+        _lastStepMS = 0;
+        _lastStepNo = 0xFFFFFFFF;
         return;
     }
 
-    // a step with media but no fseq (eg audio only) still syncs the media like FPP does
-    if (fseq == "" && lastfseq != "")
-    {
-        SendFPPSync(lastfseq, 0xFFFFFFFF, frameMS);
-        lastfseq = "";
-        lastfseqmsec = 0;
-    }
+    // A new step, or the same one starting over (looped, repeated, or the same file in the next step). FPP ignores a
+    // START for a file it is already playing, so the remotes need a STOP first.
+    bool restart = stepno != _lastStepNo || stepMS + frameMS < _lastStepMS;
+    _lastStepMS = stepMS;
+    _lastStepNo = stepno;
 
-    // and a step with an fseq but no media stops the previous step's media
-    if (media == "" && lastmedia != "")
-    {
-        SendFPPSync(lastmedia, 0xFFFFFFFF, frameMS);
-        lastmedia = "";
-        lastmediamsec = 0;
-    }
+    std::string seq = wxFileName(fseq).GetExt().Lower() == "fseq" ? fseq : "";
+    Track(_seq, seq, stepMS, frameMS, restart, true);
+    // media is synced on its own, so audio and video only steps reach the remotes too
+    Track(_media, media, stepMS, frameMS, restart, false);
+}
 
-    bool dosendFSEQ = false;
-    bool dosendMedia = false;
-
-    if (stepMS == 0 || stepMS == 0xFFFFFFFF) {
-        dosendFSEQ = true;
-        dosendMedia = true;
-    }
-
-    wxFileName fn(fseq.c_str());
-    if (fn.GetExt().Lower() == "fseq")
-    {
-        if (lastfseq != fseq)
-        {
-            if (lastfseq != "")
-            {
-                SendFPPSync(lastfseq, 0xFFFFFFFF, frameMS);
-            }
-
-            lastfseq = fseq;
-
-            if (stepMS != 0)
-            {
-                SendFPPSync(fseq, 0, frameMS);
-            }
+void SyncFPP::Track(Tracked& tracked, const std::string& item, uint32_t stepMS, uint32_t frameMS, bool restart, bool isSeq) const {
+    if (item != tracked.item || (restart && !item.empty())) {
+        if (!tracked.item.empty()) {
+            SendFPPSync(tracked.item, SYNC_PKT_STOP, 0, frameMS);
         }
-
-        if (!dosendFSEQ)
-        {
-            if (stepMS <= FPP_SEQ_SYNC_INITIAL_NUMBER_OF_FRAMES * frameMS)
-            {
-                // we are in the initial period
-                if (stepMS - lastfseqmsec >= FPP_SEQ_SYNC_INTERVAL_INITIAL_FRAMES * frameMS)
-                {
-                    dosendFSEQ = true;
-                }
-            }
-            else
-            {
-                if (stepMS - lastfseqmsec >= FPP_SEQ_SYNC_INTERVAL_FRAMES * frameMS)
-                {
-                    dosendFSEQ = true;
-                }
-            }
+        tracked.item = item;
+        tracked.lastSyncMS = stepMS;
+        if (!item.empty()) {
+            SendFPPSync(item, SYNC_PKT_START, stepMS, frameMS);
         }
+        return;
     }
+    if (item.empty()) return;
 
-    if (media != "")
-    {
-        if (lastmedia != media)
-        {
-            if (lastmedia != "")
-            {
-                SendFPPSync(lastmedia, 0xFFFFFFFF, frameMS);
-            }
-
-            lastmedia = media;
-
-            if (stepMS != 0)
-            {
-                SendFPPSync(media, 0, frameMS);
-            }
-        }
-
-        if (!dosendMedia)
-        {
-            if (stepMS - lastmediamsec >= FPP_MEDIA_SYNC_INTERVAL_MS)
-            {
-                dosendMedia = true;
-            }
-        }
+    uint32_t interval = FPP_MEDIA_SYNC_INTERVAL_MS;
+    if (isSeq) {
+        interval = (stepMS <= FPP_SEQ_SYNC_INITIAL_NUMBER_OF_FRAMES * frameMS ? FPP_SEQ_SYNC_INTERVAL_INITIAL_FRAMES : FPP_SEQ_SYNC_INTERVAL_FRAMES) * frameMS;
     }
-
-    if (dosendFSEQ && fseq != "") {
-        SendFPPSync(fseq, stepMS, frameMS);
-        lastfseqmsec = stepMS;
+    if (stepMS - tracked.lastSyncMS >= interval) {
+        SendFPPSync(item, SYNC_PKT_SYNC, stepMS, frameMS);
+        tracked.lastSyncMS = stepMS;
     }
-    if (dosendMedia && media != "") {
-        SendFPPSync(media, stepMS, frameMS);
-        lastmediamsec = stepMS;
-    }
+}
 
-    if (stepMS == 0xFFFFFFFF)
-    {
-        lastfseq = "";
-        lastfseqmsec = 0;
-        lastmedia = "";
-        lastmediamsec = 0;
-    }
+std::vector<uint8_t> SyncFPP::MakeSyncPacket(const std::string& item, uint8_t pktType, uint32_t positionMS, uint32_t frameMS) {
+    wxFileName fn(item);
+    // FPP looks the file up by name, in UTF-8
+    std::string name = fn.GetFullName().ToUTF8().data();
+    bool seq = fn.GetExt().Lower() == "fseq";
 
+    std::vector<uint8_t> buffer(sizeof(ControlPkt) + sizeof(SyncPkt) + name.size());
+    ControlPkt* cp = reinterpret_cast<ControlPkt*>(&buffer[0]);
+    memcpy(cp->fppd, "FPPD", 4);
+    cp->pktType = CTRL_PKT_SYNC;
+    cp->extraDataLen = buffer.size() - sizeof(ControlPkt);
+
+    SyncPkt* sp = reinterpret_cast<SyncPkt*>(&buffer[0] + sizeof(ControlPkt));
+    sp->pktType = pktType;
+    sp->fileType = seq ? SYNC_FILE_SEQ : SYNC_FILE_MEDIA;
+    // a START carries the position as well: FPP 10 starts media there, so a remote that joins part way through a
+    // step lines up straight away
+    bool hasPosition = pktType != SYNC_PKT_STOP;
+    sp->frameNumber = hasPosition && seq && frameMS != 0 ? positionMS / frameMS : 0;
+    sp->secondsElapsed = hasPosition ? positionMS / 1000.0f : 0.0f;
+    memcpy(&sp->filename[0], name.c_str(), name.size() + 1);
+    return buffer;
 }
 
 void SyncFPP::SendStop() const
@@ -238,163 +190,82 @@ void SyncFPP::SendStop() const
     SendSync(50, 0, 0xFFFFFFFF, 0, "", "", "", "", 0, 0);
 }
 
-void SyncBroadcastFPP::SendFPPSync(const std::string& item, uint32_t stepMS, uint32_t frameMS) const
+void SyncBroadcastFPP::SendFPPSync(const std::string& item, uint8_t pktType, uint32_t positionMS, uint32_t frameMS) const
 {
-    int bufsize = sizeof(ControlPkt) + sizeof(SyncPkt) + item.size();
+    if (_fppBroadcastSocket == nullptr) return;
+    auto packet = MakeSyncPacket(item, pktType, positionMS, frameMS);
+    _fppBroadcastSocket->SendTo(_remoteAddr, packet.data(), packet.size());
+}
 
-    std::vector<uint8_t> buffer(bufsize);
-
-    ControlPkt* cp = reinterpret_cast<ControlPkt*>(&buffer[0]);
-    memcpy(cp->fppd, "FPPD", 4);
-    cp->pktType = CTRL_PKT_SYNC;
-    cp->extraDataLen = bufsize - sizeof(ControlPkt);
-
-    SyncPkt* sp = reinterpret_cast<SyncPkt*>(&buffer[0] + sizeof(ControlPkt));
-
-    if (stepMS == 0)
-    {
-        sp->pktType = SYNC_PKT_START;
-    }
-    else if (stepMS == 0xFFFFFFFF)
-    {
-        sp->pktType = SYNC_PKT_STOP;
-    }
-    else
-    {
-        sp->pktType = SYNC_PKT_SYNC;
-    }
-
-    wxFileName fn(item);
-    if (fn.GetExt().Lower() == "fseq")
-    {
-        sp->fileType = SYNC_FILE_SEQ;
-        sp->frameNumber = stepMS / frameMS;
-    }
-    else
-    {
-        sp->fileType = SYNC_FILE_MEDIA;
-        sp->frameNumber = 0;
-    }
-
-    if (sp->pktType == SYNC_PKT_SYNC)
-    {
-        sp->secondsElapsed = stepMS / 1000.0;
-    }
-    else
-    {
-        sp->frameNumber = 0;
-        sp->secondsElapsed = 0;
-    }
-
-    strcpy(&sp->filename[0], fn.GetFullName().c_str());
-
-    if (_fppBroadcastSocket != nullptr)
-    {
-        _fppBroadcastSocket->SendTo(_remoteAddr, &buffer[0], bufsize);
+void SyncUnicastFPP::SendFPPSync(const std::string& item, uint8_t pktType, uint32_t positionMS, uint32_t frameMS) const
+{
+    if (_fppUnicastSocket == nullptr) return;
+    auto packet = MakeSyncPacket(item, pktType, positionMS, frameMS);
+    for (const auto& it : _remotes) {
+        wxIPV4address address;
+        if (_lookup->Get(it, FPP_CTRL_PORT, address)) {
+            _fppUnicastSocket->SendTo(address, packet.data(), packet.size());
+        }
     }
 }
 
-void SyncUnicastFPP::SendFPPSync(const std::string& item, uint32_t stepMS, uint32_t frameMS) const
+bool HostLookup::Get(const std::string& host, unsigned short port, wxIPV4address& address)
 {
-    uint8_t pktType;
-    if (stepMS == 0)
-    {
-        pktType = SYNC_PKT_START;
-    }
-    else if (stepMS == 0xFFFFFFFF)
-    {
-        pktType = SYNC_PKT_STOP;
-    }
-    else
-    {
-        pktType = SYNC_PKT_SYNC;
-    }
-
-    wxFileName fn(item);
-        for (auto it : _remotes)
-        {
-            SendUnicastSync(it, fn.GetFullName().ToStdString(), stepMS, frameMS, pktType);
+    std::string ip;
+    if (ip_utils::IsIPValid(host)) {
+        ip = host;
+    } else {
+        std::lock_guard<std::mutex> lock(_lock);
+        auto found = _found.find(host);
+        if (found != _found.end()) {
+            ip = found->second;
+        } else {
+            auto pending = _pending.find(host);
+            if (pending != _pending.end()) {
+                if (pending->second.wait_for(std::chrono::seconds(0)) != std::future_status::ready) return false;
+                ip = pending->second.get();
+                _pending.erase(pending);
+                if (ip.empty()) {
+                    spdlog::warn("FPP remote {} could not be found; trying again in 30 seconds.", host);
+                    _failed[host] = time(nullptr);
+                    return false;
+                }
+                _found[host] = ip;
+                _failed.erase(host);
+            } else {
+                auto failed = _failed.find(host);
+                if (failed != _failed.end() && time(nullptr) - failed->second < 30) return false;
+                _pending[host] = std::async(std::launch::async, [host]() {
+                    Diagnostics::ThreadName name("host lookup");
+                    wxIPV4address a;
+                    return a.Hostname(host) ? a.IPAddress().ToStdString() : std::string();
+                });
+                return false;
+            }
         }
     }
+    // a numeric address needs no lookup, so this doesn't block
+    address.Hostname(ip);
+    address.Service(port);
+    return true;
+}
 
-void SyncUnicastCSVFPP::SendFPPSync(const std::string& item, uint32_t stepMS, uint32_t frameMS) const
+void SyncUnicastCSVFPP::SendFPPSync(const std::string& item, uint8_t pktType, uint32_t positionMS, uint32_t frameMS) const
 {
-    uint8_t pktType;
-    if (stepMS == 0)
-    {
-        pktType = SYNC_PKT_START;
-    }
-    else if (stepMS == 0xFFFFFFFF)
-    {
-        pktType = SYNC_PKT_STOP;
-    }
-    else
-    {
-        pktType = SYNC_PKT_SYNC;
-    }
-
     wxFileName fn(item);
+    if (fn.GetExt().Lower() != "fseq") return;
 
-        for (auto it : _remotes)
-        {
-            SendUnicastSync(it, fn.GetFullName().ToStdString(), stepMS, frameMS, pktType);
-        }
+    for (auto it : _remotes)
+    {
+        SendUnicastSync(it, fn.GetFullName().ToStdString(), positionMS, frameMS, pktType);
     }
+}
 
-void SyncMulticastFPP::SendFPPSync(const std::string& item, uint32_t stepMS, uint32_t frameMS) const
+void SyncMulticastFPP::SendFPPSync(const std::string& item, uint8_t pktType, uint32_t positionMS, uint32_t frameMS) const
 {
-    int bufsize = sizeof(ControlPkt) + sizeof(SyncPkt) + item.size();
-
-    std::vector<uint8_t> buffer(bufsize);
-
-    ControlPkt* cp = reinterpret_cast<ControlPkt*>(&buffer[0]);
-    memcpy(cp->fppd, "FPPD", 4);
-    cp->pktType = CTRL_PKT_SYNC;
-    cp->extraDataLen = bufsize - sizeof(ControlPkt);
-
-    SyncPkt* sp = reinterpret_cast<SyncPkt*>(&buffer[0] + sizeof(ControlPkt));
-
-    if (stepMS == 0)
-    {
-        sp->pktType = SYNC_PKT_START;
-    }
-    else if (stepMS == 0xFFFFFFFF)
-    {
-        sp->pktType = SYNC_PKT_STOP;
-    }
-    else
-    {
-        sp->pktType = SYNC_PKT_SYNC;
-    }
-
-    wxFileName fn(item);
-    if (fn.GetExt().Lower() == "fseq")
-    {
-        sp->fileType = SYNC_FILE_SEQ;
-        sp->frameNumber = stepMS / frameMS;
-    }
-    else
-    {
-        sp->fileType = SYNC_FILE_MEDIA;
-        sp->frameNumber = 0;
-    }
-
-    if (sp->pktType == SYNC_PKT_SYNC)
-    {
-        sp->secondsElapsed = stepMS / 1000.0;
-    }
-    else
-    {
-        sp->frameNumber = 0;
-        sp->secondsElapsed = 0;
-    }
-
-    strcpy(&sp->filename[0], fn.GetFullName().c_str());
-
-    if (_fppMulticastSocket != nullptr)
-    {
-        _fppMulticastSocket->SendTo(_remoteAddr, &buffer[0], bufsize);
-    }
+    if (_fppMulticastSocket == nullptr) return;
+    auto packet = MakeSyncPacket(item, pktType, positionMS, frameMS);
+    _fppMulticastSocket->SendTo(_remoteAddr, packet.data(), packet.size());
 }
 
 SyncBroadcastFPP::SyncBroadcastFPP(SyncBroadcastFPP&& from) noexcept : SyncFPP(from)
@@ -409,6 +280,7 @@ SyncUnicastFPP::SyncUnicastFPP(SyncUnicastFPP&& from) noexcept : SyncFPP(from)
     _fppUnicastSocket = from._fppUnicastSocket;
     from._fppUnicastSocket = nullptr; // this is a transfer of ownership
     _remotes = from._remotes;
+    _lookup = from._lookup;
 }
 
 SyncUnicastCSVFPP::SyncUnicastCSVFPP(SyncUnicastCSVFPP&& from) noexcept : SyncFPP(from)
@@ -416,6 +288,7 @@ SyncUnicastCSVFPP::SyncUnicastCSVFPP(SyncUnicastCSVFPP&& from) noexcept : SyncFP
     _fppUnicastSocket = from._fppUnicastSocket;
     from._fppUnicastSocket = nullptr; // this is a transfer of ownership
     _remotes = from._remotes;
+    _lookup = from._lookup;
 }
 
 SyncMulticastFPP::SyncMulticastFPP(SyncMulticastFPP&& from) noexcept : SyncFPP(from)
@@ -524,6 +397,11 @@ SyncUnicastFPP::SyncUnicastFPP(SYNCMODE sm, REMOTEMODE rm, const ScheduleOptions
         }
 
         _remotes = options.GetFPPRemotes();
+        // start looking the remotes up now, so their addresses are known before a show starts
+        for (const auto& it : _remotes) {
+            wxIPV4address unused;
+            _lookup->Get(it, FPP_CTRL_PORT, unused);
+        }
         if (_remotes.size() > 0)
         {
             _fppUnicastSocket = new wxDatagramSocket(localaddr, wxSOCKET_NOWAIT);
@@ -571,6 +449,11 @@ SyncUnicastCSVFPP::SyncUnicastCSVFPP(SYNCMODE sm, REMOTEMODE rm, const ScheduleO
         }
 
         _remotes = options.GetFPPRemotes();
+        // start looking the remotes up now, so their addresses are known before a show starts
+        for (const auto& it : _remotes) {
+            wxIPV4address unused;
+            _lookup->Get(it, FPP_CTRL_PORT, unused);
+        }
         if (_remotes.size() > 0)
         {
             _fppUnicastSocket = new wxDatagramSocket(localaddr, wxSOCKET_NOWAIT);
@@ -649,73 +532,10 @@ SyncMulticastFPP::SyncMulticastFPP(SYNCMODE sm, REMOTEMODE rm, const ScheduleOpt
     }
 }
 
-void SyncUnicastFPP::SendUnicastSync(const std::string& ip, const std::string& item, size_t msec, size_t frameMS, int action) const
-{
-    wxIPV4address remoteAddr;
-    remoteAddr.Hostname(ip);
-
-    remoteAddr.Service(FPP_CTRL_PORT);
-
-    int bufsize = sizeof(ControlPkt) + sizeof(SyncPkt) + item.size();
-
-    std::vector<uint8_t> buffer(bufsize);
-
-    ControlPkt* cp = reinterpret_cast<ControlPkt*>(&buffer[0]);
-    memcpy(cp->fppd, "FPPD", 4);
-    cp->pktType = CTRL_PKT_SYNC;
-    cp->extraDataLen = bufsize - sizeof(ControlPkt);
-
-    SyncPkt* sp = reinterpret_cast<SyncPkt*>(&buffer[0] + sizeof(ControlPkt));
-
-    if (msec == 0)
-    {
-        sp->pktType = SYNC_PKT_START;
-    }
-    else if (msec == 0xFFFFFFFF)
-    {
-        sp->pktType = SYNC_PKT_STOP;
-    }
-    else
-    {
-        sp->pktType = SYNC_PKT_SYNC;
-    }
-
-    wxFileName fn(item);
-    if (fn.GetExt().Lower() == "fseq")
-    {
-        sp->fileType = SYNC_FILE_SEQ;
-        sp->frameNumber = msec / frameMS;
-    }
-    else
-    {
-        sp->fileType = SYNC_FILE_MEDIA;
-        sp->frameNumber = 0;
-    }
-
-    if (sp->pktType == SYNC_PKT_SYNC)
-    {
-        sp->secondsElapsed = msec / 1000.0;
-    }
-    else
-    {
-        sp->frameNumber = 0;
-        sp->secondsElapsed = 0;
-    }
-
-    strcpy(&sp->filename[0], fn.GetFullName().c_str());
-
-    if (_fppUnicastSocket != nullptr)
-    {
-        _fppUnicastSocket->SendTo(remoteAddr, &buffer[0], bufsize);
-    }
-}
-
 void SyncUnicastCSVFPP::SendUnicastSync(const std::string& ip, const std::string& item, size_t msec, size_t frameMS, int action) const
 {
     wxIPV4address remoteAddr;
-    remoteAddr.Hostname(ip);
-
-    remoteAddr.Service(FPP_CTRL_CSV_PORT);
+    if (!_lookup->Get(ip, FPP_CTRL_CSV_PORT, remoteAddr)) return;
 
     std::string buffer;
 

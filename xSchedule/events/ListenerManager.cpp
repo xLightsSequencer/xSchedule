@@ -30,6 +30,7 @@
 #include "EventMQTT.h"
 #include "EventE131.h"
 #include "../PlayList/PlayList.h"
+#include "../Diagnostics.h"
 
 wxDEFINE_EVENT(EVT_MIDI, wxCommandEvent);
 
@@ -418,6 +419,7 @@ void ListenerManager::StartListeners(const std::string& localIP)
                 // because FPP binds to the type of sync packet it sees (broadcast/multicast/unicast) we need to delete and recreate to ensure it can pick up anything new
                 current->Stop();
                 _listeners.erase(std::find(_listeners.begin(), _listeners.end(), current));
+                delete current;
                 _listeners.push_back(new ListenerFPP(this, localIP));
                 _listeners.back()->Start();
             }
@@ -446,6 +448,7 @@ void ListenerManager::StartListeners(const std::string& localIP)
                 // because FPP binds to the type of sync packet it sees (broadcast/multicast/unicast) we need to delete and recreate to ensure it can pick up anything new
                 current->Stop();
                 _listeners.erase(std::find(_listeners.begin(), _listeners.end(), current));
+                delete current;
                 _listeners.push_back(new ListenerCSVFPP(this, localIP));
                 _listeners.back()->Start();
             }
@@ -845,13 +848,17 @@ ListenerManager::~ListenerManager()
     }
 }
 
+// Takes the lock, so once this returns no listener is part way through the event list and none will start until
+// unpaused; editing the events is then safe.
 void ListenerManager::Pause(bool pause)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     _pause = pause;
 }
 
 void ListenerManager::ProcessFrame(uint8_t* buffer, long buffsize)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     // handle any data events
@@ -866,6 +873,7 @@ void ListenerManager::ProcessFrame(uint8_t* buffer, long buffsize)
 
 void ListenerManager::ProcessPacket(const std::string& source, int universe, uint8_t* buffer, long buffsize)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     for (auto& it : *_scheduleManager->GetOptions()->GetEvents())
@@ -879,6 +887,7 @@ void ListenerManager::ProcessPacket(const std::string& source, int universe, uin
 
 void ListenerManager::ProcessPacket(const std::string& source, const std::string& state, long buffsize)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     for (auto& it : *_scheduleManager->GetOptions()->GetEvents())
@@ -892,6 +901,7 @@ void ListenerManager::ProcessPacket(const std::string& source, const std::string
 
 void ListenerManager::ProcessPacket(const std::string& source, int deviceId, uint8_t status, uint8_t channel, uint8_t data1, uint8_t data2)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_notifyScan != nullptr && source == "MIDI")
     {
         wxCommandEvent event(EVT_MIDI);
@@ -927,6 +937,7 @@ void ListenerManager::ProcessPacket(const std::string& source, int deviceId, uin
 
 void ListenerManager::ProcessPacket(const std::string& source, const std::string& commPort, uint8_t* buffer, long buffsize, int subtype)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     for (auto& it : *_scheduleManager->GetOptions()->GetEvents())
@@ -940,6 +951,7 @@ void ListenerManager::ProcessPacket(const std::string& source, const std::string
 
 void ListenerManager::ProcessPacket(const std::string& source, const std::string& id)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     for (auto& it : *_scheduleManager->GetOptions()->GetEvents())
@@ -953,6 +965,7 @@ void ListenerManager::ProcessPacket(const std::string& source, const std::string
 
 void ListenerManager::ProcessPacket(const std::string& source, const std::string& path, const std::string& p1, const std::string& p2, const std::string& p3)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     for (auto& it : *_scheduleManager->GetOptions()->GetEvents())
@@ -966,6 +979,7 @@ void ListenerManager::ProcessPacket(const std::string& source, const std::string
 
 void ListenerManager::ProcessPacket(const std::string& source, bool result, const std::string& ip)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     for (auto& it : *_scheduleManager->GetOptions()->GetEvents())
@@ -979,6 +993,7 @@ void ListenerManager::ProcessPacket(const std::string& source, bool result, cons
 
 void ListenerManager::ProcessPacket(const std::string& source, const std::string& topic, const std::string& data)
 {
+    std::lock_guard<std::recursive_mutex> lock(_eventsLock);
     if (_pause || _stop) return;
 
     for (auto& it : *_scheduleManager->GetOptions()->GetEvents())
@@ -988,6 +1003,16 @@ void ListenerManager::ProcessPacket(const std::string& source, const std::string
             it->Process(topic, data, _scheduleManager);
         }
     }
+}
+
+std::string ListenerManager::Describe() const
+{
+    std::string res;
+    for (const auto& it : _listeners) {
+        if (!res.empty()) res += ", ";
+        res += it->GetType() + (it->IsOk() ? " ok" : " not running");
+    }
+    return res.empty() ? "none" : res;
 }
 
 void ListenerManager::Stop()

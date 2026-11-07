@@ -10,8 +10,8 @@
 
 #include "PlayListItemColourOrgan.h"
 #include "PlayListItemColourOrganPanel.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 #include <wx/notebook.h>
 #include <wx/xml/xml.h>
 
@@ -150,7 +150,7 @@ void PlayListItemColourOrgan::Frame(uint8_t* buffer, size_t size, size_t ms, siz
         float value = 0;
 
         if (_mode == "Maximum") {
-            auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+            auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
             if (sdl != nullptr) {
                 auto res = sdl->GetSpectrum(framems);
                 if ((int)res.size() >= _endNote) {
@@ -188,7 +188,7 @@ void PlayListItemColourOrgan::Frame(uint8_t* buffer, size_t size, size_t ms, siz
 
 void PlayListItemColourOrgan::Start(long stepLengthMS) {
     PlayListItem::Start(stepLengthMS);
-    auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+    auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
     if (sdl != nullptr) {
         sdl->StartListening();
         sdl->PurgeInput();
@@ -197,7 +197,7 @@ void PlayListItemColourOrgan::Start(long stepLengthMS) {
 
 void PlayListItemColourOrgan::Stop() {
     PlayListItem::Stop();
-    auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+    auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
     if (sdl != nullptr) {
         sdl->StopListening();
     }

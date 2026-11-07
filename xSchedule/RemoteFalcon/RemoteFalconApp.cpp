@@ -9,6 +9,7 @@
  **************************************************************/
 
 #include <wx/wx.h>
+#include <wx/config.h>
 
 //(*AppHeaders
 #include "RemoteFalconMain.h"
@@ -26,6 +27,7 @@
 #endif
 
 #include "RemoteFalconApp.h"
+#include "../SettingsFiles.h"
 
 #include "spdlog/spdlog.h"
 #include "spdlog/common.h"
@@ -33,8 +35,8 @@
 #include <wx/file.h>
 #include <wx/msgdlg.h>
 
-#include "../../xlights/xLights/xLightsVersion.h"
-#include "../../xlights/xLights/utils/SpecialOptions.h"
+#include "../../xlights/src-core/xLightsVersion.h"
+#include "../../xlights/src-core/utils/SpecialOptions.h"
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -64,7 +66,7 @@
 #pragma comment(lib, "wxmsw"WXWIDGETS_VERSION"u_qa.lib")
 #pragma comment(lib, "wxexpat.lib")
 #endif
-#pragma comment(lib, "libcurl.dll.a")
+#pragma comment(lib, "libcurl.lib")
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "WS2_32.Lib")
 #pragma comment(lib, "comdlg32.lib")
@@ -96,12 +98,18 @@ RemoteFalconApp::RemoteFalconApp() :
 {
 }
 
+PluginSettings& RemoteFalconSettings()
+{
+    static PluginSettings settings("RemoteFalcon", "RemoteFalcon");
+    return settings;
+}
+
 static void WipeSettings()
 {
     spdlog::warn("------ Wiping RemoteFalcon settings ------");
 
-    wxConfigBase* config = wxConfigBase::Get();
-    config->DeleteAll();
+    RemoteFalconSettings().DeleteAll();
+    RemoteFalconSettings().Flush();
 }
 
 static void InitialiseLogging(bool fromMain)
@@ -289,6 +297,13 @@ bool RemoteFalconApp::OnInit()
     InitialiseLogging(false);
 
     spdlog::info("******* OnInit: RemoteFalcon started.");
+
+#ifdef __WXMSW__
+    // the plugin has its own copy of wxWidgets, so xSchedule turning dark mode on doesn't reach it
+    if (ReadXScheduleSetting("SuppressDarkMode", "0") != "1") {
+        MSWEnableDarkMode();
+    }
+#endif
 
     //(*AppInitialize
     RemoteFalconFrame* Frame = new RemoteFalconFrame(0, __showDir, __xScheduleURL, __action);

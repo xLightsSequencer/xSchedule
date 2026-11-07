@@ -9,21 +9,28 @@
  **************************************************************/
 
 #include "Pinger.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/outputs/ControllerEthernet.h"
-#include "../xlights/xLights/outputs/ControllerSerial.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-core/utils/ip_utils.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/outputs/ControllerEthernet.h"
+#include "../xlights/src-core/outputs/ControllerSerial.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "events/ListenerManager.h"
 
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 
 #include <log.h>
+#include "Diagnostics.h"
 
 class PingThread : public wxThread {
     APinger* _pinger;
     std::atomic<bool> _stop;
     std::atomic<bool> _running;
+    std::mutex _lock;
+    std::condition_variable _wake;
 
 public:
     PingThread(APinger* pinger) :
@@ -43,7 +50,9 @@ public:
 
     void Stop() {
         spdlog::debug("Asking pinging thread {} to stop", (const char*)_pinger->GetName().c_str());
+        std::unique_lock<std::mutex> lock(_lock);
         _stop = true;
+        _wake.notify_all();
     }
 
     // if ping fails try this many times before setting the result
@@ -51,6 +60,7 @@ public:
 
     virtual void* Entry() override {
         _running = true;
+        Diagnostics::ThreadName name("ping " + _pinger->GetName());
 
         if (_pinger->IsInactive()) {
             spdlog::debug("Pinging thread {} is inactive. Skipping", (const char*)_pinger->GetName().c_str());
@@ -72,12 +82,9 @@ public:
                 }
                 _pinger->SetPingResult(res);
 
-                int count = 0;
-
-                while (!_stop && count < _pinger->GetPingInterval() * 100) {
-                    wxMilliSleep(10);
-                    count++;
-                }
+                // sleeps the whole interval rather than waking every 10 ms to check; Stop() wakes it
+                std::unique_lock<std::mutex> lock(_lock);
+                _wake.wait_for(lock, std::chrono::seconds(_pinger->GetPingInterval()), [this]() { return _stop.load(); });
             }
         }
         _running = false;
@@ -170,10 +177,10 @@ Output::PINGSTATE APinger::Ping() {
 void APinger::CheckLocal() {
     _isLocal = false;
 
-    auto ips = GetLocalIPs();
+    auto ips = ip_utils::GetLocalIPs();
 
     for (const auto& it : ips) {
-        if (IsInSameSubnet(_ip, it, "255.255.255.0")) {
+        if (ip_utils::IsInSameSubnet(_ip, it, "255.255.255.0")) {
             _isLocal = true;
             break;
         }
@@ -196,6 +203,12 @@ std::string APinger::GetName() const {
         return _controller->GetPingDescription();
     }
     return _ip + " " + _why + (_lastResult == Output::PINGSTATE::PING_ALLFAILED && IsLocal() ? _(" (Down)") : _(""));
+}
+
+void APinger::AskToStop() {
+    if (_pingThread != nullptr) {
+        _pingThread->Stop();
+    }
 }
 
 void APinger::Stop() {
@@ -249,15 +262,12 @@ Pinger::Pinger(ListenerManager* listenerManager, OutputManager* outputManager) {
 Pinger::~Pinger() {
     _stopping = true;
 
-    // Tell them to stop first ... means when we come to delete them we may not need to wait as long
+    // tell them all to stop before waiting for any, so pings still in progress finish together
+    for (const auto& it : _pingers) {
+        it->AskToStop();
+    }
     for (const auto& it : _pingers) {
         it->Stop();
-    }
-
-    // give the ping threads some CPU time
-    wxMilliSleep(100);
-
-    for (const auto& it : _pingers) {
         delete it;
     }
 }

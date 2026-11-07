@@ -12,7 +12,8 @@ DEL_FILE        = rm -f
 ICON_SIZES      = 16x16 32x32 64x64 128x128 256x256
 SUDO            = `which sudo`
 
-WXWIDGETS_TAG=xlights_2026.04
+# the wxWidgets build that matches the xLights dependency bundle the xlights submodule uses
+WXWIDGETS_TAG := $(shell tr -d "[:space:]" < xlights/ci_scripts/deps_version.txt)
 
 .NOTPARALLEL:
 
@@ -63,6 +64,8 @@ install:
 	-$(INSTALL_PROGRAM) -D bin/xsmsdaemon.desktop $(DESTDIR)/${PREFIX}/share/applications/xsmsdaemon.desktop
 	install -d -m 755 $(DESTDIR)/${PREFIX}/share/xSchedule/xScheduleWeb
 	cp -r bin/xScheduleWeb/* $(DESTDIR)/${PREFIX}/share/xSchedule/xScheduleWeb
+	install -d -m 755 $(DESTDIR)/${PREFIX}/share/xSchedule/controllers
+	install -m 644 xlights/resources/controllers/*.xcontroller $(DESTDIR)/${PREFIX}/share/xSchedule/controllers
 	$(foreach size, $(ICON_SIZES), install -D -m 644 images/icons/$(size).png $(DESTDIR)/${PREFIX}/share/icons/hicolor/$(size)/apps/xschedule.png ; )
 
 uninstall:
@@ -71,6 +74,7 @@ uninstall:
 	-$(DEL_FILE) $(DESTDIR)/${PREFIX}/bin/RemoteFalcon.so
 	-$(DEL_FILE) $(DESTDIR)/${PREFIX}/share/applications/xschedule.desktop
 	-$(DEL_FILE) $(DESTDIR)/${PREFIX}/share/applications/xsmsdaemon.desktop
+	-rm -rf $(DESTDIR)/${PREFIX}/share/xSchedule/controllers
 	$(foreach size, $(ICON_SIZES), $(DEL_FILE) $(DESTDIR)/${PREFIX}/share/icons/hicolor/$(size)/apps/xschedule.png ; )
 
 #############################################################################

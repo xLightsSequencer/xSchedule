@@ -13,26 +13,19 @@ concurrency:
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     steps:
     - name: Checkout xSchedule
       uses: actions/checkout@v4
       with:
           submodules: 'recursive'
-    - name: Setup msbuild
-      uses: microsoft/setup-msbuild@v1
-
-    - name: Download wxWidgets
-      run:
-        git clone --depth=1 --shallow-submodules --recurse-submodules -b xlights_2026.04 https://github.com/xLightsSequencer/wxWidgets ..\wxWidgets\
-
-    - name: Build wxWidgets
-      working-directory: ..\wxWidgets\
-      run: msbuild /m .\build\msw\wx_vc17.sln /p:Configuration="Release" /p:Platform="x64"
-
     - name: Build xSchedule
-      working-directory: xSchedule
-      run: msbuild /m:10 xSchedule.sln /p:Configuration="Release" -p:Platform="x64"
+      shell: cmd
+      run: call build_scripts\msw\build_xSchedule_x64.cmd < NUL
+
+    - name: Unit tests
+      shell: cmd
+      run: call xSchedule\tests\build_tests_msw.cmd < NUL
 
     - name: Upload xSchedule Exe
       uses: actions/upload-artifact@v4

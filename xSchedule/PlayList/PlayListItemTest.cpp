@@ -12,7 +12,7 @@
 #include <wx/xml/xml.h>
 #include <wx/notebook.h>
 #include "PlayListItemTestPanel.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 
 PlayListItemTest::PlayListItemTest(OutputManager* outputManager, wxXmlNode* node) : PlayListItem(node)
 {
@@ -116,8 +116,7 @@ std::string PlayListItemTest::GetTitle() const
 std::string PlayListItemTest::GetNameNoTime() const
 {
     if (_name != "") return _name;
-
-    return _mode;
+    return _mode.empty() ? GetTitle() : _mode;
 }
 
 void PlayListItemTest::Frame(uint8_t* buffer, size_t size, size_t ms, size_t framems, bool outputframe)

@@ -46,16 +46,19 @@ void OutputProcessReverse::Frame(uint8_t* buffer, size_t size, std::list<OutputP
 {
     if (_nodes < 2) return;
 
-    size_t sc = GetStartChannelAsNumber();
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
 
-    size_t nodes = std::min(_nodes, (size - (sc - 1)) / 3);
-    uint8_t* p = buffer + (sc - 1);
+    size_t nodes = std::min(_nodes, (size - off) / 3);
+    if (nodes < 2) return;
+    uint8_t* p = buffer + off;
 
 	uint8_t rgb[3];
 	uint8_t* from = p;
 	uint8_t* to = p + (nodes - 1) * 3;
-		
-	for (int i = 0; i < (int)nodes; i++)
+
+	// swap from both ends towards the middle; going all the way would swap every pair back
+	for (size_t i = 0; i < nodes / 2; i++)
 	{
 		memcpy(rgb, from, 3);
 		memcpy(from, to, 3);

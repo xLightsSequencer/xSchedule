@@ -11,7 +11,7 @@
 			<growablerows>1</growablerows>
 			<object class="sizeritem">
 				<object class="wxPanel" name="ID_PANEL2" variable="Panel2" member="yes">
-					<style>wxBORDER_RAISED|wxTAB_TRAVERSAL</style>
+					<style>wxTAB_TRAVERSAL</style>
 					<object class="wxFlexGridSizer" variable="FlexGridSizer5" member="no">
 						<cols>13</cols>
 						<object class="sizeritem">
@@ -97,7 +97,7 @@
 						<object class="sizeritem">
 							<object class="Custom" name="ID_CUSTOM1" subclass="BrightnessControl" variable="Brightness" member="yes">
 								<creating_code>$(THIS) = new $(CLASS)($(PARENT),$(ID),$(POS),$(SIZE),$(STYLE),wxDefaultValidator,$(NAME));</creating_code>
-								<style>ZERO</style>
+								<style>wxBORDER_NONE</style>
 								<size>16,16d</size>
 							</object>
 							<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -127,7 +127,7 @@
 						<object class="sizeritem">
 							<object class="Custom" name="ID_CUSTOM2" subclass="VolumeDisplay" variable="Custom_Volume" member="yes">
 								<creating_code>$(THIS) = new $(CLASS)($(PARENT),$(ID),$(POS),$(SIZE),$(STYLE),wxDefaultValidator,$(NAME));</creating_code>
-								<style>ZERO</style>
+								<style>wxBORDER_NONE</style>
 								<size>16,16d</size>
 								<handler function="OnCustom_VolumeLeftDown" entry="EVT_LEFT_DOWN" />
 							</object>
@@ -297,12 +297,13 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxPanel" name="ID_PANEL4" variable="Panel4" member="yes">
-					<style>wxBORDER_RAISED|wxTAB_TRAVERSAL</style>
+					<style>wxTAB_TRAVERSAL</style>
 					<object class="wxFlexGridSizer" variable="FlexGridSizer6" member="yes">
 						<cols>8</cols>
 						<growablecols>1</growablecols>
 						<object class="sizeritem">
 							<object class="wxStaticText" name="ID_STATICTEXT1" variable="StaticText_ShowDir" member="yes">
+								<style>wxST_NO_AUTORESIZE|wxST_ELLIPSIZE_MIDDLE</style>
 								<label></label>
 							</object>
 							<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
@@ -496,7 +497,7 @@
 						<checkable>1</checkable>
 					</object>
 					<object class="wxMenuItem" name="ID_MNU_FPP_UNICASTCSVMASTER" variable="MenuItem_ModeFPPUnicastCSVMaster" member="yes">
-						<label>FPP Unicast CSV</label>
+						<label>FPP Unicast CSV (Falcon v2 and xSchedule remotes)</label>
 						<handler function="OnMenuItem_ModeFPPUnicastCSVMasterSelected" entry="EVT_MENU" />
 						<checkable>1</checkable>
 					</object>
@@ -529,7 +530,7 @@
 						<radio>1</radio>
 					</object>
 					<object class="wxMenuItem" name="ID_MNU_FPPCSVREMOTE" variable="MenuItem_ModeFPPCSVRemote" member="yes">
-						<label>FPP CSV</label>
+						<label>FPP CSV (from an xSchedule or FPP 3 master)</label>
 						<handler function="OnMenuItem_ModeFPPCSVRemoteSelected" entry="EVT_MENU" />
 						<radio>1</radio>
 					</object>

@@ -79,7 +79,7 @@ PlayListStepPanel::PlayListStepPanel(wxWindow* parent, PlayListStep* step, wxWin
     FlexGridSizer1->Add(CheckBox_TimeCodeOverride, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticText_BaseTime = new wxStaticText(this, ID_STATICTEXT4, _("Base Time:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     FlexGridSizer1->Add(StaticText_BaseTime, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TimeCodeBaseTime = new wxTimePickerCtrl(this, ID_TIMEPICKERCTRL1, wxDateTime::Now(), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TIMEPICKERCTRL1"));
+    TimeCodeBaseTime = new wxTextCtrl(this, ID_TIMEPICKERCTRL1, _("00:00:00"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TIMEPICKERCTRL1"));
     FlexGridSizer1->Add(TimeCodeBaseTime, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     SetSizer(FlexGridSizer1);
     FlexGridSizer1->SetSizeHints(this);
@@ -101,13 +101,15 @@ PlayListStepPanel::PlayListStepPanel(wxWindow* parent, PlayListStep* step, wxWin
 
     int bt = step->GetBaseTimeCodeTime();
 
+    // a text box rather than the native time picker, which stays white in dark mode
+    TimeCodeBaseTime->SetToolTip("Time code at the start of this step (HH:MM:SS)");
     if (bt < 0) {
         CheckBox_TimeCodeOverride->SetValue(false);
-        TimeCodeBaseTime->SetValue(wxDateTime(0, 0, 0));
+        bt = 0;
     } else {
         CheckBox_TimeCodeOverride->SetValue(true);
-        TimeCodeBaseTime->SetValue(wxDateTime(bt / (60 * 60), (bt % (60 * 60)) / 60, bt % 60));
     }
+    TimeCodeBaseTime->SetValue(wxString::Format("%02d:%02d:%02d", bt / (60 * 60), (bt % (60 * 60)) / 60, bt % 60));
 
     ValidateWindow();
 }
@@ -121,8 +123,12 @@ PlayListStepPanel::~PlayListStepPanel() {
     _step->SetEveryStepExcludeFirst(CheckBox_ExcludeFirstStep->GetValue());
     _step->SetEveryStepExcludeLast(CheckBox_ExcludeLastStep->GetValue());
     if (CheckBox_TimeCodeOverride->GetValue()) {
-        wxDateTime bt = TimeCodeBaseTime->GetValue();
-        _step->SetBaseTimeCodeTime(bt.GetHour() * 60 * 60 + bt.GetMinute() * 60 + bt.GetSecond());
+        // HH:MM:SS, also accepting MM:SS or seconds
+        int seconds = 0;
+        for (const auto& part : wxSplit(TimeCodeBaseTime->GetValue(), ':')) {
+            seconds = seconds * 60 + std::max(0, (int)std::strtol(part.c_str(), nullptr, 10));
+        }
+        _step->SetBaseTimeCodeTime(seconds);
     } else {
         _step->SetBaseTimeCodeTime(-1);
     }

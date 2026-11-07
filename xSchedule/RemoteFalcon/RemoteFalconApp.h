@@ -25,3 +25,6 @@ public:
 };
 
 DECLARE_APP(RemoteFalconApp)
+
+class PluginSettings;
+PluginSettings& RemoteFalconSettings();

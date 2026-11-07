@@ -144,6 +144,10 @@ public:
             _changeCount++;
         }
     }
+    // the step doesn't end while an item is busy
+    virtual bool IsBusy() const {
+        return false;
+    }
     virtual bool Done() const {
         return false;
     }
@@ -181,6 +185,9 @@ public:
     virtual void Restart() {
     }
     virtual void Pause(bool pause) {
+    }
+    // starts decoding the audio this item plays, so starting it later doesn't wait
+    virtual void PreloadAudio() {
     }
     virtual void Suspend(bool suspend) {
     }

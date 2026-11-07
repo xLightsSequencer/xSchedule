@@ -53,24 +53,28 @@ wxXmlNode* OutputProcessSustain::Save()
 
 void OutputProcessSustain::Frame(uint8_t* buffer, size_t size, std::list<OutputProcess*>& processes)
 {
-    size_t sc = GetStartChannelAsNumber();
-    size_t chs = std::min(_channels, size - (sc - 1));
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
+    size_t chs = std::min(_channels, size - off);
 
-    if (_save == nullptr)
+    if (_save == nullptr || _saveSize != chs)
     {
+        if (_save != nullptr) free(_save);
         _save = (uint8_t*)malloc(chs);
+        if (_save == nullptr) return;
+        _saveSize = chs;
         memset(_save, 0x00, chs);
     }
 
     // copy from save wherever the value is zero
-    for (long i = 0; i < (long)chs; i++)
+    for (size_t i = 0; i < chs; i++)
     {
-        if (*(buffer + sc - 1 + i) == 0)
+        if (*(buffer + off + i) == 0)
         {
-            *(buffer + sc - 1 + i) = *(_save + i);
+            *(buffer + off + i) = *(_save + i);
         }
     }
 
     // back everything up for next time
-    memcpy(_save, buffer + sc - 1, chs);
+    memcpy(_save, buffer + off, chs);
 }

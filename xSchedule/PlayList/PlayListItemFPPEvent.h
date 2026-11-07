@@ -47,7 +47,7 @@ public:
     int GetMajor() const { return _major; }
     int GetMinor() const { return _minor; }
     std::string GetIP() const { return _ip; }
-    bool GetMethod() const { return _method; }
+    int GetMethod() const { return _method; }
     virtual std::string GetTitle() const override;
     #pragma endregion Getters and Setters
 

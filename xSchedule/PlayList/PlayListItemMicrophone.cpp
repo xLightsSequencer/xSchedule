@@ -10,8 +10,8 @@
 
 #include "PlayListItemMicrophone.h"
 #include "PlayListItemMicrophonePanel.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/media/AudioManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 #include <wx/notebook.h>
 #include <wx/xml/xml.h>
 
@@ -120,7 +120,7 @@ void PlayListItemMicrophone::Frame(uint8_t* buffer, size_t size, size_t ms, size
         int value = 0;
 
         if (_mode == "Maximum") {
-            auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+            auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
             if (sdl != nullptr) {
                 value = sdl->GetMax(framems);
             }
@@ -144,7 +144,7 @@ void PlayListItemMicrophone::Frame(uint8_t* buffer, size_t size, size_t ms, size
 
 void PlayListItemMicrophone::Start(long stepLengthMS) {
     PlayListItem::Start(stepLengthMS);
-    auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+    auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
     if (sdl != nullptr) {
         sdl->StartListening();
         sdl->PurgeInput();
@@ -152,7 +152,7 @@ void PlayListItemMicrophone::Start(long stepLengthMS) {
 }
 
 void PlayListItemMicrophone::Stop() {
-    auto sdl = AudioManager::GetSDLManager()->GetInputSDL(_device);
+    auto sdl = AudioManager::GetAudioManager()->GetInput(_device);
     if (sdl != nullptr) {
         sdl->StopListening();
     }

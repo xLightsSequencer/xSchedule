@@ -1,0 +1,102 @@
+name: Follow xLights releases
+
+# Once a week, looks for an xLights release newer than the commit the xlights submodule points at. If there is
+# one, it moves the submodule to that release on a branch, starts the build workflows on the branch, and opens a
+# pull request into the default branch. Merge it once the builds pass.
+#
+# Needs "Allow GitHub Actions to create and approve pull requests" turned on (Settings > Actions > General).
+# Pull requests opened with the workflow token don't trigger other workflows, so the builds are started here, and
+# each workflow in BUILD_WORKFLOWS needs a workflow_dispatch trigger.
+
+on:
+  schedule:
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+env:
+  BUILD_WORKFLOWS: win_CI.yml Ubuntu_CI.yml
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Look for a newer xLights release
+        id: check
+        run: |
+          git submodule update --init --filter=blob:none xlights
+          git -C xlights fetch --quiet --tags --filter=blob:none origin
+          current=$(git -C xlights rev-parse HEAD)
+          release=$(git -C xlights tag --list | grep -E '^[0-9]{4}\.[0-9]+(\.[0-9]+)?$' | sort -V | tail -1)
+          release_commit=$(git -C xlights rev-parse "$release^{commit}")
+          echo "xlights submodule: $current, latest release: $release ($release_commit)"
+          if git -C xlights merge-base --is-ancestor "$release_commit" "$current"; then
+            echo "Already at or past $release."
+            exit 0
+          fi
+          branch="xlights-update/$release"
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            echo "$branch has already been proposed."
+            exit 0
+          fi
+          {
+            echo "release=$release"
+            echo "release_commit=$release_commit"
+            echo "previous=$current"
+            echo "branch=$branch"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Move the submodule and open a pull request
+        if: steps.check.outputs.release != ''
+        env:
+          RELEASE: ${{ steps.check.outputs.release }}
+          RELEASE_COMMIT: ${{ steps.check.outputs.release_commit }}
+          PREVIOUS: ${{ steps.check.outputs.previous }}
+          BRANCH: ${{ steps.check.outputs.branch }}
+        run: |
+          base=$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq .defaultBranchRef.name)
+          git -C xlights checkout --quiet "$RELEASE_COMMIT"
+          git checkout -b "$BRANCH"
+          git add xlights
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Update the xLights submodule to $RELEASE"
+          git push origin "$BRANCH"
+
+          for workflow in $BUILD_WORKFLOWS; do
+            gh workflow run "$workflow" --ref "$BRANCH"
+          done
+
+          old_deps=$(git -C xlights show "$PREVIOUS:ci_scripts/deps_version.txt" | tr -d '[:space:]')
+          new_deps=$(git -C xlights show "$RELEASE_COMMIT:ci_scripts/deps_version.txt" | tr -d '[:space:]')
+          controllers=$(git -C xlights diff --name-status "$PREVIOUS" "$RELEASE_COMMIT" -- resources/controllers)
+          {
+            echo "Moves the \`xlights\` submodule to xLights [$RELEASE](https://github.com/xLightsSequencer/xLights/releases/tag/$RELEASE)."
+            echo
+            echo "- xLights changes: https://github.com/xLightsSequencer/xLights/compare/$PREVIOUS...$RELEASE_COMMIT"
+            if [ "$old_deps" != "$new_deps" ]; then
+              echo "- Dependency bundle and wxWidgets: $old_deps → $new_deps"
+            else
+              echo "- Dependency bundle and wxWidgets: unchanged ($new_deps)"
+            fi
+            if [ -n "$controllers" ]; then
+              echo "- Controller definitions changed:"
+              echo '```'
+              echo "$controllers"
+              echo '```'
+            else
+              echo "- Controller definitions: unchanged"
+            fi
+            echo
+            echo "The builds for this branch were started by this workflow; merge once they pass."
+          } > body.md
+          gh pr create --base "$base" --head "$BRANCH" --title "Update xLights to $RELEASE" --body-file body.md

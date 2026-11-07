@@ -1,6 +1,7 @@
 #ifndef SMSSERVICE_H
 #define SMSSERVICE_H
 
+#include <algorithm>
 #include <vector>
 #include <atomic>
 #include <mutex>
@@ -239,12 +240,19 @@ class SMSService
 
             int maxAgeMins = _options->GetMaxMessageAge();
 
+            // rejected messages are kept so they aren't processed again; past the maximum age they would be ignored anyway
+            if (maxAgeMins != 0)
+            {
+                _rejectedMessages.erase(std::remove_if(_rejectedMessages.begin(), _rejectedMessages.end(),
+                    [maxAgeMins](const SMSMessage& m) { return m.GetAgeMins() >= maxAgeMins; }), _rejectedMessages.end());
+            }
+
             // Only add if not too old
             if (maxAgeMins == 0 || msg.GetAgeMins() < maxAgeMins)
             {
                 // Only add if not already there
                 bool found = false;
-                for (auto it : _messages)
+                for (const auto& it : _messages)
                 {
                     if (it == msg)
                     {
@@ -252,7 +260,7 @@ class SMSService
                         break;
                     }
                 }
-                for (auto it : _rejectedMessages)
+                for (const auto& it : _rejectedMessages)
                 {
                     if (it == msg)
                     {

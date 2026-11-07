@@ -3,37 +3,41 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>xSchedule | Login</title>
-    <!-- Bootstrap core CSS -->
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favcon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favcon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/favcon/apple-icon-180x180.png">
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <script>
+      try {
+        var t = localStorage.getItem('xsTheme');
+        if (t == 'light' || t == 'dark') document.documentElement.setAttribute('data-theme', t);
+        var v = JSON.parse(localStorage.getItem('xsColorVars') || '{}');
+        for (var k in v) document.documentElement.style.setProperty(k, v[k]);
+      } catch (e) {}
+    </script>
   </head>
   <body>
-    <header id="header">
-      <div class="container">
-        <div class="row">
-          <div class="col-md-12">
-            <h1 class="text-center">xLights Scheduler</h1>
-          </div>
-        </div>
+    <nav id="nav" class="xs-nav">
+      <div class="xs-bar">
+        <span id="header" class="xs-brand"><img src="img/xlights.png" alt="xLights"><span id="headerName">xLights Scheduler</span></span>
       </div>
-    </header>
+    </nav>
 
     <section id="main">
-      <div class="container">
-        <div class="row">
-          <div class="col-md-4 col-md-offset-4">
-            <div id="login" class="well">
-                  <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" class="form-control" id="webPassword" placeholder="Password"/>
-                  </div>
-                  <a href="#" onclick="forgotPassword()" class="flip-link btn btn-inverse" id="forgotPassword">Lost password?</a>
-                  <span class="text-right"><button type="submit" onclick="loginSubmit();" class="btn btn-default btn-success pull-right">Login</button></class>
-              </form>
+      <div class="xs-solo">
+        <form id="login" class="xs-card xs-form" onsubmit="loginSubmit(); return false;">
+          <label class="xs-field"><span>Password</span>
+            <input type="password" class="form-control" id="webPassword" placeholder="Password" autofocus>
+          </label>
+          <div id="error"></div>
+          <div class="xs-actions" style="justify-content: space-between;">
+            <button type="button" onclick="forgotPassword()" class="xs-btn" id="forgotPassword">Lost password?</button>
+            <button type="submit" class="xs-btn xs-btn-primary">Log in</button>
           </div>
-        </div>
+        </form>
       </div>
     </section>
 
@@ -41,9 +45,6 @@
       <p>xSchedule</p>
     </footer>
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/assets/jquery.min.js"></script>
     <script src="js/assets/bootstrap.min.js"></script>
     <script src="js/login.js"></script>

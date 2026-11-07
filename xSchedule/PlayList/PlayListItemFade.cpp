@@ -12,7 +12,7 @@
 #include <wx/xml/xml.h>
 #include <wx/notebook.h>
 #include "PlayListItemFadePanel.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../../xlights/src-core/outputs/OutputManager.h"
 
 PlayListItemFade::PlayListItemFade(OutputManager* outputManager, wxXmlNode* node) : PlayListItem(node)
 {
@@ -102,7 +102,7 @@ void PlayListItemFade::Frame(uint8_t* buffer, size_t size, size_t ms, size_t fra
         duration = _stepLengthMS - _delay;
     }
 
-	if (_duration == 0) return;
+	if (_duration == 0 || duration <= 0) return;
 	
     if (outputframe)
     {
@@ -110,13 +110,10 @@ void PlayListItemFade::Frame(uint8_t* buffer, size_t size, size_t ms, size_t fra
         {
             long sc = GetStartChannelAsNumber();
 
-            if ((size_t)sc > size) return;
+            if (sc < 1 || (size_t)sc > size) return;
 
-            size_t toset = _channels + sc - 1 < size ? _channels : (size - sc + 1);
-            if (_channels == 0)
-            {
-                toset = size;
-            }
+            // no channel count means every channel from the start channel on
+            size_t toset = _channels != 0 && _channels + sc - 1 < size ? _channels : (size - sc + 1);
 
 			int adjust = ((ms - _delay) * 255) / duration;
 			
@@ -129,7 +126,7 @@ void PlayListItemFade::Frame(uint8_t* buffer, size_t size, size_t ms, size_t fra
             {
 				for (long i = 0; i < (long)toset; i++)
 				{
-					buffer[i] = ((int)buffer[i] * adjust) / 255;
+					buffer[sc - 1 + i] = ((int)buffer[sc - 1 + i] * adjust) / 255;
 				}
             }
         }

@@ -16,9 +16,10 @@
 #include "events/ListenerManager.h"
 #include "wxMIDI/src/wxMidi.h"
 
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include <log.h>
+#include "Diagnostics.h"
 
 class MIDITimecodeThread : public wxThread {
     std::atomic<bool> _stop;
@@ -59,38 +60,38 @@ public:
     }
 
     void* Entry() {
-        wxLongLong last = 0;
+        Diagnostics::ThreadName name("MIDI timecode");
         double interval = _syncMidi->GetInterval() * 1000.0; // quarter frame messages
         _running = true;
+        // the time of the next send; sending only when it is due and sleeping until then keeps the thread idle
+        wxLongLong next = 0;
         while (!_stop) {
-            if (!_suspend) {
-                long long sleepfor = 0;
+            if (_suspend) {
+                wxMilliSleep(10);
+                continue;
+            }
 
-                if (wxGetUTCTimeUSec() - last > interval) {
-                    // get our absolute position
-                    PlayList* pl = _scheduleManager->GetRunningPlayList();
-                    if (pl != nullptr) {
-                        // sent a sync
-                        auto ms = pl->GetPosition();
-                        auto stepno = pl->GetRunningStepIndex();
-                        auto stepms = pl->GetRunningStep() == nullptr ? 0 : pl->GetRunningStep()->GetPosition();
-                        auto basesecs = pl->GetRunningStep() == nullptr ? -1 : pl->GetRunningStep()->GetBaseTimeCodeTime();
-                        _syncMidi->SendSync(0, 0, stepms, ms, "", "", "", "", stepno, basesecs);
-                        _toSendStop = true;
-                    } else {
-                        if (_toSendStop) {
-                            _syncMidi->SendStop();
-                            _toSendStop = false;
-                        }
+            wxLongLong now = wxGetUTCTimeUSec();
+            if (now >= next) {
+                // get our absolute position
+                PlaybackState playing = _scheduleManager->GetPlaybackSnapshot();
+                if (playing.playing) {
+                    // sent a sync
+                    _syncMidi->SendSync(0, 0, playing.stepMS, playing.playlistMS, "", "", "", "", playing.stepNo, playing.baseTimeCodeSecs);
+                    _toSendStop = true;
+                } else {
+                    if (_toSendStop) {
+                        _syncMidi->SendStop();
+                        _toSendStop = false;
                     }
-
-                    sleepfor = (int64_t)((last.GetValue()) + interval - wxGetUTCTimeUSec().GetValue());
-                    last = wxGetUTCTimeUSec().GetValue();
                 }
+                // a long way behind (a stall, or the first send) starts again from now rather than catching up in a burst
+                next = (next == 0 || (now - next).GetValue() > (long long)interval) ? now + (long long)interval : next + (long long)interval;
+            }
 
-                if (sleepfor > 0) {
-                    wxMicroSleep(sleepfor);
-                }
+            long long sleepfor = (next - wxGetUTCTimeUSec()).GetValue();
+            if (sleepfor > 0) {
+                wxMicroSleep(sleepfor);
             }
         }
         _running = false;
@@ -138,6 +139,7 @@ public:
     }
 
     void* Entry() {
+        Diagnostics::ThreadName name("MIDI clock");
         wxLongLong last = 0;
         double interval = 1000000.0 / 24.0; // 88 BPM, 24 frames per second
         spdlog::debug("Clock thread interval {}ms", interval / 1000);
@@ -148,8 +150,7 @@ public:
 
                 if (wxGetUTCTimeUSec() - last > interval) {
                     // get our absolute position
-                    PlayList* pl = _scheduleManager->GetRunningPlayList();
-                    if (pl != nullptr) {
+                    if (_scheduleManager->GetPlaybackSnapshot().playing) {
                         // sent a sync
                         _syncMidi->SendClock();
                     }

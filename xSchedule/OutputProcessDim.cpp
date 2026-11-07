@@ -71,9 +71,11 @@ void OutputProcessDim::Frame(uint8_t* buffer, size_t size, std::list<OutputProce
     if (!_enabled) return;
     if (_dim == 100) return;
 
-    size_t sc = GetStartChannelAsNumber();
+    size_t off;
+    if (!GetBufferOffset(size, off)) return;
+    size_t sc = off + 1;
 
-    size_t chs = std::min(_channels, size - (sc - 1));
+    size_t chs = std::min(_channels, size - off);
 
     auto ed = GetExcludeDim(processes, sc, sc + chs - 1);
 
@@ -97,10 +99,10 @@ void OutputProcessDim::Frame(uint8_t* buffer, size_t size, std::list<OutputProce
 
             if (!ex) {
                 if (_dim == 0) {
-                    *(buffer + i + sc - 1) = 0;
+                    *(buffer + i) = 0;
                 }
                 else {
-                    *(buffer + i + sc - 1) = _dimTable[*(buffer + i + sc - 1)];
+                    *(buffer + i) = _dimTable[*(buffer + i)];
                 }
             }
         }

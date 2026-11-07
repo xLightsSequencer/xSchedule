@@ -10,11 +10,11 @@
 
 #include "ListenerMQTT.h"
 #include "ListenerManager.h"
-#include "../../xLights/outputs/IPOutput.h"
+#include "../../xlights/src-core/outputs/IPOutput.h"
 #include "../ScheduleManager.h"
 #include "../ScheduleOptions.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "../PlayList/PlayListItemMQTT.h"
 
 #include <wx/socket.h>
@@ -127,13 +127,16 @@ void ListenerMQTT::StartProcess(const std::string& localIP)
 
 bool ListenerMQTT::Subscribe(const std::string& topic)
 {
-    static int __msgid = 1;
+    std::unique_lock<std::mutex> lock(_topicLock);
+
+    if (std::find(begin(_subscribed), end(_subscribed), topic) == end(_subscribed))
+    {
+        _subscribed.push_back(topic);
+    }
 
     if (!_isOk)
     {
         spdlog::warn("MQTT trying to subscribe to topic {} but listener not in a good state.", topic);
-
-        std::unique_lock<std::mutex> lock(_topicLock);
 
         if (std::find(begin(_toSubscribe), end(_toSubscribe), topic) == end(_toSubscribe))
         {
@@ -141,6 +144,13 @@ bool ListenerMQTT::Subscribe(const std::string& topic)
         }
         return false;
     }
+
+    return SendSubscribe(topic);
+}
+
+bool ListenerMQTT::SendSubscribe(const std::string& topic)
+{
+    static int __msgid = 1;
 
     uint8_t buffer[1444];
     memset(buffer, 0x00, sizeof(buffer));
@@ -173,9 +183,39 @@ void ListenerMQTT::StopProcess()
     _isOk = false;
 }
 
+void ListenerMQTT::Reconnect()
+{
+    wxLongLong now = wxGetUTCTimeMillis();
+    if (now < _nextRetry) {
+        wxMilliSleep(100);
+        return;
+    }
+
+    spdlog::info("MQTT listener reconnecting to {}:{}.", _ip, _port);
+    if (_client.IsConnected()) {
+        _client.Close();
+    }
+    StartProcess("");
+
+    if (_isOk) {
+        _retryDelay = 1000;
+        std::unique_lock<std::mutex> lock(_topicLock);
+        _toSubscribe = _subscribed;
+    } else {
+        _retryDelay = std::min(_retryDelay * 2, 60000);
+    }
+    _nextRetry = wxGetUTCTimeMillis() + _retryDelay;
+}
+
 void ListenerMQTT::Poll()
 {
-    if (_isOk)
+    if (!_isOk)
+    {
+        // not connected: returning straight away would spin this thread, so wait and retry with a growing delay
+        if (!_stop) Reconnect();
+        return;
+    }
+    else
     {
         if (!_client.IsConnected()) {
             spdlog::error("MQTT client has disconnected.");
@@ -226,7 +266,7 @@ void ListenerMQTT::Poll()
                 int lastSize = 0;
                 while (_toSubscribe.size() != 0 && (int)_toSubscribe.size() != lastSize) {
                     lastSize = _toSubscribe.size();
-                    if (Subscribe(_toSubscribe.front())) {
+                    if (SendSubscribe(_toSubscribe.front())) {
                         _toSubscribe.pop_front();
                     } else {
                         spdlog::debug("MQTT Failed to subscribe to {}", (const char*)_toSubscribe.front().c_str());
