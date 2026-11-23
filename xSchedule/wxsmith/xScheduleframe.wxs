@@ -167,7 +167,16 @@
 										<object class="wxFlexGridSizer" variable="FlexGridSizer7" member="no">
 											<cols>1</cols>
 											<growablecols>0</growablecols>
-											<growablerows>0</growablerows>
+											<growablerows>1</growablerows>
+											<object class="sizeritem">
+												<object class="wxSearchCtrl" name="ID_SEARCHCTRL1" variable="SearchCtrl_TreeFilter" member="yes">
+													<hint>Filter playlists and schedules</hint>
+													<handler function="OnSearchCtrl_TreeFilterText" entry="EVT_TEXT" />
+													<handler function="OnSearchCtrl_TreeFilterCancel" entry="EVT_SEARCHCTRL_CANCEL_BTN" />
+												</object>
+												<flag>wxLEFT|wxRIGHT|wxTOP|wxEXPAND</flag>
+												<border>5</border>
+											</object>
 											<object class="sizeritem">
 												<object class="wxTreeCtrl" name="ID_TREECTRL1" variable="TreeCtrl_PlayListsSchedules" member="yes">
 													<image_list>&lt;none&gt;</image_list>
@@ -273,10 +282,22 @@
 							<growablecols>0</growablecols>
 							<growablerows>0</growablerows>
 							<object class="sizeritem">
-								<object class="wxListView" name="ID_LISTVIEW1" variable="ListView_Running" member="yes">
-									<minsize>300,300</minsize>
-									<style>wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_NO_SORT_HEADER</style>
-									<handler function="OnListView_RunningItemActivated" entry="EVT_LIST_ITEM_ACTIVATED" />
+								<object class="wxNotebook" name="ID_NOTEBOOK1" variable="Notebook_Running" member="yes">
+									<object class="notebookpage">
+										<object class="wxListView" name="ID_LISTVIEW1" variable="ListView_Running" member="yes">
+											<minsize>300,300</minsize>
+											<style>wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_NO_SORT_HEADER</style>
+											<handler function="OnListView_RunningItemActivated" entry="EVT_LIST_ITEM_ACTIVATED" />
+										</object>
+										<label>Running playlist</label>
+										<selected>1</selected>
+									</object>
+									<object class="notebookpage">
+										<object class="wxListView" name="ID_LISTVIEW3" variable="ListView_Upcoming" member="yes">
+											<style>wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_NO_SORT_HEADER</style>
+										</object>
+										<label>Upcoming</label>
+									</object>
 								</object>
 								<flag>wxALL|wxEXPAND</flag>
 								<border>5</border>
@@ -300,12 +321,14 @@
 					<style>wxBORDER_RAISED|wxTAB_TRAVERSAL</style>
 					<object class="wxFlexGridSizer" variable="FlexGridSizer6" member="yes">
 						<cols>8</cols>
-						<growablecols>1</growablecols>
+						<growablecols>0</growablecols>
 						<object class="sizeritem">
 							<object class="wxStaticText" name="ID_STATICTEXT1" variable="StaticText_ShowDir" member="yes">
 								<label></label>
+								<minsize>120,-1</minsize>
+								<style>wxST_NO_AUTORESIZE|wxST_ELLIPSIZE_MIDDLE</style>
 							</object>
-							<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+							<flag>wxALL|wxEXPAND</flag>
 							<border>5</border>
 							<option>1</option>
 						</object>
