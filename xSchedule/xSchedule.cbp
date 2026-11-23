@@ -105,7 +105,6 @@
 		<Unit filename="../xlights/common/xlStackWalker.h" />
 		<Unit filename="../xlights/xLights/utils/AudioManager.cpp" />
 		<Unit filename="../xlights/xLights/utils/AudioManager.h" />
-		<Unit filename="../xlights/xLights/ui/setup/Discovery.cpp" />
 		<Unit filename="../xlights/xLights/ui/setup/Discovery.h" />
 		<Unit filename="../xlights/xLights/utils/ExternalHooks.h" />
 		<Unit filename="../xlights/xLights/render/FSEQFile.cpp" />
@@ -250,6 +249,7 @@
 		<Unit filename="Control.h" />
 		<Unit filename="DeadChannelDialog.cpp" />
 		<Unit filename="DeadChannelDialog.h" />
+		<Unit filename="DiscoveryStub.cpp" />
 		<Unit filename="DimDialog.cpp" />
 		<Unit filename="DimDialog.h" />
 		<Unit filename="DimWhiteDialog.cpp" />

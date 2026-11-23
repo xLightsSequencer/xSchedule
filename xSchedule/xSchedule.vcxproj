@@ -217,7 +217,7 @@ IF EXIST "$(SolutionDir)..\bin\*.cfg" copy "$(SolutionDir)..\bin\*.cfg" "$(Targe
     <ClCompile Include="..\xlights\xLights\controllers\BaseController.cpp" />
     <ClCompile Include="..\xlights\xLights\controllers\ControllerCaps.cpp" />
     <ClCompile Include="..\xlights\xLights\controllers\Falcon.cpp" />
-    <ClCompile Include="..\xlights\xLights\ui/setup/Discovery.cpp" />
+    <ClCompile Include="DiscoveryStub.cpp" />
     <ClCompile Include="..\xlights\xLights\utils\AnimatedImage.cpp" />
     <ClCompile Include="..\xlights\xLights\utils\xlImage.cpp" />
     <ClCompile Include="..\xlights\xLights\render\FSEQFile.cpp" />
