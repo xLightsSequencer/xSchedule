@@ -20,7 +20,9 @@ class BrightnessControl;
 #include <wx/frame.h>
 #include <wx/listctrl.h>
 #include <wx/menu.h>
+#include <wx/notebook.h>
 #include <wx/panel.h>
+#include <wx/srchctrl.h>
 #include <wx/sizer.h>
 #include <wx/splitter.h>
 #include <wx/statbmp.h>
@@ -38,6 +40,7 @@ class BrightnessControl;
 class wxDebugReportCompress;
 class ScheduleManager;
 class PlayList;
+class PlayListStep;
 class WebServer;
 class Schedule;
 class RunningSchedule;
@@ -80,6 +83,9 @@ class xScheduleFrame : public xlFrame {
     void LoadShowDir();
     void SaveShowDir() const;
     void UpdateTree() const;
+    void UpdateUpcoming();
+    void RefreshTreeStates();
+    void GetActionSelection(PlayList*& playlist, PlayListStep*& step, Schedule*& schedule);
     void DeleteSelectedItem();
     void ValidateWindow();
     void CreateButtons();
@@ -220,6 +226,8 @@ private:
     void OnMenuItem_UpdateSelected(wxCommandEvent& event);
     void OnMenuItem_DonateSelected(wxCommandEvent& event);
     void OnMenuItem_DownloadSelected(wxCommandEvent& event);
+    void OnSearchCtrl_TreeFilterText(wxCommandEvent& event);
+    void OnSearchCtrl_TreeFilterCancel(wxCommandEvent& event);
     //*)
 
     void SlowFrameProcessing(wxCommandEvent& event);
@@ -260,6 +268,7 @@ private:
     static const wxWindowID ID_CUSTOM2;
     static const wxWindowID ID_BITMAPBUTTON9;
     static const wxWindowID ID_PANEL2;
+    static const wxWindowID ID_SEARCHCTRL1;
     static const wxWindowID ID_TREECTRL1;
     static const wxWindowID ID_BUTTON1;
     static const wxWindowID ID_BUTTON2;
@@ -272,6 +281,8 @@ private:
     static const wxWindowID ID_SPLITTERWINDOW2;
     static const wxWindowID ID_PANEL3;
     static const wxWindowID ID_LISTVIEW1;
+    static const wxWindowID ID_LISTVIEW3;
+    static const wxWindowID ID_NOTEBOOK1;
     static const wxWindowID ID_PANEL5;
     static const wxWindowID ID_SPLITTERWINDOW1;
     static const wxWindowID ID_PANEL1;
@@ -370,6 +381,7 @@ private:
     wxFlexGridSizer* FlexGridSizer6;
     wxListView* ListView_Ping;
     wxListView* ListView_Running;
+    wxListView* ListView_Upcoming;
     wxMenu* Menu4;
     wxMenu* Menu5;
     wxMenu* Menu6;
@@ -415,6 +427,7 @@ private:
     wxMenuItem* MenuItem_VirtualMatrices;
     wxMenuItem* MenuItem_WebInterface;
     wxMenuItem* Menu_OutputProcessing;
+    wxNotebook* Notebook_Running;
     wxPanel* Panel1;
     wxPanel* Panel2;
     wxPanel* Panel3;
@@ -422,6 +435,7 @@ private:
     wxPanel* Panel5;
     wxPanel* Panel6;
     wxPanel* Panel7;
+    wxSearchCtrl* SearchCtrl_TreeFilter;
     wxSplitterWindow* SplitterWindow1;
     wxSplitterWindow* SplitterWindow2;
     wxStaticBitmap* StaticBitmap_Slow;
@@ -439,6 +453,9 @@ private:
     xLightsTimer _timer;
     xLightsTimer _timerSchedule;
     //*)
+
+    wxTimer _treeFilterTimer;
+    std::string _upcomingSignature;
 
     DECLARE_EVENT_TABLE()
 
