@@ -10,11 +10,11 @@
 
 #include "PlayListItemFSEQ.h"
 #include "PlayListItemFSEQPanel.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/render/FSEQFile.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/render/FSEQFile.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "wx/xml/xml.h"
 #include <log.h>
 #include <wx/notebook.h>

@@ -12,7 +12,7 @@
 #include <wx/xml/xml.h>
 #include <wx/notebook.h>
 #include "PlayListItemTestPanel.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 PlayListItemTest::PlayListItemTest(OutputManager* outputManager, wxXmlNode* node) : PlayListItem(node)
 {

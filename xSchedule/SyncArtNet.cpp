@@ -11,14 +11,14 @@
 #include "SyncArtNet.h"
 #include "ScheduleManager.h"
 #include "ScheduleOptions.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
 #include "PlayList/PlayList.h"
 #include "PlayList/PlayListStep.h"
 #include "events/ListenerManager.h"
 
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/outputs/ArtNetOutput.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/outputs/ArtNetOutput.h"
 #include <log.h>
 
 class ArtNetTimecodeThread : public wxThread {

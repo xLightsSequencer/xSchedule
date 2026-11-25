@@ -11,9 +11,9 @@
 #include "PlayListItemFSEQPanel.h"
 #include "PlayListDialog.h"
 #include "PlayListItemFSEQ.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/render/FSEQFile.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/render/FSEQFile.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "../ScheduleManager.h"
 #include "../xScheduleMain.h"
 

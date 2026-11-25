@@ -12,7 +12,10 @@ DEL_FILE        = rm -f
 ICON_SIZES      = 16x16 32x32 64x64 128x128 256x256
 SUDO            = `which sudo`
 
-WXWIDGETS_TAG=xlights_2026.04
+# wxWidgets tag comes from the xLights submodule's dependency pin so xSchedule
+# always builds against the same wxWidgets as the xLights version it uses.
+WXWIDGETS_TAG := $(shell cat xlights/ci_scripts/deps_version.txt)
+WXWIDGETS_CANVAS_FLAGS = --enable-glcanvasegl
 
 .NOTPARALLEL:
 
@@ -77,13 +80,15 @@ uninstall:
 
 wxwidgets33: FORCE
 	@printf "Checking wxwidgets\n"
-	@if test -n "`wx-config --version 2>/dev/null`"; then \
-		echo "wxWidgets already installed: `wx-config --version`"; \
+	@if test -f /etc/wxwidgets_tag && test "$$(cat /etc/wxwidgets_tag)" = "$(WXWIDGETS_TAG)"; then \
+		echo "wxWidgets $(WXWIDGETS_TAG) already installed in container"; \
+	elif test -n "`wx-config --version 2>/dev/null`"; then \
+		echo "wxWidgets already installed: `wx-config --version` (xLights expects $(WXWIDGETS_TAG))"; \
 	elif test ! -d wxWidgets-$(WXWIDGETS_TAG); then \
 		echo Downloading wxwidgets; \
 		git clone --depth=1 --shallow-submodules --recurse-submodules -b $(WXWIDGETS_TAG) https://github.com/xLightsSequencer/wxWidgets wxWidgets-$(WXWIDGETS_TAG); \
 		cd wxWidgets-$(WXWIDGETS_TAG); \
-		./configure --enable-cxx11 --with-cxx=17 --enable-std_containers --enable-std_string_conv_in_wxstring --enable-backtrace --enable-exceptions --enable-mediactrl --enable-graphics_ctx --enable-monolithic --disable-sdltest --with-gtk=3 --disable-pcx --disable-iff --without-libtiff --enable-utf8 --enable-utf8only --prefix=$(PREFIX); \
+		./configure --enable-cxx11 --with-cxx=17 --enable-std_containers --enable-std_string_conv_in_wxstring --enable-backtrace --enable-exceptions --enable-mediactrl --enable-graphics_ctx --enable-monolithic --disable-sdltest --with-gtk=3 $(WXWIDGETS_CANVAS_FLAGS) --disable-pcx --disable-iff --without-libtiff --enable-utf8 --enable-utf8only --prefix=$(PREFIX); \
 		echo Building wxwidgets; \
 		${MAKE} -j 4 -s; \
 		echo Installing wxwidgets; \

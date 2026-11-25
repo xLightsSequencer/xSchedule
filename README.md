@@ -36,10 +36,14 @@ sudo make install
 
 ### Windows
 
-1. Clone [wxWidgets](https://github.com/xLightsSequencer/wxWidgets) (branch `xlights_2026.04`) as a sibling directory
-2. Build wxWidgets with Visual Studio 2022
-3. Open `xSchedule/xSchedule.sln` in Visual Studio 2022
-4. Build Release x64
+Prebuilt dependencies (wxWidgets, FFmpeg, curl, SDL2, zstd, zlib) come from the same
+[xLights-dependencies](https://github.com/xLightsSequencer/xLights-dependencies) bundle xLights uses, pinned by
+`xlights/ci_scripts/deps_version.txt`. The projects fetch it automatically (via
+`xlights/ci_scripts/fetch_dependencies.ps1`) into `xlights/dependencies-bundle` before compiling. To build against
+a local wxWidgets build instead, set the `WXWIDGETS_ROOT` environment variable.
+
+1. Open `xSchedule/xSchedule.sln` in Visual Studio 2022
+2. Build Release x64
 
 Or use the build script:
 ```cmd

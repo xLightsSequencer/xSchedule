@@ -9,11 +9,11 @@
  **************************************************************/
 
 #include "Pinger.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/outputs/ControllerEthernet.h"
-#include "../xlights/xLights/outputs/ControllerSerial.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/outputs/ControllerEthernet.h"
+#include "../xlights/src-core/outputs/ControllerSerial.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "events/ListenerManager.h"
 
 #include <atomic>
@@ -170,10 +170,10 @@ Output::PINGSTATE APinger::Ping() {
 void APinger::CheckLocal() {
     _isLocal = false;
 
-    auto ips = GetLocalIPs();
+    auto ips = ip_utils::GetLocalIPs();
 
     for (const auto& it : ips) {
-        if (IsInSameSubnet(_ip, it, "255.255.255.0")) {
+        if (ip_utils::IsInSameSubnet(_ip, it, "255.255.255.0")) {
             _isLocal = true;
             break;
         }

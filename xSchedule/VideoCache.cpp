@@ -9,10 +9,11 @@
  **************************************************************/
 
 #include "VideoCache.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/render/VideoReader.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/media/VideoReader.h"
 
+#include <cstring>
 #include <log.h>
 
 // #define VIDEO_EXTRALOGGING
@@ -291,9 +292,20 @@ wxImage CachedVideoReader::GetNextFrame(long ms) {
     return wxImage(_size);
 }
 
-wxImage CachedVideoReader::CreateImageFromFrame(AVFrame* frame, const wxSize& size) {
-    if (frame != nullptr) {
-        wxImage img(frame->width, frame->height, (unsigned char*)frame->data[0], true);
+wxImage CachedVideoReader::CreateImageFromFrame(VideoFrame* frame, const wxSize& size) {
+    if (frame != nullptr && frame->data != nullptr) {
+        const int rowBytes = frame->width * 3;
+        if (frame->linesize == rowBytes) {
+            wxImage img(frame->width, frame->height, frame->data, true);
+            img.SetType(wxBitmapType::wxBITMAP_TYPE_BMP);
+            return img;
+        }
+        // rows are padded - copy them into a tightly packed image
+        wxImage img(frame->width, frame->height, false);
+        unsigned char* dst = img.GetData();
+        for (int y = 0; y < frame->height; ++y) {
+            memcpy(dst + (size_t)y * rowBytes, frame->data + (size_t)y * frame->linesize, rowBytes);
+        }
         img.SetType(wxBitmapType::wxBITMAP_TYPE_BMP);
         return img;
     } else {

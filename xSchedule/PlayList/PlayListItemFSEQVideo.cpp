@@ -16,12 +16,12 @@
 #include "PlayListItemFSEQVideoPanel.h"
 #include "PlayerFrame.h"
 #include "PlayerWindow.h"
-#include "../../xLights/utils/AudioManager.h"
-#include "../../xLights/render/FSEQFile.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
-#include "../../xLights/render/VideoReader.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/render/FSEQFile.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/media/VideoReader.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "../ScheduleManager.h"
 #include "../ScheduleOptions.h"
 #include "../VideoCache.h"
@@ -595,7 +595,7 @@ void PlayListItemFSEQVideo::Frame(uint8_t* buffer, size_t size, size_t ms, size_
                         adjustedMS -= videoLength;
                     }
 
-                    AVFrame* img = _videoReader->GetNextFrame(adjustedMS, framems);
+                    VideoFrame* img = _videoReader->GetNextFrame(adjustedMS, framems);
                     _window->SetImage(CachedVideoReader::FadeImage(CachedVideoReader::CreateImageFromFrame(img, _size), brightness));
                 }
             }

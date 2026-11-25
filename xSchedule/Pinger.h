@@ -14,7 +14,7 @@
 #include <list>
 #include <atomic>
 
-#include "../xlights/xLights/outputs/Output.h"
+#include "../xlights/src-core/outputs/Output.h"
 
 #define PINGINTERVAL 60
 

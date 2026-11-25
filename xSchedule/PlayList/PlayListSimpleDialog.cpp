@@ -19,8 +19,8 @@
 #include "PlayListItemFSEQ.h"
 #include "PlayListItemFSEQVideo.h"
 #include "PlayListItemAudio.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "../ScheduleOptions.h"
 
 #include <wx/xml/xml.h>

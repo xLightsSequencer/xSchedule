@@ -5,7 +5,7 @@
 
 #include <log.h>
 
-#include "../../xlights/xLights/utils/string_utils.h"
+#include "../../xlights/src-core/utils/string_utils.h"
 
 #include "SMSMessage.h"
 #include "SMSService.h"

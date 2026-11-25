@@ -39,20 +39,21 @@ Source: "../../xSchedule/xSMSDaemon/PhoneBlacklist.txt"; DestDir: "{app}"; Flags
 ; RemoteFalcon
 Source: "../../xSchedule/RemoteFalcon/x64/Release/RemoteFalcon.dll"; DestDir: "{app}"
 
-; DLLs from xLights repo
-Source: "../../xlights/bin64/libcurl-x64.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/avcodec-60.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/avformat-60.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/avutil-58.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/swresample-4.dll"; DestDir: "{app}"; Flags: "ignoreversion"
-Source: "../../xlights/bin64/swscale-7.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+; DLLs from the xLights dependency bundle (staged into xlights/bin64 by xlights/ci_scripts/fetch_dependencies.ps1)
+Source: "../../xlights/bin64/libcurl.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/bin64/avcodec-62.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/bin64/avfilter-11.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/bin64/avformat-62.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/bin64/avutil-60.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/bin64/swresample-6.dll"; DestDir: "{app}"; Flags: "ignoreversion"
+Source: "../../xlights/bin64/swscale-9.dll"; DestDir: "{app}"; Flags: "ignoreversion"
 Source: "../../xlights/bin64/SDL2.dll"; DestDir: "{app}"; Flags: "ignoreversion"
 
 ; readmes and licenses
 Source: "../../LICENSE"; DestDir: "{app}";
 
 ; VC++ Redistributable
-Source: "vcredist/vc_redist.x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall
+Source: "../../xlights/build_scripts/msw/vcredist/VC_redist.x64.exe"; DestDir: {tmp}; DestName: "vc_redist.x64.exe"; Flags: deleteafterinstall
 
 [Icons]
 Name: "{group}\xSchedule"; Filename: "{app}\xSchedule.EXE"; WorkingDir: "{app}"

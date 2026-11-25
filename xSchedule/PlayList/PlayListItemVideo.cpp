@@ -15,12 +15,12 @@
 #include "PlayListItemVideo.h"
 #include "PlayListItemVideoPanel.h"
 #include "../VideoCache.h"
-#include "../../xLights/render/VideoReader.h"
+#include "../xlights/src-core/media/VideoReader.h"
 #include "../xScheduleApp.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "PlayerFrame.h"
 #include "PlayerWindow.h"
 #include "../ScheduleOptions.h"
@@ -305,7 +305,7 @@ void PlayListItemVideo::Frame(uint8_t* buffer, size_t size, size_t ms, size_t fr
                         adjustedMS -= videoLength;
                     }
 
-                    AVFrame* img = _videoReader->GetNextFrame(adjustedMS, framems);
+                    VideoFrame* img = _videoReader->GetNextFrame(adjustedMS, framems);
                     if (_window != nullptr) _window->SetImage(CachedVideoReader::FadeImage(CachedVideoReader::CreateImageFromFrame(img, _size), brightness));
                 }
             }

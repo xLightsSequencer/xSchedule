@@ -12,7 +12,7 @@
 #include "PlayListItemFade.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(PlayListItemFadePanel)
 #include <wx/intl.h>

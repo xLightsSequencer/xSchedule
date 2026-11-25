@@ -24,22 +24,23 @@
 #include "Pinger.h"
 #include "RunningSchedule.h"
 #include "ScheduleManager.h"
+#include "xScheduleConfig.h"
 #include "ScheduleOptions.h"
 #include "UserButton.h"
 #include "Xyzzy.h"
 #include "xScheduleApp.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "xScheduleMain.h"
-#include "../xlights/xLights/utils/AudioManager.h"
-#include "../xlights/xLights/utils/Parallel.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/render/VideoReader.h"
-#include "../xlights/xLights/outputs/Controller.h"
-#include "../xlights/xLights/outputs/ControllerEthernet.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
-#include "../xlights/xLights/outputs/Output.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/utils/Parallel.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/media/VideoReader.h"
+#include "../xlights/src-core/outputs/Controller.h"
+#include "../xlights/src-core/outputs/ControllerEthernet.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/Output.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "xScheduleVersion.h"
 #include "PlayList/PlayList.h"
 #include "PlayList/PlayListItemAudio.h"
@@ -4687,15 +4688,7 @@ std::string ScheduleManager::DecodeButton(const std::string& buttonlabelparamete
 }
 
 std::string ScheduleManager::xLightsShowDir() {
-    wxString showDir = "";
-
-    wxConfig* xlconfig = new wxConfig(_("xLights"));
-    if (xlconfig != nullptr) {
-        xlconfig->Read(_("LastDir"), &showDir);
-        delete xlconfig;
-    }
-
-    return showDir.ToStdString();
+    return ReadXLightsSetting("LastDir");
 }
 
 std::string ScheduleManager::xScheduleShowDir() {
@@ -4843,7 +4836,7 @@ std::string ScheduleManager::GetForceLocalIP() const {
     wxString localIP;
     config->Read(_("xLightsLocalIP"), &localIP, "");
     if (localIP != "") {
-        if (IsValidLocalIP(localIP)) {
+        if (ip_utils::IsValidLocalIP(localIP.ToStdString())) {
             spdlog::info("Forcing output via {}.", localIP.ToStdString());
         } else {
             spdlog::warn("Forcing output via {} IGNORED as the IP does not exist on this machine at this time.", localIP.ToStdString());

@@ -16,8 +16,8 @@
 #include <wx/config.h>
 #include <wx/wxcrt.h>
 
-#include "../../xlights/xLights/utils/UtilFunctions.h"
-#include "../../xlights/xLights/ui/wxUtilities.h"
+#include "../../xlights/src-core/utils/UtilFunctions.h"
+#include "../../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 RemoteFalconOptions::RemoteFalconOptions()
 {

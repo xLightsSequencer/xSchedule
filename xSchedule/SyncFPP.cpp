@@ -13,11 +13,11 @@
 #include "events/ListenerManager.h"
 
 #include <log.h>
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include <wx/filename.h>
 #include "Control.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
 #include "xScheduleVersion.h"
 
 #define FPP_MEDIA_SYNC_INTERVAL_MS 500

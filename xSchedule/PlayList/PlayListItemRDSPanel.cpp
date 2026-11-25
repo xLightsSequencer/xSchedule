@@ -10,7 +10,7 @@
 
 #include "PlayListItemRDSPanel.h"
 #include "PlayListItemRDS.h"
-#include "../../xLights/outputs/SerialOutput.h"
+#include "../xlights/src-core/outputs/SerialOutput.h"
 
 //(*InternalHeaders(PlayListItemRDSPanel)
 #include <wx/intl.h>

@@ -18,7 +18,7 @@
 
 #include "CommandManager.h"
 #include "UserButton.h"
-#include "../xlights/xLights/utils/AudioManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
 #include "events/EventARTNet.h"
 #include "events/EventARTNetTrigger.h"
 #include "events/EventBase.h"
@@ -76,8 +76,8 @@ ScheduleOptions::ScheduleOptions(OutputManager* outputManager, wxXmlNode* node, 
     _artNetTimeCodeFormat = static_cast<TIMECODEFORMAT>(wxAtoi(node->GetAttribute("ARTNetTimeCodeFormat", "1")));
     _audioDevice = node->GetAttribute("AudioDevice", "").ToStdString();
     _inputAudioDevice = node->GetAttribute("InputAudioDevice", "").ToStdString();
-    AudioManager::GetSDLManager()->SetDefaultOutput(_audioDevice);
-    AudioManager::GetSDLManager()->SetDefaultInput(_inputAudioDevice);
+    AudioManager::GetAudioManager()->SetDefaultOutput(_audioDevice);
+    AudioManager::GetAudioManager()->SetDefaultInput(_inputAudioDevice);
     _password = node->GetAttribute("Password", "");
     _defaultPage = node->GetAttribute("DefaultPage", "index.html");
     _allowUnauth = node->GetAttribute("AllowUnauth", "FALSE") == "TRUE";
@@ -149,7 +149,7 @@ ScheduleOptions::ScheduleOptions(OutputManager* outputManager, wxXmlNode* node, 
 void ScheduleOptions::SetAudioDevice(const std::string& audioDevice) {
     if (_audioDevice != audioDevice) {
         _audioDevice = audioDevice;
-        AudioManager::GetSDLManager()->SetDefaultOutput(_audioDevice);
+        AudioManager::GetAudioManager()->SetDefaultOutput(_audioDevice);
         _changeCount++;
     }
 }
@@ -157,7 +157,7 @@ void ScheduleOptions::SetAudioDevice(const std::string& audioDevice) {
 void ScheduleOptions::SetInputAudioDevice(const std::string& audioDevice) {
     if (_inputAudioDevice != audioDevice) {
         _inputAudioDevice = audioDevice;
-        AudioManager::GetSDLManager()->SetDefaultInput(_inputAudioDevice);
+        AudioManager::GetAudioManager()->SetDefaultInput(_inputAudioDevice);
         _changeCount++;
     }
 }

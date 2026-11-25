@@ -31,6 +31,7 @@
 #include <wx/numdlg.h>
 
 #include "xScheduleMain.h"
+#include "xScheduleConfig.h"
 #include "PlayList/PlayList.h"
 #include "MyTreeItemData.h"
 #include "ScheduleManager.h"
@@ -39,9 +40,9 @@
 #include "OptionsDialog.h"
 #include "WebServer.h"
 #include "PlayList/PlayListStep.h"
-#include "../xlights/xLights/xLightsVersion.h"
+#include "../xlights/src-core/xLightsVersion.h"
 #include "xScheduleVersion.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 #include "RunningSchedule.h"
 #include "UserButton.h"
 #include "OutputProcessingDialog.h"
@@ -54,22 +55,22 @@
 #include "ConfigureTest.h"
 #include "Pinger.h"
 #include "EventsDialog.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
 #include "PlayList/PlayListItemOSC.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/utils/ip_utils.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/utils/ip_utils.h"
 #include "ConfigureMIDITimecodeDialog.h"
 #include "City.h"
 #include "events/ListenerManager.h"
 #include "ExtraIPsDialog.h"
 #include "SyncFPP.h"
-#include "../xlights/xLights/render/VideoReader.h"
-#include "../xlights/xLights/utils/SpecialOptions.h"
-#include "../xlights/xLights/outputs/Output.h"
-#include "../xlights/xLights/utils/AudioManager.h"
-#include "../xlights/xLights/outputs/ControllerEthernet.h"
-#include "../xlights/xLights/outputs/ControllerSerial.h"
+#include "../xlights/src-core/media/VideoReader.h"
+#include "../xlights/src-core/utils/SpecialOptions.h"
+#include "../xlights/src-core/outputs/Output.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/outputs/ControllerEthernet.h"
+#include "../xlights/src-core/outputs/ControllerSerial.h"
 #include "RemoteModeConfigDialog.h"
 #include "utils/ExternalHooks.h"
 #include "utils/CurlManager.h"
@@ -402,8 +403,6 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     _nowebicon = wxBitmap(no_web_icon_24);
     _webicon = wxBitmap(web_icon_24);
     _slowicon = wxBitmap(slow_32);
-
-    _timer.SetLog((spdlog::get_level() == spdlog::level::debug));
 
     //(*Initialize(xScheduleFrame)
     wxBoxSizer* BoxSizer1;
@@ -750,15 +749,9 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
 
     ListView_Ping->Connect(wxEVT_MOTION, (wxObjectEventFunction)&xScheduleFrame::OnListView_PingMouseMove, nullptr, this);
 
-    wxString userEmail;
-    wxConfig* xlconfig = new wxConfig(_("xLights"));
-    if (xlconfig != nullptr)     {
-        xlconfig->Read("xLightsUserEmail", &userEmail, "");
-        if (userEmail != "noone@nowhere.xlights.org" && userEmail != "")
-            spdlog::debug("User email address: <email>{}</email>", userEmail.ToStdString());
-        delete xlconfig;
-        xlconfig = nullptr;
-    }
+    std::string const userEmail = ReadXLightsSetting("xLightsUserEmail");
+    if (userEmail != "noone@nowhere.xlights.org" && userEmail != "")
+        spdlog::debug("User email address: <email>{}</email>", userEmail);
 
     _timer.SetName("xSchedule frame timer");
     _timerSchedule.SetName("xSchedule schedule timer");
@@ -2618,7 +2611,7 @@ void xScheduleFrame::UpdateStatus(bool force)
                 if (!currenthighlighted && ListView_Running->GetItemData(i) == step->GetId()) {
                     currenthighlighted = true;
                     ListView_Running->SetItem(i, 4, step->GetStatus());
-                    if (step->GetAudioManager() != nullptr && AudioManager::GetSDLManager()->IsNoAudio()) {
+                    if (step->GetAudioManager() != nullptr && AudioManager::GetAudioManager()->IsNoAudio()) {
                         ListView_Running->SetItemBackgroundColour(i, StatusFill(wxColor(244, 146, 155)));
                         const std::string noaudio = "Audio not playing due to no audio device found.";
                         if (ListView_Running->GetToolTipText() != noaudio) ListView_Running->SetToolTip(noaudio);

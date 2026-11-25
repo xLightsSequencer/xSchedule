@@ -11,8 +11,8 @@
 #include "SyncManager.h"
 #include "ScheduleManager.h"
 #include "ScheduleOptions.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "events/ListenerManager.h"
 
 #include "SyncArtNet.h"

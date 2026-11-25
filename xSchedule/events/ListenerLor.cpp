@@ -10,7 +10,7 @@
 
 #include "ListenerLor.h"
 #include "ListenerManager.h"
-#include "../../xLights/outputs/serial.h"
+#include "../xlights/src-core/outputs/serial.h"
 #include <log.h>
 
 ListenerLor::ListenerLor(ListenerManager* listenerManager, std::string commPort, std::string serialConfig, int baudRate, std::string protocol, std::string unit_id_str) :

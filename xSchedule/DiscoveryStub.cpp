@@ -13,9 +13,9 @@
 // If an xlights submodule bump adds new Discovery calls in those outputs, the
 // link will fail on the missing symbols; add them here.
 
-#include "ui/setup/Discovery.h"
+#include "discovery/Discovery.h"
 
-void Discovery::AddBroadcast(int port, std::function<void(wxDatagramSocket* socket, uint8_t* buffer, int len)>&& callback) {
+void Discovery::AddBroadcast(int port, std::function<void(uint8_t* buffer, int len, const std::string& fromIP)>&& callback) {
 }
 
 void Discovery::SendBroadcastData(int port, uint8_t* buffer, int len) {

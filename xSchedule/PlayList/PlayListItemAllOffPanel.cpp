@@ -12,7 +12,7 @@
 #include "PlayListItemAllOff.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/outputs/OutputManager.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
 
 //(*InternalHeaders(PlayListItemAllOffPanel)
 #include <wx/intl.h>

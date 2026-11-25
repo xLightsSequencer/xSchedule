@@ -25,15 +25,20 @@
 #include <wx/msgdlg.h>
 
 #include "ScheduleManager.h"
-#include "../xlights/xLights/outputs/OutputManager.h"
-#include "../xlights/xLights/xLightsVersion.h"
+#include "../xlights/src-core/outputs/OutputManager.h"
+#include "../xlights/src-core/xLightsVersion.h"
 #include "xScheduleVersion.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-ui-wx/settings/XLightsConfigAdapter.h"
+#include "../xlights/src-core/utils/AppCallbacks.h"
+#include "../xlights/src-core/utils/ThreadUtils.h"
+#include "../xlights/src-core/utils/FileUtils.h"
 #include <wx/cmdline.h>
 #include <wx/confbase.h>
 #include <wx/debugrpt.h>
 #include <wx/filename.h>
+#include <wx/dir.h>
 #include <wx/snglinst.h>
 #include <wx/stdpaths.h>
 
@@ -56,13 +61,9 @@
         #pragma comment(lib, "wxwebpd.lib")
         #pragma comment(lib, "wxmsw" WXWIDGETS_VERSION "ud_qa.lib")
         #pragma comment(lib, "wxexpatd.lib")
-        #pragma comment(lib, "portmidid.lib")
         #pragma comment(lib, "msvcprtd.lib")
         #pragma comment(lib, "libzstdd_static_VS.lib")
 
-        #if !defined(SKIP_SMPTE)
-            #pragma comment(lib, "libltcd.lib")
-        #endif
 
     #else
         #pragma comment(lib, "wxbase"WXWIDGETS_VERSION"u.lib")
@@ -79,14 +80,10 @@
         #pragma comment(lib, "wxmsw" WXWIDGETS_VERSION "u_qa.lib")
         #pragma comment(lib, "wxexpat.lib")
         #pragma comment(lib, "libzstd_static_VS.lib")
-        #pragma comment(lib, "portmidi.lib")
         #pragma comment(lib, "msvcprt.lib")
-        #if !defined(SKIP_SMPTE)
-            #pragma comment(lib, "libltc.lib")
-        #endif
     #endif
 
-    #pragma comment(lib, "libcurl.dll.a")
+    #pragma comment(lib, "libcurl.lib")
     #pragma comment(lib, "z.lib")
     #pragma comment(lib, "iphlpapi.lib")
     #pragma comment(lib, "WS2_32.Lib")
@@ -111,7 +108,6 @@
     #pragma comment(lib, "avfilter.lib")
     #pragma comment(lib, "avformat.lib")
     #pragma comment(lib, "avutil.lib")
-    #pragma comment(lib, "postproc.lib")
     #pragma comment(lib, "swresample.lib")
     #pragma comment(lib, "swscale.lib")
     #pragma comment(lib, "SDL2.lib")
@@ -213,21 +209,7 @@ void InitialiseLogging(bool fromMain)
     static bool loggingInitialised = false;
 
     if (!loggingInitialised) {
-        std::string const logFileName = "xschedule_spdlog.log";
-#ifdef __WXMSW__
-        wxString dir;
-        wxGetEnv("APPDATA", &dir);
-        std::string const logFilePath = std::string(dir.c_str()) + "\\" + logFileName;
-#endif
-#ifdef __WXOSX__
-        wxFileName home;
-        home.AssignHomeDir();
-        wxString const dir = home.GetFullPath();
-        std::string const logFilePath = std::string(dir.c_str()) + "/Library/Logs/" + logFileName;
-#endif
-#ifdef __LINUX__
-        std::string const logFilePath = "/tmp/" + logFileName;
-#endif
+        std::string const logFilePath = GetLogFilePath().string();
 
         // wxStandardPaths::Get().Get()
 
@@ -293,8 +275,55 @@ bool xScheduleApp::OnInit()
 
     // curl_global_init(CURL_GLOBAL_SSL);
 
+    SetMainThreadId();
     InitialiseLogging(false);
     spdlog::info("******* OnInit: xSchedule started.");
+
+    // bootstrap FileUtils::GetResourcesDir() - the shared xLights code (eg ControllerCaps
+    // locating the controllers folder) relies on it being set
+    GetResourcesDirectory();
+#ifdef __LINUX__
+    // when run from the build tree there is no share/xSchedule/controllers; fall back to
+    // the repo's controllers folder next to bin/ (where ControllerCaps used to look)
+    if (!wxDir::Exists(FileUtils::GetResourcesDir() + "/controllers")) {
+        wxFileName exeParent(wxStandardPaths::Get().GetExecutablePath());
+        exeParent.RemoveLastDir();
+        if (wxDir::Exists(exeParent.GetPath() + "/controllers")) {
+            FileUtils::SetResourcesDir(exeParent.GetPath().ToStdString());
+        }
+    }
+#endif
+
+    // hooks the shared xLights code uses to reach back into the application
+    AppCallbacks::SetPostToMainThread([](std::function<void()> fn) {
+        wxTheApp->CallAfter(std::move(fn));
+    });
+    AppCallbacks::SetHandleUnhandledException([] {
+        wxTheApp->OnUnhandledException();
+    });
+    AppCallbacks::SetSetupThreadCrashHandler([] {
+        xlCrashHandler::SetupCrashHandlerForNonWxThread();
+    });
+    AppCallbacks::SetDisplayMessageCallback([](AppCallbacks::DisplayMessageLevel level, const std::string& msg) {
+        auto showBox = [level, msg]() {
+            switch (level) {
+            case AppCallbacks::DisplayMessageLevel::Error:
+                wxMessageBox(msg, "Error", wxICON_ERROR | wxOK);
+                break;
+            case AppCallbacks::DisplayMessageLevel::Warning:
+                wxMessageBox(msg, "Warning", wxICON_WARNING | wxOK);
+                break;
+            case AppCallbacks::DisplayMessageLevel::Info:
+                wxMessageBox(msg, "Information", wxICON_INFORMATION | wxOK);
+                break;
+            }
+        };
+        if (wxThread::IsMain()) {
+            showBox();
+        } else {
+            AppCallbacks::PostToMainThread(showBox);
+        }
+    });
 
 #ifdef __WXMSW__
     spdlog::debug("xSchedule module handle {:#x}", reinterpret_cast<uintptr_t>(::GetModuleHandle(nullptr)));

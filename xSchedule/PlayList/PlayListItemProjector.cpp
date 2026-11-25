@@ -12,17 +12,17 @@
 #include "wx/xml/xml.h"
 #include <wx/notebook.h>
 #include "PlayListItemProjectorPanel.h"
-#include "../../xLights/utils/AudioManager.h"
+#include "../xlights/src-core/media/AudioManager.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
 #include <wx/sckaddr.h>
 #include <wx/socket.h>
 #include "../md5.h"
 #include <log.h>
-#include "../../xLights/outputs/SerialOutput.h"
-#include "../../xLights/outputs/serial.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/outputs/SerialOutput.h"
+#include "../xlights/src-core/outputs/serial.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 
 std::string PlayListItemProjector::BuildSerialConfiguration()
 {

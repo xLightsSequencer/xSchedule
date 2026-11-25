@@ -14,12 +14,17 @@
 #include "PlayListItemImagePanel.h"
 #include "PlayerWindow.h"
 #include "../xScheduleApp.h"
-#include "../../xLights/utils/AnimatedImage.h"
+#include "../xlights/src-core/utils/AnimatedImage.h"
 #include "../xScheduleMain.h"
 #include "../ScheduleManager.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "../ScheduleOptions.h"
+#include "../xlights/src-core/utils/xlImage.h"
+
+#include <fstream>
+#include <iterator>
+#include <vector>
 
 PlayListItemImage::PlayListItemImage(wxXmlNode* node) : PlayListItem(node)
 {
@@ -178,7 +183,14 @@ void PlayListItemImage::Start(long stepLengthMS)
         }
         if (_gifImage == nullptr)
         {
-            auto data = LoadGIFAnimationDataWx(_ImageFile);
+            AnimatedImageData data;
+            std::ifstream gif(_ImageFile, std::ios::binary);
+            if (gif) {
+                std::vector<uint8_t> buffer((std::istreambuf_iterator<char>(gif)), std::istreambuf_iterator<char>());
+                if (!buffer.empty()) {
+                    data = LoadAnimatedGIFFromMemory(buffer.data(), buffer.size());
+                }
+            }
             if (!data.frames.empty())
             {
                 _gifImage = new AnimatedImage(_ImageFile, data);

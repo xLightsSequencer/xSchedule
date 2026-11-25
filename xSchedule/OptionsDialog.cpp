@@ -17,10 +17,10 @@
 #include "ScheduleOptions.h"
 #include "UserButton.h"
 #include "xScheduleMain.h"
-#include "../xlights/xLights/utils/AudioManager.h"
-#include "../xlights/xLights/utils/UtilFunctions.h"
-#include "../xlights/xLights/ui/wxUtilities.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
+#include "../xlights/src-core/media/AudioManager.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
 #include "xScheduleVersion.h"
 #include "PlayList/VideoWindowPositionDialog.h"
 #include <wx/file.h>
@@ -364,7 +364,7 @@ OptionsDialog::OptionsDialog(wxWindow* parent, CommandManager* commandManager, S
     }
 
     Choice1->AppendString("");
-    for (auto it : GetLocalIPs()) {
+    for (auto it : ip_utils::GetLocalIPs()) {
         Choice1->AppendString(it);
     }
     Choice1->SetStringSelection(((xScheduleFrame*)parent)->GetScheduleManager()->GetForceLocalIP());
@@ -458,18 +458,18 @@ void OptionsDialog::OnButton_OkClick(wxCommandEvent& event) {
 
     if (Choice_AudioDevice->GetStringSelection() == "(Default)") {
         _options->SetAudioDevice("");
-        AudioManager::GetSDLManager()->SetDefaultOutput("");
+        AudioManager::GetAudioManager()->SetDefaultOutput("");
     } else {
         _options->SetAudioDevice(Choice_AudioDevice->GetStringSelection().ToStdString());
-        AudioManager::GetSDLManager()->SetDefaultOutput(Choice_AudioDevice->GetStringSelection().ToStdString());
+        AudioManager::GetAudioManager()->SetDefaultOutput(Choice_AudioDevice->GetStringSelection().ToStdString());
     }
 
     if (Choice_InputAudioDevice->GetStringSelection() == "(Default)") {
         _options->SetInputAudioDevice("");
-        AudioManager::GetSDLManager()->SetDefaultInput("");
+        AudioManager::GetAudioManager()->SetDefaultInput("");
     } else {
         _options->SetInputAudioDevice(Choice_InputAudioDevice->GetStringSelection().ToStdString());
-        AudioManager::GetSDLManager()->SetDefaultInput(Choice_InputAudioDevice->GetStringSelection().ToStdString());
+        AudioManager::GetAudioManager()->SetDefaultInput(Choice_InputAudioDevice->GetStringSelection().ToStdString());
     }
 
     _options->ClearButtons();

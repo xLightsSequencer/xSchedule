@@ -13,7 +13,7 @@
    @author Robin Gareus <robin@gareus.org>
    @copyright
 
-   Copyright (C) 2006-2019 Robin Gareus <robin@gareus.org>
+   Copyright (C) 2006-2022 Robin Gareus <robin@gareus.org>
 
    Copyright (C) 2008-2009 Jan Weiß <jan@geheimwerk.de>
 
@@ -59,21 +59,27 @@ extern "C" {
 # endif
 #endif
 
+#if defined(__GNUC__) && __GNUC__ >= 4
+# define DEPRECATED_EXPORT __attribute__((__deprecated__))
+#else
+# define DEPRECATED_EXPORT
+#endif
+
 #include <stddef.h> /* size_t */
 
 #ifndef DOXYGEN_IGNORE
 /* libltc version */
-#define LIBLTC_VERSION "1.3.1"
+#define LIBLTC_VERSION "1.3.2"
 #define LIBLTC_VERSION_MAJOR  1
 #define LIBLTC_VERSION_MINOR  3
-#define LIBLTC_VERSION_MICRO  1
+#define LIBLTC_VERSION_MICRO  2
 
 /* interface revision number
  * http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
  */
-#define LIBLTC_CUR 12
+#define LIBLTC_CUR 13
 #define LIBLTC_REV  0
-#define LIBLTC_AGE  1
+#define LIBLTC_AGE  2
 #endif /* end DOXYGEN_IGNORE */
 
 /**
@@ -431,14 +437,25 @@ int ltc_decoder_free(LTCDecoder *d);
  * @param d decoder handle
  * @param buf pointer to ltcsnd_sample_t - unsigned 8 bit mono audio data
  * @param size size number of samples to parse
- * @param posinfo (optional, recommended) sample-offset in the audio-stream. It is added to \ref off_start, \ref off_end in \ref LTCFrameExt and should be monotonic (ie incremented by \param size for every call to ltc_decoder_write)
+ * @param posinfo (optional, recommended) sample-offset in the audio-stream. It is added to \ref off_start, \ref off_end in \ref LTCFrameExt and should be monotonic (ie incremented by \p size for every call to ltc_decoder_write)
  */
 void ltc_decoder_write(LTCDecoder *d,
 		ltcsnd_sample_t *buf, size_t size,
 		ltc_off_t posinfo);
 
 /**
- * Wrapper around \ref ltc_decoder_write that accepts floating point
+ * Wrapper around \ref ltc_decoder_write that accepts 64-bit floating point
+ * audio samples. Note: internally libltc uses 8 bit only.
+ *
+ * @param d decoder handle
+ * @param buf pointer to audio sample data
+ * @param size number of samples to parse
+ * @param posinfo (optional, recommended) sample-offset in the audio-stream.
+ */
+void ltc_decoder_write_double(LTCDecoder *d, double *buf, size_t size, ltc_off_t posinfo);
+
+/**
+ * Wrapper around \ref ltc_decoder_write that accepts 32-bit floating point
  * audio samples. Note: internally libltc uses 8 bit only.
  *
  * @param d decoder handle
@@ -540,22 +557,22 @@ void ltc_encoder_set_timecode(LTCEncoder *e, SMPTETimecode *t);
 void ltc_encoder_get_timecode(LTCEncoder *e, SMPTETimecode *t);
 
 /**
-* Set the user-bits of the frame to the given data.
-*
-* The data should be a 32-bits unsigned integer.
-* It is written LSB first continiously int the eight user fields.
-*
-* @param e encoder handle
-* @param data the data to write
-*/
+ * Set the user-bits of the frame to the given data.
+ *
+ * The data should be a 32-bits unsigned integer.
+ * It is written LSB first continiously int the eight user fields.
+ *
+ * @param e encoder handle
+ * @param data the data to write
+ */
 void ltc_encoder_set_user_bits(LTCEncoder *e, unsigned long data);
 
 /**
-* Get the 32-bits unsigned integer from the user-data bits.
-* The data should be written LSB first in the frame
-*
-* @param f LTC frame data to parse
-*/
+ * Get the 32-bits unsigned integer from the user-data bits.
+ * The data should be written LSB first in the frame
+ *
+ * @param f LTC frame data to parse
+ */
 unsigned long ltc_frame_get_user_bits(LTCFrame *f);
 
 /**
@@ -599,9 +616,22 @@ void ltc_encoder_get_frame(LTCEncoder *e, LTCFrame *f);
  * to hold \ref ltc_encoder_get_buffersize bytes
  * @return the number of bytes written to the memory area
  * pointed to by buf.
+ *
+ * @deprecated please use ltc_encoder_copy_buffer() instead
  */
-int ltc_encoder_get_buffer(LTCEncoder *e, ltcsnd_sample_t *buf);
+int ltc_encoder_get_buffer(LTCEncoder *e, ltcsnd_sample_t *buf) DEPRECATED_EXPORT;
 
+/**
+ * Copy the accumulated encoded audio to the given
+ * sample-buffer and flush the internal buffer.
+ *
+ * @param e encoder handle
+ * @param buf place to store the audio-samples, needs to be large enough
+ * to hold \ref ltc_encoder_get_buffersize bytes
+ * @return the number of bytes written to the memory area
+ * pointed to by buf.
+ */
+int ltc_encoder_copy_buffer(LTCEncoder *e, ltcsnd_sample_t *buf);
 
 /**
  * Retrieve a pointer to the accumulated encoded audio-data.
@@ -610,8 +640,20 @@ int ltc_encoder_get_buffer(LTCEncoder *e, ltcsnd_sample_t *buf);
  * @param size if set, the number of valid bytes in the buffer is stored there
  * @param flush call \ref ltc_encoder_buffer_flush - reset the buffer write-pointer
  * @return pointer to encoder-buffer
+ *
+ * @deprecated please use ltc_encoder_get_bufferptr() instead
  */
-ltcsnd_sample_t *ltc_encoder_get_bufptr(LTCEncoder *e, int *size, int flush);
+ltcsnd_sample_t *ltc_encoder_get_bufptr(LTCEncoder *e, int *size, int flush) DEPRECATED_EXPORT;
+
+/**
+ * Retrieve a pointer to the accumulated encoded audio-data.
+ *
+ * @param e encoder handle
+ * @param buf if set, the pointer to encoder-buffer
+ * @param flush call \ref ltc_encoder_buffer_flush - reset the buffer write-pointer
+ * @return the number of valid bytes in the buffer
+ */
+int ltc_encoder_get_bufferptr(LTCEncoder *e, ltcsnd_sample_t **buf, int flush);
 
 /**
  * reset the write-pointer of the encoder-buffer
@@ -625,7 +667,7 @@ void ltc_encoder_buffer_flush(LTCEncoder *e);
  * sample-rate and frame-rate.  ie. (1 + sample-rate / fps) bytes
  *
  * Note this returns the total size of the buffer, not the used/free
- * part. See also \ref ltc_encoder_get_bufptr
+ * part. See also \ref ltc_encoder_get_bufferptr
  *
  * @param e encoder handle
  * @return size of the allocated internal buffer.
@@ -639,7 +681,7 @@ size_t ltc_encoder_get_buffersize(LTCEncoder *e);
  * and biphase state reset.
  *
  * This call will fail if the internal buffer is too small
- * to hold one full LTC frame. Use \ref ltc_encoder_set_bufsize to
+ * to hold one full LTC frame. Use \ref ltc_encoder_set_buffersize to
  * prepare an internal buffer large enough to accommodate all
  * sample_rate, fps combinations that you would like to re-init to.
  *
@@ -684,8 +726,37 @@ void ltc_encoder_reset(LTCEncoder *e);
  * @param fps video-frames per second (e.g. 25.0)
  * @return 0 on success, -1 if allocation fails (which makes the
  *   encoder unusable, call \ref ltc_encoder_free or realloc the buffer)
+ *
+ * @deprecated please use ltc_encoder_set_buffersize() instead
  */
-int ltc_encoder_set_bufsize(LTCEncoder *e, double sample_rate, double fps);
+int ltc_encoder_set_bufsize(LTCEncoder *e, double sample_rate, double fps) DEPRECATED_EXPORT;
+
+/**
+ * Configure a custom size for the internal buffer.
+ *
+ * This is needed if you are planning to call \ref ltc_encoder_reinit()
+ * or if you want to keep more than one LTC frame's worth of data in
+ * the library's internal buffer.
+ *
+ * The buffer-size is (1 + sample_rate / fps) bytes.
+ * resizing the internal buffer will flush all existing data
+ * in it - alike \ref ltc_encoder_buffer_flush.
+ *
+ * @param e encoder handle
+ * @param sample_rate audio sample rate (eg. 48000)
+ * @param fps video-frames per second (e.g. 25.0)
+ * @return 0 on success, -1 if allocation fails (which makes the
+ *   encoder unusable, call \ref ltc_encoder_free or realloc the buffer)
+ */
+int ltc_encoder_set_buffersize(LTCEncoder *e, double sample_rate, double fps);
+
+/**
+ * Query the volume of the generated LTC signal
+ *
+ * @param e encoder handle
+ * @return the volume in dB full-scale (<= 0.0)
+ */
+double ltc_encoder_get_volume(LTCEncoder *e);
 
 /**
  * Set the volume of the generated LTC signal
@@ -704,6 +775,14 @@ int ltc_encoder_set_bufsize(LTCEncoder *e, double sample_rate, double fps);
  * @return 0 on success, -1 if the value was out of range
  */
 int ltc_encoder_set_volume(LTCEncoder *e, double dBFS);
+
+/**
+ * Get encoder signal rise-time / signal filtering
+ *
+ * @param e encoder handle
+ * @return the signal rise-time in us (10^(-6) sec)
+ */
+double ltc_encoder_get_filter(LTCEncoder *e);
 
 /**
  * Set encoder signal rise-time / signal filtering
@@ -727,7 +806,7 @@ void ltc_encoder_set_filter(LTCEncoder *e, double rise_time);
  * Generate LTC audio for given byte of the LTC-frame and
  * place it into the internal buffer.
  *
- * see \ref ltc_encoder_get_buffer and  \ref ltc_encoder_get_bufptr
+ * see \ref ltc_encoder_copy_buffer and  \ref ltc_encoder_get_bufferptr
  *
  * LTC has 10 bytes per frame: 0 <= bytecnt < 10
  * use SMPTESetTime(..) to set the current frame before Encoding.
@@ -737,7 +816,7 @@ void ltc_encoder_set_filter(LTCEncoder *e, double rise_time);
  * see also \ref ltc_encoder_set_volume
  *
  * if speed is < 0, the bits are encoded in reverse.
- * slowdown > 10.0 requires custom buffer sizes; see \ref ltc_encoder_set_bufsize
+ * slowdown > 10.0 requires custom buffer sizes; see \ref ltc_encoder_set_buffersize
  *
  * @param e encoder handle
  * @param byte byte of the LTC-frame to encode 0..9
@@ -748,19 +827,53 @@ void ltc_encoder_set_filter(LTCEncoder *e, double rise_time);
 int ltc_encoder_encode_byte(LTCEncoder *e, int byte, double speed);
 
 /**
+ * Terminate encoding and add final transition
+ *
+ * Refer to the image at \ref LTCFrame. In this example, the encoded data
+ * starts and ends with a rising edge.
+ * The transition at the start of tne next frame marks the end of
+ * the previous frame. This transition is encoded at the
+ * beginning of a frame. However if there is no additional frame to be encoded,
+ * a final terminating transition has to be added.
+ *
+ * Since LTC is usually sent as continuous stream, this is of no concern.
+ * However for a fixed, finite duration to be encoded, this method adds
+ * a terminating transition to the buffer.
+ *
+ * After this one must either call \ref ltc_encoder_reset() or \ref ltc_encoder_free.
+ *
+ * @param e encoder handle
+ * @return 0 on success, -1 if byte is invalid or buffer overflow (speed > 10.0)
+ */
+int ltc_encoder_end_encode(LTCEncoder *e);
+
+/**
  * Encode a full LTC frame at fixed speed.
  * This is equivalent to calling \ref ltc_encoder_encode_byte 10 times for
  * bytes 0..9 with speed 1.0.
  *
  * Note: The internal buffer must be empty before calling this function.
  * Otherwise it may overflow. This is usually the case if it is read with
- * \ref ltc_encoder_get_buffer after calling this function.
+ * \ref ltc_encoder_copy_buffer after calling this function.
  *
  * The default internal buffersize is exactly one full LTC frame at speed 1.0.
  *
  * @param e encoder handle
  */
 void ltc_encoder_encode_frame(LTCEncoder *e);
+
+/**
+ * Encode a full LTC frame at fixed speed -1.
+ * This is equivalent to calling \ref ltc_encoder_encode_byte 10 times for
+ * bytes 9..0, rolling in reverse at speed 1.
+ *
+ * Note: The internal buffer must be empty before calling this function.
+ * Otherwise it may overflow. This is usually the case if it is read with
+ * \ref ltc_encoder_copy_buffer after calling this function.
+ *
+ * @param e encoder handle
+ */
+void ltc_encoder_encode_reversed_frame(LTCEncoder *e);
 
 /**
  * Set the parity of the LTC frame.
@@ -782,16 +895,16 @@ void ltc_encoder_encode_frame(LTCEncoder *e);
 void ltc_frame_set_parity(LTCFrame *frame, enum LTC_TV_STANDARD standard);
 
 /**
- * Parse Binary Group Flags into standard independent format:
+ * Parse Binary Coded Group Flags into standard independent format:
  * bit 0 (1) - BGF 0,
  * bit 1 (2) - BGF 1,
  * bit 2 (4) - BGF 2
  *
- * @param f LTC frame data analyze
+ * @param frame LTC frame data analyze
  * @param standard the TV standard to use -- see \ref LTCFrame for BGF assignment
  * @return LTC Binary Group Flags
  */
-int parse_bcg_flags(LTCFrame *f, enum LTC_TV_STANDARD standard);
+int ltc_frame_parse_bcg_flags(LTCFrame *frame, enum LTC_TV_STANDARD standard);
 
 /**
  * LTCFrame sample alignment offset.

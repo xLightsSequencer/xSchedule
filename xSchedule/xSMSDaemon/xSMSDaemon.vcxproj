@@ -28,14 +28,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>false</SpectreMitigation>
@@ -43,14 +43,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <SpectreMitigation>false</SpectreMitigation>
@@ -75,28 +75,28 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\xLights;..\..\xlights\xLights\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
+    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\src-core;..\..\xlights\src-ui-wx;..\..\xlights\src-core\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
     <LibraryPath>..\..\..\wxWidgets\lib\vc_lib;..\..\xlights\lib\windows;GL;$(LibraryPath);$(VCToolsInstallDir)lib\x86</LibraryPath>
     <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)..\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\xLights;..\..\xlights\xLights\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\..\wxWidgets\lib\vc_x64_lib;..\..\xlights\lib\windows64;..\..\..\wxWidgets\lib\vc_x64_lib;..\..\xlights\lib\windows;GL;$(VCToolsInstallDir)lib\x64</LibraryPath>
+    <IncludePath>$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;..\..\xlights\dependencies-bundle\wxWidgets\include;..\..\xlights\dependencies-bundle\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\dependencies-bundle\include;..\..\xlights\include;..\..\xlights\src-core;..\..\xlights\src-ui-wx;..\..\xlights\src-core\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(WXWIDGETS_ROOT)\lib\vc_x64_lib;..\..\xlights\dependencies-bundle\wxWidgets\lib\vc_x64_lib;..\..\xlights\dependencies-bundle\libdbg;..\..\xlights\lib\windows64;GL;$(VCToolsInstallDir)lib\x64</LibraryPath>
     <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)..\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\xLights;..\..\xlights\xLights\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
+    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\src-core;..\..\xlights\src-ui-wx;..\..\xlights\src-core\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
     <LibraryPath>..\..\..\wxWidgets\lib\vc_lib;..\..\xlights\lib\windows;GL;$(LibraryPath)</LibraryPath>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\wxWidgets\include;..\..\..\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\include;..\..\xlights\xLights;..\..\xlights\xLights\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;..\..\..\wxWidgets\lib\vc_x64_lib;..\..\xlights\lib\windows64;$(VCToolsInstallDir)lib\x64</LibraryPath>
+    <IncludePath>$(WXWIDGETS_ROOT)\include;$(WXWIDGETS_ROOT)\include\msvc;..\..\xlights\dependencies-bundle\wxWidgets\include;..\..\xlights\dependencies-bundle\wxWidgets\include\msvc;$(IncludePath);..\..\xlights\dependencies-bundle\include;..\..\xlights\include;..\..\xlights\src-core;..\..\xlights\src-ui-wx;..\..\xlights\src-core\utils;..\..\dependencies\pugixml\src;..\..\dependencies\spdlog\include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(WXWIDGETS_ROOT)\lib\vc_x64_lib;..\..\xlights\dependencies-bundle\wxWidgets\lib\vc_x64_lib;..\..\xlights\dependencies-bundle\lib;..\..\xlights\lib\windows64;$(VCToolsInstallDir)lib\x64</LibraryPath>
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
@@ -190,10 +190,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\dependencies\pugixml\src\pugixml.cpp" />
     <ClCompile Include="..\..\xlights\common\xlBaseApp.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\utils\UtilFunctions.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\ui\wxUtilities.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\utils\CurlManager.cpp" />
-    <ClCompile Include="..\..\xlights\xLights\xLightsVersion.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\UtilFunctions.cpp" />
+    <ClCompile Include="..\..\xlights\src-ui-wx\shared\utils\wxUtilities.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\CurlManager.cpp" />
     <ClCompile Include="..\CommandManager.cpp" />
     <ClCompile Include="MagicWord.cpp" />
     <ClCompile Include="MagicWordDialog.cpp" />
@@ -204,14 +203,24 @@
     <ClCompile Include="TestMessagesDialog.cpp" />
     <ClCompile Include="xSMSDaemonApp.cpp" />
     <ClCompile Include="xSMSDaemonMain.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\AppCallbacks.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\FileUtils.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\JobPool.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\ShowGuid.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\TraceLog.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\ip_utils.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\string_utils.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\xlCrashCapture.cpp" />
+    <ClCompile Include="..\..\xlights\src-core\utils\xlExceptionDescribe.cpp" />
+    <ClCompile Include="..\xScheduleConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\xlights\common\xlBaseApp.h" />
     <ClInclude Include="..\..\xlights\common\xlStackWalker.h" />
-    <ClInclude Include="..\..\xlights\xLights\utils/ExternalHooks.h" />
-    <ClInclude Include="..\..\xlights\xLights\ui\wxUtilities.h" />
-    <ClInclude Include="..\..\xlights\xLights\utils\CurlManager.h" />
-    <ClInclude Include="..\..\xlights\xLights\xLightsVersion.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\ExternalHooks.h" />
+    <ClInclude Include="..\..\xlights\src-ui-wx\shared\utils\wxUtilities.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\CurlManager.h" />
+    <ClInclude Include="..\..\xlights\src-core\xLightsVersion.h" />
     <ClInclude Include="..\CommandManager.h" />
     <ClInclude Include="Bandwidth.h" />
     <ClInclude Include="MagicWord.h" />
@@ -226,6 +235,16 @@
     <ClInclude Include="voip_ms.h" />
     <ClInclude Include="xSMSDaemonApp.h" />
     <ClInclude Include="xSMSDaemonMain.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\AppCallbacks.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\FileUtils.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\JobPool.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\ShowGuid.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\TraceLog.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\ip_utils.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\string_utils.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\xlCrashCapture.h" />
+    <ClInclude Include="..\..\xlights\src-core\utils\xlExceptionDescribe.h" />
+    <ClInclude Include="..\xScheduleConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="API Documentation.txt" />
@@ -233,6 +252,13 @@
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
   </ItemGroup>
+  <!-- Stage the prebuilt Windows dependencies (wxWidgets, FFmpeg, curl, SDL2, zstd, zlib) from the
+       xLights-dependencies bundle pinned by xlights\ci_scripts\deps_version.txt, using the
+       xLights submodule's own fetch script. It skips the download when already staged. -->
+  <Target Name="FetchDependencies" BeforeTargets="ClCompile" Condition="'$(Platform)'=='x64'">
+    <Message Importance="high" Text="Staging prebuilt dependencies..." />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\xlights\ci_scripts\fetch_dependencies.ps1&quot; -Only Dependencies" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

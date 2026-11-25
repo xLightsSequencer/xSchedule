@@ -33,8 +33,8 @@
 #include <wx/file.h>
 #include <wx/msgdlg.h>
 
-#include "../../xlights/xLights/xLightsVersion.h"
-#include "../../xlights/xLights/utils/SpecialOptions.h"
+#include "../../xlights/src-core/xLightsVersion.h"
+#include "../../xlights/src-core/utils/SpecialOptions.h"
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -64,7 +64,7 @@
 #pragma comment(lib, "wxmsw"WXWIDGETS_VERSION"u_qa.lib")
 #pragma comment(lib, "wxexpat.lib")
 #endif
-#pragma comment(lib, "libcurl.dll.a")
+#pragma comment(lib, "libcurl.lib")
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "WS2_32.Lib")
 #pragma comment(lib, "comdlg32.lib")

@@ -10,8 +10,8 @@
 
 #include "ListenerSerial.h"
 #include <log.h>
-#include "../../xLights/outputs/serial.h"
-#include "../../xLights/outputs/SerialOutput.h"
+#include "../xlights/src-core/outputs/serial.h"
+#include "../xlights/src-core/outputs/SerialOutput.h"
 #include "ListenerManager.h"
 
 ListenerSerial::ListenerSerial(ListenerManager* listenerManager, const std::string& commPort, const std::string& serialConfig, int baudRate, const std::string& protocol) : ListenerBase(listenerManager, "")

@@ -11,11 +11,11 @@
 #include "PlayListItemFPPEvent.h"
 #include "PlayList.h"
 #include "PlayListItemFPPEventPanel.h"
-#include "../../xLights/utils/UtilFunctions.h"
-#include "../../xLights/ui/wxUtilities.h"
+#include "../xlights/src-core/utils/UtilFunctions.h"
+#include "../xlights/src-ui-wx/shared/utils/wxUtilities.h"
 #include "../Control.h"
-#include "../xlights/xLights/outputs/IPOutput.h"
-#include "../xlights/xLights/utils/ip_utils.h"
+#include "../xlights/src-core/outputs/IPOutput.h"
+#include "../xlights/src-core/utils/ip_utils.h"
 #include "utils/CurlManager.h"
 #include <log.h>
 #include <wx/notebook.h>
