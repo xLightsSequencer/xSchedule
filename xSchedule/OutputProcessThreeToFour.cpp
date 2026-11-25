@@ -73,7 +73,7 @@ void OutputProcessThreeToFour::Frame(uint8_t* buffer, size_t size, std::list<Out
 			}
 			else
 			{
-				memcpy(target, source, 3);
+				memmove(target, source, 3);
 				*(target+3) = 0x00;
 			}
 		}
@@ -86,7 +86,7 @@ void OutputProcessThreeToFour::Frame(uint8_t* buffer, size_t size, std::list<Out
 			}
 			else
 			{
-				memcpy(target + 1, source, 3);
+				memmove(target + 1, source, 3);
 				*target = 0x00;
 			}
 		}

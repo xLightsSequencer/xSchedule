@@ -510,11 +510,10 @@ void Brightness(uint8_t* buffer, uint8_t* blendBuffer, size_t pixels)
 {
     uint8_t* p = buffer;
     uint8_t* pp = blendBuffer;
-    for (size_t i = 0; i < pixels * 3; ++i)         {
-        if (*pp == 0)             {
+    for (size_t i = 0; i < pixels * 3; ++i, ++p, ++pp) {
+        if (*pp == 0) {
             *p = 0;
-        }
-        else if (*pp != 255)             {
+        } else if (*pp != 255) {
             *p = ((int)*p * (int)*pp) / 255;
         }
     }

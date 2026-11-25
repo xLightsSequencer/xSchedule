@@ -22,6 +22,7 @@ OutputProcessDim::OutputProcessDim(OutputManager* outputManager, wxXmlNode* node
 
 OutputProcessDim::OutputProcessDim(const OutputProcessDim& op) : OutputProcess(op)
 {
+    _lastDim = -1;
     _channels = op._channels;
     _dim = op._dim;
     BuildDimTable();
@@ -35,6 +36,7 @@ void OutputProcessDim::BuildDimTable()
         {
             _dimTable[i] = i * _dim / 100;
         }
+        _lastDim = _dim;
     }
 }
 
@@ -97,10 +99,10 @@ void OutputProcessDim::Frame(uint8_t* buffer, size_t size, std::list<OutputProce
 
             if (!ex) {
                 if (_dim == 0) {
-                    *(buffer + i + sc - 1) = 0;
+                    *(buffer + i) = 0;
                 }
                 else {
-                    *(buffer + i + sc - 1) = _dimTable[*(buffer + i + sc - 1)];
+                    *(buffer + i) = _dimTable[*(buffer + i)];
                 }
             }
         }

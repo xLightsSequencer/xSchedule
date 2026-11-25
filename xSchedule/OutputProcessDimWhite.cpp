@@ -22,6 +22,7 @@ OutputProcessDimWhite::OutputProcessDimWhite(OutputManager* outputManager, wxXml
 
 OutputProcessDimWhite::OutputProcessDimWhite(const OutputProcessDimWhite& op) : OutputProcess(op)
 {
+    _lastDim = -1;
     _nodes = op._nodes;
     _dim = op._dim;
     BuildDimTable();
@@ -40,6 +41,7 @@ OutputProcessDimWhite::OutputProcessDimWhite(OutputManager* outputManager, std::
     _lastDim = -1;
     _nodes = p1;
     _dim = p2;
+    BuildDimTable();
 }
 
 wxXmlNode* OutputProcessDimWhite::Save()
@@ -62,6 +64,7 @@ void OutputProcessDimWhite::BuildDimTable()
         {
             _dimTable[i] = i * _dim / 100;
         }
+        _lastDim = _dim;
     }
 }
 

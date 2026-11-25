@@ -77,11 +77,6 @@ size_t OutputProcess::GetStartChannelAsNumber()
     return _sc;
 }
 
-bool compare_excluderanges(const OutputProcessExcludeDim* first, const OutputProcessExcludeDim* second)
-{
-    return first->GetStartChannel() > second->GetStartChannel();
-}
-
 std::list<OutputProcessExcludeDim*> OutputProcess::GetExcludeDim(std::list<OutputProcess*>& processes, size_t sc, size_t ec)
 {
     std::list<OutputProcessExcludeDim*> res;
@@ -95,8 +90,8 @@ std::list<OutputProcessExcludeDim*> OutputProcess::GetExcludeDim(std::list<Outpu
         }
     }
 
-    // sort them so it is easier to process
-    res.sort(compare_excluderanges);
+    // the frame loops walk the ranges in ascending channel order
+    res.sort([](OutputProcessExcludeDim* a, OutputProcessExcludeDim* b) { return a->GetFirstExcludeChannel() < b->GetFirstExcludeChannel(); });
 
     return res;
 }
