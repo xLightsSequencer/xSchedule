@@ -51,6 +51,16 @@ cd build_scripts\msw
 call build_xSchedule_x64.cmd
 ```
 
+
+## Unit Tests
+
+```bash
+cmake -S tests/unit -B build-tests -G Ninja
+cmake --build build-tests && ctest --test-dir build-tests --output-on-failure
+```
+
+See `tests/unit/CMakeLists.txt` for details (Windows needs the xLights dependency bundle first).
+
 ## Repository Structure
 
 xSchedule's own source code lives in `xSchedule/`. Shared code from the xLights project (outputs, controllers, utilities, audio/video support) is provided via the `xlights/` git submodule.

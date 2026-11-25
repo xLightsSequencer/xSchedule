@@ -889,7 +889,6 @@ xScheduleFrame::xScheduleFrame(wxWindow* parent, const std::string& showdir, con
     // City::Test();
 
     // Uncomment this to run the schedule date tests
-    //Schedule::Test();
 
     wxFrame::SendSizeEvent();
     size_t rate = 50;

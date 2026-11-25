@@ -31,6 +31,19 @@ cd build_scripts\msw
 call build_xSchedule_x64.cmd
 ```
 
+### Unit Tests
+Catch2 tests live in `tests/unit/` (modelled on `xlights/tests/unit`). Standalone CMake project:
+```bash
+cmake -S tests/unit -B build-tests -G Ninja
+cmake --build build-tests && ctest --test-dir build-tests --output-on-failure
+```
+On Windows, run `xlights\ci_scripts\fetch_dependencies.ps1 -Only Dependencies` first (the tests build against the same bundle), then use the `Visual Studio 18 2026` generator. CI: `.github/workflows/Unit_Tests.yml` (Linux in the xlights-build-docker container + Windows) on relevant pushes/PRs and nightly.
+
+- xSchedule has no wx-free core, so the tests link wxWidgets but never create windows (headless). `support/main.cpp` initialises wx and silences spdlog (`XS_TEST_LOG=debug` to see logs).
+- Production sources compiled into the tests are listed in `tests/unit/sources.cmake`: add a file when a test needs it. Each `tests/unit/test_*.cpp` is picked up automatically.
+- To reach private logic, add a `friend struct XxxTestAccess;` to the class (see `Schedule.h`) rather than making members public.
+- Known, not-yet-fixed bugs are pinned by tests tagged `[bug][!shouldfail]` (or `[!mayfail]` when platform dependent). When fixing one, remove the tag: a `[!shouldfail]` test that starts passing fails the run. List them with `xschedule_unit_tests "[bug]"`.
+
 ### wxSmith Generated Code
 Some dialogs use wxSmith (wxWidgets RAD tool). Generated code is delimited by `//(* ... //*)` guards in `.cpp`/`.h` files. **Any changes within these guards MUST also be reflected in the corresponding `.wxs` file** in `xSchedule/wxsmith/`. Otherwise the changes will be overwritten the next time the `.wxs` file is opened in wxSmith.
 

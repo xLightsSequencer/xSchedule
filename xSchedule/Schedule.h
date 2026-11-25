@@ -51,12 +51,13 @@ class Schedule
     bool IsOkNthDay(const wxDateTime& date);
     bool CheckActiveAt(const wxDateTime& now);
 
+    friend struct ScheduleTestAccess; // tests/unit
+
     public:
 
         static int GetMaxSchedulePriority() { return 20; }
         static int GetMaxSchedulePriorityBelowQueued() { return 10; }
 
-        static void Test();
 
         static void SetCity(std::string city) { __city = city; }
         wxUint32 GetId() const { return _id; }
