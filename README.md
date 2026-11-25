@@ -22,8 +22,8 @@ xSchedule is part of the [xLights](https://github.com/xLightsSequencer/xLights) 
 ```bash
 # Install dependencies (Ubuntu/Debian)
 sudo apt-get install g++ build-essential libgtk-3-dev libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev freeglut3-dev libavcodec-dev \
-    libavformat-dev libswscale-dev libsdl2-dev libavutil-dev \
+    libgstreamer-plugins-base1.0-dev freeglut3-dev libegl-dev libwayland-dev libavcodec-dev \
+    libavformat-dev libavfilter-dev libswscale-dev libsdl2-dev libavutil-dev \
     libportmidi-dev libzstd-dev libwebp-dev libcurl4-openssl-dev \
     libsecret-1-dev libltc-dev cbp2make
 
