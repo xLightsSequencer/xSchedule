@@ -12,6 +12,7 @@ on:
       - 'xlights'
       - 'dependencies/**'
       - '.github/workflows/Unit_Tests.yml'
+      - 'ci_scripts/**'
   pull_request:
     branches: [ main ]
     paths:
@@ -20,12 +21,14 @@ on:
       - 'xlights'
       - 'dependencies/**'
       - '.github/workflows/Unit_Tests.yml'
+      - 'ci_scripts/**'
   schedule:
     - cron: '0 7 * * *'   # 07:00 UTC, after Windows Nightly (05:00)
   workflow_dispatch:
 
+# Per event, so a push doesn't cancel the nightly run (and its dashboard entry).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -127,3 +130,101 @@ jobs:
         name: results-unit-windows-x64
         path: results
         retention-days: 14
+
+  # Aggregate the JUnit reports (summary on the run page) even when tests failed.
+  # A platform that produced no report counts as failed.
+  report:
+    needs: [linux, windows]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download the reports
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        pattern: results-*
+        path: results
+
+    # xLights' aggregator, at the commit the xlights submodule is pinned to (saves
+    # checking out the whole submodule for one script).
+    - name: Fetch nightly_report.py
+      run: |
+        sha=$(git ls-tree HEAD xlights | awk '{print $3}')
+        curl -fsSL -o nightly_report.py "https://raw.githubusercontent.com/xLightsSequencer/xLights/$sha/ci_scripts/nightly_report.py"
+
+    - name: Aggregate
+      run: |
+        mkdir -p results
+        python3 nightly_report.py --results results \
+          --expect results-unit-linux-x64,results-unit-windows-x64 \
+          --summary "$GITHUB_STEP_SUMMARY" --json nightly-results.json
+
+    - name: Upload the aggregate
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-results
+        path: nightly-results.json
+        retention-days: 90
+
+  # The dashboard (GitHub Pages): one entry per nightly or manual run of main.
+  publish:
+    needs: report
+    if: ${{ always() && needs.report.result == 'success' && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy-retry.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download the aggregate
+      uses: actions/download-artifact@v4
+      with:
+        name: nightly-results
+        path: .
+
+    - name: Build the dashboard
+      run: |
+        # A Pages deploy replaces the whole site, so the history is carried over from the
+        # published copy. The cache-busting query keeps a CDN-cached copy from dropping
+        # an entry made minutes ago.
+        curl -fsSL "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/history.json?t=$(date +%s)" \
+          -H 'Cache-Control: no-cache' -o history.json || echo "no published history yet"
+        python3 ci_scripts/build_dashboard.py nightly-results.json site history.json \
+          "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    # Named per attempt: "Re-run failed jobs" uploads another artifact into the same
+    # run, and deploy-pages refuses a run holding two artifacts of one name.
+    - name: Upload the site
+      uses: actions/upload-pages-artifact@v5
+      with:
+        path: site
+        name: github-pages-${{ github.run_attempt }}
+
+    # The Pages API answers with the odd 5xx; one more try a minute later rides that out.
+    - name: Deploy
+      id: deploy
+      continue-on-error: true
+      uses: actions/deploy-pages@v5
+      with:
+        artifact_name: github-pages-${{ github.run_attempt }}
+
+    - name: Wait before retrying the deploy
+      if: ${{ steps.deploy.outcome == 'failure' }}
+      run: sleep 60
+
+    - name: Deploy (retry)
+      if: ${{ steps.deploy.outcome == 'failure' }}
+      id: deploy-retry
+      uses: actions/deploy-pages@v5
+      with:
+        artifact_name: github-pages-${{ github.run_attempt }}

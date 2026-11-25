@@ -37,7 +37,7 @@ Catch2 tests live in `tests/unit/` (modelled on `xlights/tests/unit`). Standalon
 cmake -S tests/unit -B build-tests -G Ninja
 cmake --build build-tests && ctest --test-dir build-tests --output-on-failure
 ```
-On Windows, run `xlights\ci_scripts\fetch_dependencies.ps1 -Only Dependencies` first (the tests build against the same bundle), then use the `Visual Studio 18 2026` generator. CI: `.github/workflows/Unit_Tests.yml` (Linux in the xlights-build-docker container + Windows) on relevant pushes/PRs and nightly.
+On Windows, run `xlights\ci_scripts\fetch_dependencies.ps1 -Only Dependencies` first (the tests build against the same bundle), then use the `Visual Studio 18 2026` generator. CI: `.github/workflows/Unit_Tests.yml` (Linux in the xlights-build-docker container + Windows) on relevant pushes/PRs and nightly. Every run gets a summary from `xlights/ci_scripts/nightly_report.py`; nightly and manual runs of `main` also publish the dashboard (https://xlightssequencer.github.io/xSchedule/) built by `ci_scripts/build_dashboard.py`, an xSchedule copy of xLights' script (same history.json format). The history lives only in the published site; `--drop-run <run id>` removes a bad entry.
 
 - xSchedule has no wx-free core, so the tests link wxWidgets but never create windows (headless). `support/main.cpp` initialises wx and silences spdlog (`XS_TEST_LOG=debug` to see logs).
 - Production sources compiled into the tests are listed in `tests/unit/sources.cmake`: add a file when a test needs it. Each `tests/unit/test_*.cpp` is picked up automatically.
